@@ -28,13 +28,19 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Protect routes — redirect unauthenticated users
-  const protectedPaths = ['/dashboard', '/update-password']
-  const isProtected = protectedPaths.some((p) =>
+  const publicPaths = [
+    '/',
+    '/login',
+    '/register',
+    '/forgot-password',
+    '/auth/callback',
+  ]
+
+  const isPublic = publicPaths.some((p) =>
     request.nextUrl.pathname.startsWith(p)
   )
 
-  if (isProtected && !user) {
+  if (!isPublic && !user) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
