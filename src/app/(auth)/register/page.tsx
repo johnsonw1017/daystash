@@ -69,19 +69,19 @@ export default function SignUpPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form id="signup-form" onSubmit={form.handleSubmit(onSubmit)}>
+            <form id="register-form" onSubmit={form.handleSubmit(onSubmit)}>
               <FieldGroup>
                 <Controller
                   name="full_name"
                   control={form.control}
                   render={({ field, fieldState }) => (
                     <Field data-invalid={fieldState.invalid}>
-                      <FieldLabel htmlFor="signup-full-name">
+                      <FieldLabel htmlFor="register-full-name">
                         Full Name
                       </FieldLabel>
                       <Input
                         {...field}
-                        id="signup-full-name"
+                        id="register-full-name"
                         placeholder="John Doe"
                         aria-invalid={fieldState.invalid}
                       />
@@ -96,10 +96,10 @@ export default function SignUpPage() {
                   control={form.control}
                   render={({ field, fieldState }) => (
                     <Field data-invalid={fieldState.invalid}>
-                      <FieldLabel htmlFor="signup-email">Email</FieldLabel>
+                      <FieldLabel htmlFor="register-email">Email</FieldLabel>
                       <Input
                         {...field}
-                        id="signup-email"
+                        id="register-email"
                         type="email"
                         placeholder="m@example.com"
                         aria-invalid={fieldState.invalid}
@@ -115,12 +115,12 @@ export default function SignUpPage() {
                   control={form.control}
                   render={({ field, fieldState }) => (
                     <Field data-invalid={fieldState.invalid}>
-                      <FieldLabel htmlFor="signup-password">
+                      <FieldLabel htmlFor="register-password">
                         Password
                       </FieldLabel>
                       <Input
                         {...field}
-                        id="signup-password"
+                        id="register-password"
                         type="password"
                         aria-invalid={fieldState.invalid}
                       />
@@ -135,12 +135,12 @@ export default function SignUpPage() {
                   control={form.control}
                   render={({ field, fieldState }) => (
                     <Field data-invalid={fieldState.invalid}>
-                      <FieldLabel htmlFor="signup-verify-password">
+                      <FieldLabel htmlFor="register-verify-password">
                         Verify Password
                       </FieldLabel>
                       <Input
                         {...field}
-                        id="signup-verify-password"
+                        id="register-verify-password"
                         type="password"
                         aria-invalid={fieldState.invalid}
                       />
@@ -160,7 +160,7 @@ export default function SignUpPage() {
             <div className="mt-4 flex flex-col gap-4">
               <Button
                 type="submit"
-                form="signup-form"
+                form="register-form"
                 className="w-full"
                 disabled={isPending}
               >
