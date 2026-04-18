@@ -1,6 +1,10 @@
 'use client'
 
-import supabase from '@/lib/supabase/client'
+import { useTransition } from 'react'
+import { Controller, useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { updatePassword } from '@/actions/auth'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -9,46 +13,44 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+
+const updatePasswordSchema = z
+  .object({
+    password: z.string().min(6, 'Password must be at least 6 characters'),
+    verify_password: z.string(),
+  })
+  .refine((data) => data.password === data.verify_password, {
+    message: 'Passwords do not match',
+    path: ['verify_password'],
+  })
+
+type UpdatePasswordSchema = z.infer<typeof updatePasswordSchema>
 
 export default function UpdatePasswordPage() {
-  const [password, setPassword] = useState('')
-  const [verifyPassword, setVerifyPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
 
-  const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError(null)
+  const form = useForm<UpdatePasswordSchema>({
+    resolver: zodResolver(updatePasswordSchema),
+    defaultValues: {
+      password: '',
+      verify_password: '',
+    },
+  })
 
-    if (password !== verifyPassword) {
-      setError('Passwords do not match')
-      setIsLoading(false)
-      return
-    }
-
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters')
-      setIsLoading(false)
-      return
-    }
-
-    try {
-      const { error } = await supabase.auth.updateUser({
-        password,
-      })
-      if (error) throw error
-      router.push('/login')
-    } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'An error occurred')
-    } finally {
-      setIsLoading(false)
-    }
+  const onSubmit = (data: UpdatePasswordSchema) => {
+    startTransition(async () => {
+      const result = await updatePassword(data)
+      if (result?.error) {
+        form.setError('root', { message: result.error })
+      }
+    })
   }
 
   return (
@@ -60,36 +62,68 @@ export default function UpdatePasswordPage() {
             <CardDescription>Enter your new password below</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleResetPassword}>
-              <div className="flex flex-col gap-6">
-                <div className="grid gap-2">
-                  <Label htmlFor="password">New Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="verify-password">Confirm New Password</Label>
-                  <Input
-                    id="verify-password"
-                    type="password"
-                    required
-                    value={verifyPassword}
-                    onChange={(e) => setVerifyPassword(e.target.value)}
-                  />
-                </div>
-                {error && (
-                  <p className="text-destructive-foreground text-sm">{error}</p>
+            <form
+              id="update-password-form"
+              onSubmit={form.handleSubmit(onSubmit)}
+            >
+              <FieldGroup>
+                <Controller
+                  name="password"
+                  control={form.control}
+                  render={({ field, fieldState }) => (
+                    <Field data-invalid={fieldState.invalid}>
+                      <FieldLabel htmlFor="update-password">
+                        New Password
+                      </FieldLabel>
+                      <Input
+                        {...field}
+                        id="update-password"
+                        type="password"
+                        aria-invalid={fieldState.invalid}
+                      />
+                      {fieldState.invalid && (
+                        <FieldError errors={[fieldState.error]} />
+                      )}
+                    </Field>
+                  )}
+                />
+                <Controller
+                  name="verify_password"
+                  control={form.control}
+                  render={({ field, fieldState }) => (
+                    <Field data-invalid={fieldState.invalid}>
+                      <FieldLabel htmlFor="update-verify-password">
+                        Confirm New Password
+                      </FieldLabel>
+                      <Input
+                        {...field}
+                        id="update-verify-password"
+                        type="password"
+                        aria-invalid={fieldState.invalid}
+                      />
+                      {fieldState.invalid && (
+                        <FieldError errors={[fieldState.error]} />
+                      )}
+                    </Field>
+                  )}
+                />
+                {form.formState.errors.root && (
+                  <p className="text-destructive-foreground text-sm">
+                    {form.formState.errors.root.message}
+                  </p>
                 )}
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? 'Updating password...' : 'Update Password'}
-                </Button>
-              </div>
+              </FieldGroup>
             </form>
+            <div className="mt-4">
+              <Button
+                type="submit"
+                form="update-password-form"
+                className="w-full"
+                disabled={isPending}
+              >
+                {isPending ? 'Updating password...' : 'Update Password'}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
