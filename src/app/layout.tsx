@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import UserMenu from '@/components/user-menu'
+import UserMenu from '@/components/header/user-menu'
 import './globals.css'
 
 export const metadata: Metadata = {
