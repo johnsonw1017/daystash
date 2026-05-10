@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import UserMenu from '@/components/user-menu'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -13,7 +14,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body cz-shortcut-listen="true">{children}</body>
+      <body className="min-h-svh bg-background text-foreground">
+        <header className="pointer-events-none absolute top-3 right-4 z-50 bg-transparent md:top-4 md:right-6">
+          <div className="pointer-events-auto">
+            <UserMenu />
+          </div>
+        </header>
+        {children}
+      </body>
     </html>
   )
 }
