@@ -127,8 +127,8 @@ const LoginPage = () => {
               </Button>
               <p className="text-center text-sm">
                 {"Don't have an account? "}
-                <Link href="/sign-up" className="underline underline-offset-4">
-                  Sign up
+                <Link href="/register" className="underline underline-offset-4">
+                  Register
                 </Link>
               </p>
             </div>
