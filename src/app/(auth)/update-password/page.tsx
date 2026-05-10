@@ -33,7 +33,7 @@ const updatePasswordSchema = z
 
 type UpdatePasswordSchema = z.infer<typeof updatePasswordSchema>
 
-export default function UpdatePasswordPage() {
+const UpdatePasswordPage = () => {
   const [isPending, startTransition] = useTransition()
 
   const form = useForm<UpdatePasswordSchema>({
@@ -130,3 +130,5 @@ export default function UpdatePasswordPage() {
     </div>
   )
 }
+
+export default UpdatePasswordPage

@@ -28,7 +28,7 @@ const forgotPasswordSchema = z.object({
 
 type ForgotPasswordSchema = z.infer<typeof forgotPasswordSchema>
 
-export default function ForgotPasswordPage() {
+const ForgotPasswordPage = () => {
   const [isPending, startTransition] = useTransition()
 
   const form = useForm<ForgotPasswordSchema>({
@@ -143,3 +143,5 @@ export default function ForgotPasswordPage() {
     </div>
   )
 }
+
+export default ForgotPasswordPage

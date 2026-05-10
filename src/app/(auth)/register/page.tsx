@@ -36,7 +36,7 @@ const signUpSchema = z
 
 type SignUpSchema = z.infer<typeof signUpSchema>
 
-export default function SignUpPage() {
+const SignUpPage = () => {
   const [isPending, startTransition] = useTransition()
 
   const form = useForm<SignUpSchema>({
@@ -179,3 +179,5 @@ export default function SignUpPage() {
     </div>
   )
 }
+
+export default SignUpPage

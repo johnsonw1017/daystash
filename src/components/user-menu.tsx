@@ -13,7 +13,7 @@ import {
 import { useSupabaseUser } from '@/hooks/use-supabase-user'
 import supabase from '@/lib/supabase/client'
 
-export default function UserMenu() {
+const UserMenu = () => {
   const router = useRouter()
   const { user, isLoggedIn, isLoading } = useSupabaseUser()
   const fullName = (user?.user_metadata?.full_name as string | undefined) ?? ''
@@ -63,3 +63,5 @@ export default function UserMenu() {
     </DropdownMenu>
   )
 }
+
+export default UserMenu

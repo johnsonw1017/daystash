@@ -29,7 +29,7 @@ const loginSchema = z.object({
 
 type LoginSchema = z.infer<typeof loginSchema>
 
-export default function LoginPage() {
+const LoginPage = () => {
   const [isPending, startTransition] = useTransition()
 
   const form = useForm<LoginSchema>({
@@ -138,3 +138,5 @@ export default function LoginPage() {
     </div>
   )
 }
+
+export default LoginPage
