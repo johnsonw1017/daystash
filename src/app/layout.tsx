@@ -14,12 +14,8 @@ const RootLayout = ({
 }>) => {
   return (
     <html lang="en">
-      <body className="min-h-svh bg-background text-foreground">
-        <header className="pointer-events-none absolute top-3 right-4 z-50 bg-transparent md:top-4 md:right-6">
-          <div className="pointer-events-auto">
-            <UserMenu />
-          </div>
-        </header>
+      <body>
+        <UserMenu />
         {children}
       </body>
     </html>

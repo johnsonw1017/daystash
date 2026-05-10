@@ -38,29 +38,31 @@ const UserMenu = () => {
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" aria-label="Open user menu">
-          <User className="size-5" />
-          <span>{firstName || 'Account'}</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem asChild>
-          <Link href="/dashboard" className="w-full">
-            Dashboard
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href="/settings" className="w-full">
-            Settings
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem variant="destructive" onSelect={handleLogout}>
-          Logout
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <div className="absolute top-2 right-2 z-50 bg-transparent">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm" aria-label="Open user menu">
+            <User className="size-5" />
+            <span>{firstName || 'Account'}</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem asChild>
+            <Link href="/dashboard" className="w-full">
+              Dashboard
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href="/settings" className="w-full">
+              Settings
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem variant="destructive" onSelect={handleLogout}>
+            Logout
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   )
 }
 
