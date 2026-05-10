@@ -15,14 +15,13 @@ import { logout } from '@/actions/auth'
 import { usePathname } from 'next/navigation'
 
 const UserMenu = () => {
-  const { user, isLoggedIn, isLoading, setUser } = useSupabaseUser()
+  const { user, isLoggedIn, isLoading } = useSupabaseUser()
   const pathname = usePathname()
 
   const fullName = (user?.user_metadata?.full_name as string | undefined) ?? ''
   const firstName = fullName.trim().split(' ').filter(Boolean)[0]
 
   const handleLogout = async () => {
-    setUser(null)
     await logout()
   }
 

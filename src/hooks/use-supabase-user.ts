@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 import type { User } from '@supabase/supabase-js'
-import { atom, useAtomValue, useSetAtom } from 'jotai'
+import { atom, useAtomValue } from 'jotai'
 import { atomWithQuery } from 'jotai-tanstack-query'
 import supabase from '@/lib/supabase/client'
 
@@ -10,7 +10,6 @@ type UserResult = {
   user: User | null
   isLoggedIn: boolean
   isLoading: boolean
-  setUser: (user: User | null) => void
 }
 
 const fetchSupabaseUser = async (): Promise<User | null> => {
@@ -26,7 +25,11 @@ const authUserAtom = atom<User | null | undefined>(undefined)
 authUserAtom.onMount = (setAtom) => {
   const {
     data: { subscription },
-  } = supabase.auth.onAuthStateChange((_event, session) => {
+  } = supabase.auth.onAuthStateChange((event, session) => {
+    if (event === 'INITIAL_SESSION' && !session?.user) {
+      return
+    }
+
     setAtom(session?.user ?? null)
   })
 
@@ -37,11 +40,11 @@ const supabaseUserQueryAtom = atomWithQuery((get) => ({
   queryKey: ['supabase-user'],
   queryFn: fetchSupabaseUser,
   enabled: get(authUserAtom) === undefined,
-  staleTime: Infinity,
-  gcTime: Infinity,
-  refetchOnMount: false,
-  refetchOnWindowFocus: false,
-  refetchOnReconnect: false,
+  staleTime: 0,
+  gcTime: 5 * 60 * 1000,
+  refetchOnMount: true,
+  refetchOnWindowFocus: true,
+  refetchOnReconnect: true,
 }))
 
 const supabaseUserStateAtom = atom((get) => {
@@ -59,15 +62,13 @@ const supabaseUserStateAtom = atom((get) => {
 
 export const useSupabaseUser = (): UserResult => {
   const { user, isLoading } = useAtomValue(supabaseUserStateAtom)
-  const setUser = useSetAtom(authUserAtom)
 
   return useMemo(
     () => ({
       user,
       isLoggedIn: Boolean(user),
       isLoading,
-      setUser,
     }),
-    [isLoading, setUser, user]
+    [isLoading, user]
   )
 }
