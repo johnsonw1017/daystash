@@ -1,4 +1,6 @@
 import type { Metadata } from 'next'
+import UserMenu from '@/components/header/user-menu'
+import Providers from '@/components/providers'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -6,16 +8,21 @@ export const metadata: Metadata = {
   description: 'Stash your important moments in one place.',
 }
 
-export default function RootLayout({
+const RootLayout = ({
   children,
 }: Readonly<{
   children: React.ReactNode
-}>) {
+}>) => {
   return (
     <html lang="en">
       <body>
-        {children}
+        <Providers>
+          <UserMenu />
+          {children}
+        </Providers>
       </body>
     </html>
   )
 }
+
+export default RootLayout
