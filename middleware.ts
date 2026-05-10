@@ -28,17 +28,12 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const publicPaths = [
-    '/',
-    '/login',
-    '/register',
-    '/forgot-password',
-    '/auth/callback',
-  ]
-
-  const isPublic = publicPaths.some((p) =>
-    request.nextUrl.pathname.startsWith(p)
-  )
+  const pathname = request.nextUrl.pathname
+  const exactPublicPaths = new Set(['/', '/login', '/register', '/forgot-password'])
+  const prefixPublicPaths = ['/auth/callback']
+  const isPublic =
+    exactPublicPaths.has(pathname) ||
+    prefixPublicPaths.some((prefix) => pathname.startsWith(prefix))
 
   if (!isPublic && !user) {
     return NextResponse.redirect(new URL('/login', request.url))
