@@ -38,10 +38,10 @@ const UserMenu = () => {
   }
 
   return (
-    <div className="absolute top-2 right-2 z-50 bg-transparent">
+    <div className="absolute top-2 right-2 z-50">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" aria-label="Open user menu">
+          <Button size="sm" aria-label="Open user menu">
             <User className="size-5" />
             <span>{firstName || 'Account'}</span>
           </Button>
