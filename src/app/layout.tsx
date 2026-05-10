@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import UserMenu from '@/components/header/user-menu'
+import Providers from '@/components/providers'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -15,8 +16,10 @@ const RootLayout = ({
   return (
     <html lang="en">
       <body>
-        <UserMenu />
-        {children}
+        <Providers>
+          <UserMenu />
+          {children}
+        </Providers>
       </body>
     </html>
   )

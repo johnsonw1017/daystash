@@ -48,6 +48,11 @@ const UserMenu = () => {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem asChild>
+            <Link href="/" className="w-full">
+              Home
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
             <Link href="/dashboard" className="w-full">
               Dashboard
             </Link>

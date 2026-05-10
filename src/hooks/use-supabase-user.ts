@@ -1,46 +1,63 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import type { User } from '@supabase/supabase-js'
+import { atom, useAtomValue } from 'jotai'
+import { atomWithQuery } from 'jotai-tanstack-query'
 import supabase from '@/lib/supabase/client'
 
-type UseSupabaseUserResult = {
+type UserResult = {
   user: User | null
   isLoggedIn: boolean
   isLoading: boolean
 }
 
-export function useSupabaseUser(): UseSupabaseUserResult {
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+const fetchSupabaseUser = async (): Promise<User | null> => {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  useEffect(() => {
-    let isMounted = true
+  return user
+}
 
-    const loadUser = async () => {
-      const {
-        data: { user: currentUser },
-      } = await supabase.auth.getUser()
+const authUserAtom = atom<User | null | undefined>(undefined)
 
-      if (!isMounted) return
-      setUser(currentUser)
-      setIsLoading(false)
-    }
+authUserAtom.onMount = (setAtom) => {
+  const {
+    data: { subscription },
+  } = supabase.auth.onAuthStateChange((_event, session) => {
+    setAtom(session?.user ?? null)
+  })
 
-    loadUser()
+  return () => subscription.unsubscribe()
+}
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-      setIsLoading(false)
-    })
+const supabaseUserQueryAtom = atomWithQuery((get) => ({
+  queryKey: ['supabase-user'],
+  queryFn: fetchSupabaseUser,
+  enabled: get(authUserAtom) === undefined,
+  staleTime: Infinity,
+  gcTime: Infinity,
+  refetchOnMount: false,
+  refetchOnWindowFocus: false,
+  refetchOnReconnect: false,
+}))
 
-    return () => {
-      isMounted = false
-      subscription.unsubscribe()
-    }
-  }, [])
+const supabaseUserStateAtom = atom((get) => {
+  const authUser = get(authUserAtom)
+  const query = get(supabaseUserQueryAtom)
+
+  const user = authUser !== undefined ? authUser : (query.data ?? null)
+  const isLoading = authUser === undefined && query.isPending
+
+  return {
+    user,
+    isLoading,
+  }
+})
+
+export const useSupabaseUser = (): UserResult => {
+  const { user, isLoading } = useAtomValue(supabaseUserStateAtom)
 
   return useMemo(
     () => ({
@@ -48,6 +65,6 @@ export function useSupabaseUser(): UseSupabaseUserResult {
       isLoggedIn: Boolean(user),
       isLoading,
     }),
-    [user, isLoading]
+    [isLoading, user]
   )
 }
