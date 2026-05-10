@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 import type { User } from '@supabase/supabase-js'
-import { atom, useAtomValue } from 'jotai'
+import { atom, useAtomValue, useSetAtom } from 'jotai'
 import { atomWithQuery } from 'jotai-tanstack-query'
 import supabase from '@/lib/supabase/client'
 
@@ -10,6 +10,7 @@ type UserResult = {
   user: User | null
   isLoggedIn: boolean
   isLoading: boolean
+  setUser: (user: User | null) => void
 }
 
 const fetchSupabaseUser = async (): Promise<User | null> => {
@@ -58,13 +59,15 @@ const supabaseUserStateAtom = atom((get) => {
 
 export const useSupabaseUser = (): UserResult => {
   const { user, isLoading } = useAtomValue(supabaseUserStateAtom)
+  const setUser = useSetAtom(authUserAtom)
 
   return useMemo(
     () => ({
       user,
       isLoggedIn: Boolean(user),
       isLoading,
+      setUser,
     }),
-    [isLoading, user]
+    [isLoading, setUser, user]
   )
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+
 import { User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -11,29 +11,32 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useSupabaseUser } from '@/hooks/use-supabase-user'
-import supabase from '@/lib/supabase/client'
+import { logout } from '@/actions/auth'
+import { usePathname } from 'next/navigation'
 
 const UserMenu = () => {
-  const router = useRouter()
-  const { user, isLoggedIn, isLoading } = useSupabaseUser()
+  const { user, isLoggedIn, isLoading, setUser } = useSupabaseUser()
+  const pathname = usePathname()
+
   const fullName = (user?.user_metadata?.full_name as string | undefined) ?? ''
   const firstName = fullName.trim().split(' ').filter(Boolean)[0]
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/login')
-    router.refresh()
+    setUser(null)
+    await logout()
   }
 
-  if (isLoading) {
+  if (isLoading || pathname === '/login') {
     return null
   }
 
   if (!isLoggedIn) {
     return (
-      <Button asChild size="sm">
-        <Link href="/login">Login</Link>
-      </Button>
+      <div className="absolute top-2 right-2 z-50">
+        <Button asChild size="sm">
+          <Link href="/login">Login</Link>
+        </Button>
+      </div>
     )
   }
 
@@ -62,7 +65,7 @@ const UserMenu = () => {
               Settings
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem variant="destructive" onSelect={handleLogout}>
+          <DropdownMenuItem variant="destructive" onClick={handleLogout}>
             Logout
           </DropdownMenuItem>
         </DropdownMenuContent>
