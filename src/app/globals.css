@@ -37,6 +37,7 @@
   --sidebar-border: #bcb7ac;
   --sidebar-ring: #b15c3a;
   --radius: 0.625rem;
+  --tree: #1e2a24;
 }
 
 @theme inline {
@@ -112,6 +113,7 @@
   --sidebar-accent-foreground: #030905;
   --sidebar-border: #121e16;
   --sidebar-ring: #d0724c;
+  --tree: #6f836e;
 }
 
 @layer base {
