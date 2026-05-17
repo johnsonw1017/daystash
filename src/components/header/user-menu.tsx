@@ -10,22 +10,22 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { useSupabaseUser } from '@/hooks/use-supabase-user'
 import { logout } from '@/actions/auth'
 import { usePathname } from 'next/navigation'
 
-const UserMenu = () => {
-  const { user, isLoggedIn, isLoading } = useSupabaseUser()
-  const pathname = usePathname()
+type UserMenuProps = {
+  isLoggedIn: boolean
+  firstName?: string
+}
 
-  const fullName = (user?.user_metadata?.full_name as string | undefined) ?? ''
-  const firstName = fullName.trim().split(' ').filter(Boolean)[0]
+const UserMenu = ({ isLoggedIn, firstName }: UserMenuProps) => {
+  const pathname = usePathname()
 
   const handleLogout = async () => {
     await logout()
   }
 
-  if (isLoading || pathname === '/login') {
+  if (pathname === '/login') {
     return null
   }
 
