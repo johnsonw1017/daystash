@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { logout } from '@/actions/auth'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 
 type UserMenuProps = {
   isLoggedIn: boolean
@@ -20,6 +20,9 @@ type UserMenuProps = {
 
 const UserMenu = ({ isLoggedIn, firstName }: UserMenuProps) => {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const redirectTo = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
+  const loginHref = `/login?redirectTo=${encodeURIComponent(redirectTo)}`
 
   const handleLogout = async () => {
     await logout()
@@ -33,7 +36,7 @@ const UserMenu = ({ isLoggedIn, firstName }: UserMenuProps) => {
     return (
       <div className="absolute top-3 right-3 z-50">
         <Button asChild size="sm">
-          <Link href="/login">Login</Link>
+          <Link href={loginHref}>Login</Link>
         </Button>
       </div>
     )

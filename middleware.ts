@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import { isProtectedPath } from '@/lib/auth/redirect'
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -29,14 +30,12 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const pathname = request.nextUrl.pathname
-  const exactPublicPaths = new Set(['/', '/login', '/register', '/forgot-password'])
-  const prefixPublicPaths = ['/auth/callback']
-  const isPublic =
-    exactPublicPaths.has(pathname) ||
-    prefixPublicPaths.some((prefix) => pathname.startsWith(prefix))
 
-  if (!isPublic && !user) {
-    return NextResponse.redirect(new URL('/login', request.url))
+  if (isProtectedPath(pathname) && !user) {
+    const loginUrl = new URL('/login', request.url)
+    const redirectTo = `${pathname}${request.nextUrl.search}`
+    loginUrl.searchParams.set('redirectTo', redirectTo)
+    return NextResponse.redirect(loginUrl)
   }
 
   return supabaseResponse

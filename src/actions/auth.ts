@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { createServerSideClient } from '@/lib/supabase/server'
+import { getSafeRedirectPath } from '@/lib/auth/redirect'
 
 type CommonObject = Record<string, unknown>
 
@@ -27,6 +28,7 @@ export async function register(formData: CommonObject) {
 
 export async function login(formData: CommonObject) {
   const supabase = await createServerSideClient()
+  const redirectTo = getSafeRedirectPath(formData.redirectTo as string | undefined)
 
   const { error } = await supabase.auth.signInWithPassword({
     email: formData.email as string,
@@ -35,7 +37,7 @@ export async function login(formData: CommonObject) {
 
   if (error) return { error: error.message }
 
-  redirect('/dashboard')
+  redirect(redirectTo)
 }
 
 export async function logout() {

@@ -1,6 +1,7 @@
 'use client'
 
 import { useTransition } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -25,12 +26,15 @@ import { Input } from '@/components/ui/input'
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(1, 'Password is required'),
+  redirectTo: z.string().optional(),
 })
 
 type LoginSchema = z.infer<typeof loginSchema>
 
 const LoginForm = () => {
   const [isPending, startTransition] = useTransition()
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get('redirectTo') ?? ''
 
   const form = useForm<LoginSchema>({
     resolver: zodResolver(loginSchema),
@@ -42,7 +46,10 @@ const LoginForm = () => {
 
   const onSubmit = (data: LoginSchema) => {
     startTransition(async () => {
-      const result = await login(data)
+      const result = await login({
+        ...data,
+        redirectTo,
+      })
       if (result?.error) {
         form.setError('root', { message: result.error })
       }
