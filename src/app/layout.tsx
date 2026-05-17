@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import UserMenu from '@/components/header/user-menu'
 import Providers from '@/components/providers'
 import './globals.css'
+import { cn } from '@/lib/utils'
+import { cormorant, inter } from '@/lib/fonts'
 
 export const metadata: Metadata = {
   title: 'Daystash',
@@ -14,8 +16,8 @@ const RootLayout = ({
   children: React.ReactNode
 }>) => {
   return (
-    <html lang="en">
-      <body>
+    <html lang="en" className={cn(inter.variable, cormorant.variable)}>
+      <body className="font-sans">
         <Providers>
           <UserMenu />
           {children}
