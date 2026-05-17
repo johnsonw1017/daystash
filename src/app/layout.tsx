@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Logo from '@/components/header/logo'
 import UserMenu from '@/components/header/user-menu'
 import Providers from '@/components/providers'
 import './globals.css'
@@ -19,6 +20,7 @@ const RootLayout = ({
     <html lang="en" className={cn(inter.variable, cormorant.variable)}>
       <body className="font-sans">
         <Providers>
+          <Logo />
           <UserMenu />
           {children}
         </Providers>

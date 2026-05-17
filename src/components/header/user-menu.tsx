@@ -31,7 +31,7 @@ const UserMenu = () => {
 
   if (!isLoggedIn) {
     return (
-      <div className="absolute top-2 right-2 z-50">
+      <div className="absolute top-3 right-3 z-50">
         <Button asChild size="sm">
           <Link href="/login">Login</Link>
         </Button>
@@ -40,7 +40,7 @@ const UserMenu = () => {
   }
 
   return (
-    <div className="absolute top-2 right-2 z-50">
+    <div className="absolute top-3 right-3 z-50">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button size="sm" aria-label="Open user menu">
