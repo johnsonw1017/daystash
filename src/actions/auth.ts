@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { createServerSideClient } from '@/lib/supabase/server'
-import { getSafeRedirectPath } from '@/lib/auth/redirect'
+import { DEFAULT_POST_LOGIN_REDIRECT, getSafeRedirectPath } from '@/lib/auth/redirect'
 
 type CommonObject = Record<string, unknown>
 
@@ -13,16 +13,13 @@ export async function register(formData: CommonObject) {
     email: formData.email as string,
     password: formData.password as string,
     options: {
-      // Optional: pass extra user metadata
       data: { full_name: formData.full_name as string },
-      // Supabase will send a confirmation email to this URL
       emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
     },
   })
 
   if (error) return { error: error.message }
 
-  // User receives a confirmation email; redirect to a pending page
   redirect('/verify-email')
 }
 
@@ -37,13 +34,16 @@ export async function login(formData: CommonObject) {
 
   if (error) return { error: error.message }
 
-  redirect(redirectTo)
+  return { success: true, redirectTo }
 }
 
 export async function logout() {
   const supabase = await createServerSideClient()
-  await supabase.auth.signOut()
-  redirect('/login')
+  const { error } = await supabase.auth.signOut()
+
+  if (error) return { error: error.message }
+
+  return { success: true }
 }
 
 export async function forgotPassword(formData: CommonObject) {
@@ -70,5 +70,5 @@ export async function updatePassword(formData: CommonObject) {
 
   if (error) return { error: error.message }
 
-  redirect('/dashboard')
+  redirect(DEFAULT_POST_LOGIN_REDIRECT)
 }

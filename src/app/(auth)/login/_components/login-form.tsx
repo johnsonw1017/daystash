@@ -1,11 +1,12 @@
 'use client'
 
 import { useTransition } from 'react'
-import { useSearchParams } from 'next/navigation'
+import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
-import Link from 'next/link'
 import { login } from '@/actions/auth'
 import { Button } from '@/components/ui/button'
 import {
@@ -22,6 +23,7 @@ import {
   FieldLabel,
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { DEFAULT_POST_LOGIN_REDIRECT } from '@/lib/auth/redirect'
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -33,6 +35,8 @@ type LoginSchema = z.infer<typeof loginSchema>
 
 const LoginForm = () => {
   const [isPending, startTransition] = useTransition()
+  const queryClient = useQueryClient()
+  const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get('redirectTo') ?? ''
 
@@ -50,9 +54,14 @@ const LoginForm = () => {
         ...data,
         redirectTo,
       })
+
       if (result?.error) {
         form.setError('root', { message: result.error })
+        return
       }
+
+      await queryClient.invalidateQueries({ queryKey: ['auth-user'] })
+      router.replace(result?.redirectTo ?? DEFAULT_POST_LOGIN_REDIRECT)
     })
   }
 

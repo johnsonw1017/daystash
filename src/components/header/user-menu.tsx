@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 
 import { User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -10,8 +11,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { useQueryClient } from '@tanstack/react-query'
 import { logout } from '@/actions/auth'
-import { usePathname, useSearchParams } from 'next/navigation'
 
 type UserMenuProps = {
   isLoggedIn: boolean
@@ -19,13 +20,21 @@ type UserMenuProps = {
 }
 
 const UserMenu = ({ isLoggedIn, firstName }: UserMenuProps) => {
+  const queryClient = useQueryClient()
+  const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const redirectTo = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
   const loginHref = `/login?redirectTo=${encodeURIComponent(redirectTo)}`
 
   const handleLogout = async () => {
-    await logout()
+    const result = await logout()
+    if (result?.error) {
+      return
+    }
+
+    await queryClient.invalidateQueries({ queryKey: ['auth-user'] })
+    router.replace('/login')
   }
 
   if (pathname === '/login') {

@@ -1,4 +1,4 @@
-export const DEFAULT_POST_LOGIN_REDIRECT = '/dashboard'
+export const DEFAULT_POST_LOGIN_REDIRECT = '/'
 
 export const PROTECTED_ROUTES = ['/dashboard', '/settings', '/write'] as const
 
