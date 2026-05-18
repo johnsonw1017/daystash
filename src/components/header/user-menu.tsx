@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 
 import { User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -10,66 +11,68 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { useSupabaseUser } from '@/hooks/use-supabase-user'
+import { useQueryClient } from '@tanstack/react-query'
 import { logout } from '@/actions/auth'
-import { usePathname } from 'next/navigation'
 
-const UserMenu = () => {
-  const { user, isLoggedIn, isLoading } = useSupabaseUser()
+type UserMenuProps = {
+  isLoggedIn: boolean
+  firstName?: string
+}
+
+const UserMenu = ({ isLoggedIn, firstName }: UserMenuProps) => {
+  const queryClient = useQueryClient()
+  const router = useRouter()
   const pathname = usePathname()
-
-  const fullName = (user?.user_metadata?.full_name as string | undefined) ?? ''
-  const firstName = fullName.trim().split(' ').filter(Boolean)[0]
+  const searchParams = useSearchParams()
+  const redirectTo = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
+  const loginHref = `/login?redirectTo=${encodeURIComponent(redirectTo)}`
 
   const handleLogout = async () => {
-    await logout()
+    const result = await logout()
+    if (result?.error) {
+      return
+    }
+
+    await queryClient.invalidateQueries({ queryKey: ['auth-user'] })
+    router.replace('/login')
   }
 
-  if (isLoading || pathname === '/login') {
+  if (pathname === '/login') {
     return null
   }
 
   if (!isLoggedIn) {
     return (
-      <div className="absolute top-2 right-2 z-50">
-        <Button asChild size="sm">
-          <Link href="/login">Login</Link>
-        </Button>
-      </div>
+      <Button asChild size="sm">
+        <Link href={loginHref}>Login</Link>
+      </Button>
     )
   }
 
   return (
-    <div className="absolute top-2 right-2 z-50">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button size="sm" aria-label="Open user menu">
-            <User className="size-5" />
-            <span>{firstName || 'Account'}</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem asChild>
-            <Link href="/" className="w-full">
-              Home
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href="/dashboard" className="w-full">
-              Dashboard
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href="/settings" className="w-full">
-              Settings
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem variant="destructive" onClick={handleLogout}>
-            Logout
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button size="sm" aria-label="Open user menu">
+          <User className="size-5" />
+          <span>{firstName || 'Account'}</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem asChild>
+          <Link href="/" className="w-full">
+            Home
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/dashboard" className="w-full">
+            Dashboard
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem variant="destructive" onClick={handleLogout}>
+          Logout
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 

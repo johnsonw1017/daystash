@@ -1,7 +1,10 @@
 import type { Metadata } from 'next'
-import UserMenu from '@/components/header/user-menu'
+import Logo from '@/components/header/logo'
+import HeaderAuth from '@/components/header/header-auth'
 import Providers from '@/components/providers'
 import './globals.css'
+import { cn } from '@/lib/utils'
+import { cormorant, inter } from '@/lib/fonts'
 
 export const metadata: Metadata = {
   title: 'Daystash',
@@ -14,11 +17,16 @@ const RootLayout = ({
   children: React.ReactNode
 }>) => {
   return (
-    <html lang="en">
-      <body>
+    <html lang="en" className={cn(inter.variable, cormorant.variable)}>
+      <body className="font-sans" suppressHydrationWarning>
         <Providers>
-          <UserMenu />
-          {children}
+          <header className="sticky top-0 z-50 h-16">
+            <div className="flex h-full items-center justify-between px-3">
+              <Logo />
+              <HeaderAuth />
+            </div>
+          </header>
+          <main>{children}</main>
         </Providers>
       </body>
     </html>
