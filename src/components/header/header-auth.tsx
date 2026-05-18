@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import UserMenu from '@/components/header/user-menu'
+import ThemeToggle from '@/components/header/theme-toggle'
 import supabase from '@/lib/supabase/client'
 
 const getFirstName = (user: User | null) => {
@@ -45,10 +46,13 @@ const HeaderAuth = () => {
   }
 
   return (
-    <UserMenu
-      isLoggedIn={data?.isLoggedIn ?? false}
-      firstName={data?.firstName ?? ''}
-    />
+    <div className="flex items-center gap-3">
+      <ThemeToggle />
+      <UserMenu
+        isLoggedIn={data?.isLoggedIn ?? false}
+        firstName={data?.firstName ?? ''}
+      />
+    </div>
   )
 }
 
