@@ -14,7 +14,7 @@ const Home = () => {
         <h2 className="text-center font-serif text-5xl font-bold">
           Every day leaves something behind.
         </h2>
-        <Button variant="accent" size="lg" asChild>
+        <Button variant="accent" size="lg" className="mb-3" asChild>
           <Link href="/write">Start Writing</Link>
         </Button>
       </div>
