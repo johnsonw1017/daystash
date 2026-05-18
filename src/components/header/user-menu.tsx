@@ -34,45 +34,41 @@ const UserMenu = ({ isLoggedIn, firstName }: UserMenuProps) => {
 
   if (!isLoggedIn) {
     return (
-      <div className="absolute top-3 right-3 z-50">
-        <Button asChild size="sm">
-          <Link href={loginHref}>Login</Link>
-        </Button>
-      </div>
+      <Button asChild size="sm">
+        <Link href={loginHref}>Login</Link>
+      </Button>
     )
   }
 
   return (
-    <div className="absolute top-3 right-3 z-50">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button size="sm" aria-label="Open user menu">
-            <User className="size-5" />
-            <span>{firstName || 'Account'}</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem asChild>
-            <Link href="/" className="w-full">
-              Home
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href="/dashboard" className="w-full">
-              Dashboard
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href="/settings" className="w-full">
-              Settings
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem variant="destructive" onClick={handleLogout}>
-            Logout
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button size="sm" aria-label="Open user menu">
+          <User className="size-5" />
+          <span>{firstName || 'Account'}</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem asChild>
+          <Link href="/" className="w-full">
+            Home
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/dashboard" className="w-full">
+            Dashboard
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/settings" className="w-full">
+            Settings
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem variant="destructive" onClick={handleLogout}>
+          Logout
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 

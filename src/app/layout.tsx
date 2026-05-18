@@ -29,9 +29,13 @@ const RootLayout = async ({
     <html lang="en" className={cn(inter.variable, cormorant.variable)}>
       <body className="font-sans">
         <Providers>
-          <Logo />
-          <UserMenu isLoggedIn={Boolean(user)} firstName={firstName} />
-          {children}
+          <header className="sticky top-0 z-50 h-16">
+            <div className="flex h-full items-center justify-between px-3">
+              <Logo />
+              <UserMenu isLoggedIn={Boolean(user)} firstName={firstName} />
+            </div>
+          </header>
+          <main>{children}</main>
         </Providers>
       </body>
     </html>
