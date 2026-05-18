@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createServerSideClient } from '@/lib/supabase/server'
 import LoginForm from './_components/login-form'
-import { getSafeRedirectPath } from '@/lib/auth/redirect'
+import { getPostLoginRedirectPath } from '@/lib/auth/redirect'
 
 type LoginPageProps = {
   searchParams?: Promise<{
@@ -11,7 +11,7 @@ type LoginPageProps = {
 
 const LoginPage = async ({ searchParams }: LoginPageProps) => {
   const resolvedSearchParams = await searchParams
-  const redirectTo = getSafeRedirectPath(resolvedSearchParams?.redirectTo)
+  const redirectTo = getPostLoginRedirectPath(resolvedSearchParams?.redirectTo)
   const supabase = await createServerSideClient()
   const {
     data: { user },
