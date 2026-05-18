@@ -68,11 +68,6 @@ const UserMenu = ({ isLoggedIn, firstName }: UserMenuProps) => {
             Dashboard
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href="/settings" className="w-full">
-            Settings
-          </Link>
-        </DropdownMenuItem>
         <DropdownMenuItem variant="destructive" onClick={handleLogout}>
           Logout
         </DropdownMenuItem>

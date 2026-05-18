@@ -1,6 +1,6 @@
 export const DEFAULT_POST_LOGIN_REDIRECT = '/'
 
-export const PROTECTED_ROUTES = ['/dashboard', '/settings', '/write'] as const
+export const PROTECTED_ROUTES = ['/dashboard', '/write'] as const
 
 export const isProtectedPath = (pathname: string): boolean => {
   return PROTECTED_ROUTES.some(
