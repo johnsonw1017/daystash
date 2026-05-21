@@ -1,13 +1,13 @@
 import EntryEdit from '@/app/(journal)/entries/[slug]/edit/_components/entry-edit'
 
 type EntryEditPageProps = {
-  params: {
+  params: Promise<{
     slug: string
-  }
+  }>
 }
 
-const EntryEditPage = ({ params }: EntryEditPageProps) => {
-  const { slug } = params
+const EntryEditPage = async ({ params }: EntryEditPageProps) => {
+  const { slug } = await params
 
   return (
     <div className="px-4 pb-10">

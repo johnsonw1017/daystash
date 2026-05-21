@@ -1,13 +1,13 @@
 import EntryView from '@/app/(journal)/entries/[slug]/_components/entry-view'
 
 type EntryPageProps = {
-  params: {
+  params: Promise<{
     slug: string
-  }
+  }>
 }
 
-const EntryPage = ({ params }: EntryPageProps) => {
-  const { slug } = params
+const EntryPage = async ({ params }: EntryPageProps) => {
+  const { slug } = await params
 
   return (
     <div className="px-4 pb-10">
