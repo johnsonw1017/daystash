@@ -1,11 +1,13 @@
 'use client'
 
+import Link from 'next/link'
 import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { saveJournalDraft } from '@/app/(journal)/write/actions'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -15,6 +17,8 @@ type JournalEditorProps = {
   initialTitle?: string
   initialContent?: string
   successMessage?: string
+  isEditMode?: boolean
+  viewHref?: string
 }
 
 type JournalFormValues = {
@@ -27,6 +31,8 @@ const JournalEditor = ({
   initialTitle = '',
   initialContent = '',
   successMessage = 'Journal saved',
+  isEditMode = false,
+  viewHref,
 }: JournalEditorProps) => {
   const [journalId, setJournalId] = useState<string | undefined>(initialJournalId)
   const [errorMessage, setErrorMessage] = useState('')
@@ -63,26 +69,40 @@ const JournalEditor = ({
 
   return (
     <section className="mx-auto flex w-full max-w-[210mm] flex-col gap-4">
-      <div className="flex items-center gap-3">
-        <Input
-          {...form.register('title')}
-          placeholder="Title"
-          className="placeholder:text-muted-foreground h-auto border-0 bg-transparent px-0 py-0 font-serif text-3xl font-semibold shadow-none focus-visible:ring-0 md:text-4xl"
-        />
-        <Button
-          type="button"
-          onClick={handleSave}
-          disabled={saveMutation.isPending}
-        >
-          {saveMutation.isPending ? 'Saving...' : 'Save'}
-        </Button>
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-3">
+          <Input
+            {...form.register('title')}
+            placeholder="Title"
+            className="placeholder:text-muted-foreground h-14 overflow-hidden border-0 bg-transparent px-0 py-0 font-serif text-3xl leading-tight font-semibold shadow-none focus-visible:ring-0 md:h-16 md:text-4xl"
+          />
+          <div className="flex items-center gap-2">
+            {isEditMode && viewHref && (
+              <Button variant="outline" asChild>
+                <Link href={viewHref}>View entry</Link>
+              </Button>
+            )}
+            <Button
+              type="button"
+              onClick={handleSave}
+              disabled={saveMutation.isPending}
+            >
+              {saveMutation.isPending
+                ? 'Saving...'
+                : isEditMode
+                  ? 'Save changes'
+                  : 'Save'}
+            </Button>
+          </div>
+        </div>
+        {isEditMode && <Badge variant="secondary">Editing</Badge>}
       </div>
 
-      {errorMessage ? (
+      {errorMessage && (
         <Alert variant="destructive">
           <AlertDescription>{errorMessage}</AlertDescription>
         </Alert>
-      ) : null}
+      )}
 
       <Textarea
         {...form.register('content')}

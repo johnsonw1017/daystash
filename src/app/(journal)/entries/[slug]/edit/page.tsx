@@ -48,6 +48,8 @@ const EntryEditPage = async ({ params }: EntryEditPageProps) => {
         initialTitle={journal.title ?? ''}
         initialContent={content}
         successMessage="Journal updated"
+        isEditMode
+        viewHref={`/entries/${slug}`}
       />
     </div>
   )
