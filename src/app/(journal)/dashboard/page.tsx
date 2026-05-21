@@ -1,5 +1,6 @@
 import { requireAuth } from '@/lib/auth/require-auth'
 import { createServerSideClient } from '@/lib/supabase/server'
+import Link from 'next/link'
 import {
   Card,
   CardContent,
@@ -20,7 +21,7 @@ const DashboardPage = async () => {
 
   const { data: journals, error } = await supabase
     .from('journals')
-    .select('id, title, created_at')
+    .select('id, title, created_at, slug')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
 
@@ -68,8 +69,8 @@ const DashboardPage = async () => {
               firstParagraphByJournalId.get(journal.id)?.trim() ||
               'No journal text yet.'
 
-            return (
-              <Card key={journal.id} className="h-full">
+            const cardBody = (
+              <Card className="h-full">
                 <CardHeader>
                   <CardTitle className="line-clamp-1 text-base font-medium">
                     {dateFormatter.format(new Date(journal.created_at))} - {title}
@@ -81,6 +82,16 @@ const DashboardPage = async () => {
                   </CardDescription>
                 </CardContent>
               </Card>
+            )
+
+            if (!journal.slug) {
+              return <div key={journal.id}>{cardBody}</div>
+            }
+
+            return (
+              <Link key={journal.id} href={`/entries/${journal.slug}`}>
+                {cardBody}
+              </Link>
             )
           })}
         </div>

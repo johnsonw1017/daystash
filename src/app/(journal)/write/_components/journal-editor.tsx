@@ -10,24 +10,36 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 
-type WriteFormValues = {
+type JournalEditorProps = {
+  initialJournalId?: string
+  initialTitle?: string
+  initialContent?: string
+  successMessage?: string
+}
+
+type JournalFormValues = {
   title: string
   content: string
 }
 
-const WriteEditor = () => {
-  const [journalId, setJournalId] = useState<string | undefined>(undefined)
+const JournalEditor = ({
+  initialJournalId,
+  initialTitle = '',
+  initialContent = '',
+  successMessage = 'Journal saved',
+}: JournalEditorProps) => {
+  const [journalId, setJournalId] = useState<string | undefined>(initialJournalId)
   const [errorMessage, setErrorMessage] = useState('')
 
-  const form = useForm<WriteFormValues>({
+  const form = useForm<JournalFormValues>({
     defaultValues: {
-      title: '',
-      content: '',
+      title: initialTitle,
+      content: initialContent,
     },
   })
 
   const saveMutation = useMutation({
-    mutationFn: async (values: WriteFormValues) => {
+    mutationFn: async (values: JournalFormValues) => {
       return saveJournalDraft({
         journalId,
         title: values.title,
@@ -36,7 +48,7 @@ const WriteEditor = () => {
     },
     onSuccess: (response) => {
       setJournalId(response.journalId)
-      toast.success('Journal saved')
+      toast.success(successMessage)
     },
     onError: () => {
       setErrorMessage('Could not save. Try again.')
@@ -81,4 +93,4 @@ const WriteEditor = () => {
   )
 }
 
-export default WriteEditor
+export default JournalEditor
