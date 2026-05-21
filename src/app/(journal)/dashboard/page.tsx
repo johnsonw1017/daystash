@@ -1,9 +1,7 @@
-import { requireAuth } from '@/lib/auth/require-auth'
+import DashboardJournals from '@/app/(journal)/dashboard/_components/dashboard-journals'
 
-const DashboardPage = async () => {
-  await requireAuth('/dashboard')
-
-  return <div>dashboard</div>
+const DashboardPage = () => {
+  return <DashboardJournals />
 }
 
 export default DashboardPage

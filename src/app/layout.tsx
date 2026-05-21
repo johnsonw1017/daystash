@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Logo from '@/components/header/logo'
 import HeaderAuth from '@/components/header/header-auth'
 import Providers from '@/components/providers'
+import { Toaster } from '@/components/ui/sonner'
 import './globals.css'
 import { cn } from '@/lib/utils'
 import { cormorant, inter } from '@/lib/fonts'
@@ -27,6 +28,7 @@ const RootLayout = ({
             </div>
           </header>
           <main>{children}</main>
+          <Toaster />
         </Providers>
       </body>
     </html>
