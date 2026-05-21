@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
@@ -34,7 +34,7 @@ const JournalEditor = ({
   isEditMode = false,
   viewHref,
 }: JournalEditorProps) => {
-  const [journalId, setJournalId] = useState<string | undefined>(initialJournalId)
+  const journalIdRef = useRef<string | undefined>(initialJournalId)
   const [errorMessage, setErrorMessage] = useState('')
 
   const form = useForm<JournalFormValues>({
@@ -44,16 +44,24 @@ const JournalEditor = ({
     },
   })
 
+  useEffect(() => {
+    journalIdRef.current = initialJournalId
+    form.reset({
+      title: initialTitle,
+      content: initialContent,
+    })
+  }, [form, initialContent, initialJournalId, initialTitle])
+
   const saveMutation = useMutation({
     mutationFn: async (values: JournalFormValues) => {
       return saveJournalDraft({
-        journalId,
+        journalId: journalIdRef.current,
         title: values.title,
         content: values.content,
       })
     },
     onSuccess: (response) => {
-      setJournalId(response.journalId)
+      journalIdRef.current = response.journalId
       toast.success(successMessage)
     },
     onError: () => {
