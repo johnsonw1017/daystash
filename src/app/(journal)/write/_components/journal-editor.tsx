@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { saveJournalDraft } from '@/app/(journal)/write/actions'
@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { journalQueryKeys } from '@/hooks/use-journals'
 
 type JournalEditorProps = {
   initialJournalId?: string
@@ -34,6 +35,7 @@ const JournalEditor = ({
   isEditMode = false,
   viewHref,
 }: JournalEditorProps) => {
+  const queryClient = useQueryClient()
   const journalIdRef = useRef<string | undefined>(initialJournalId)
   const [errorMessage, setErrorMessage] = useState('')
 
@@ -62,6 +64,7 @@ const JournalEditor = ({
     },
     onSuccess: (response) => {
       journalIdRef.current = response.journalId
+      void queryClient.invalidateQueries({ queryKey: journalQueryKeys.all })
       toast.success(successMessage)
     },
     onError: () => {
