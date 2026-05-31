@@ -2,14 +2,23 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
+import type { ReactNode } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { ImageIcon, Plus, Trash2, Upload, X } from 'lucide-react'
+import { ImageIcon, Plus, Trash2, Upload } from 'lucide-react'
 import { v4 as uuidv4 } from 'uuid'
 import { deleteJournalImage, saveJournalDraft } from '@/app/(journal)/write/actions'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,6 +41,7 @@ type JournalEditorProps = {
   successMessage?: string
   isEditMode?: boolean
   viewHref?: string
+  headerActions?: ReactNode
 }
 
 const makeTextBlock = (text = ''): JournalBlock => ({
@@ -72,6 +82,7 @@ const JournalEditor = ({
   successMessage = 'Journal saved',
   isEditMode = false,
   viewHref,
+  headerActions,
 }: JournalEditorProps) => {
   const queryClient = useQueryClient()
   const journalIdRef = useRef<string | undefined>(initialJournalId)
@@ -316,6 +327,7 @@ const JournalEditor = ({
                   ? 'Save changes'
                   : 'Save'}
             </Button>
+            {headerActions}
           </div>
         </div>
         {isEditMode && <Badge variant="secondary">Editing</Badge>}
@@ -436,67 +448,68 @@ const JournalEditor = ({
         ))}
       </div>
 
-      {isUploadDialogOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-          <div className="w-full max-w-lg rounded-lg border bg-background p-5 shadow-lg">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Add images</h2>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => setIsUploadDialogOpen(false)}
-                aria-label="Close"
-              >
-                <X />
-              </Button>
+      <Dialog
+        open={isUploadDialogOpen}
+        onOpenChange={(open) => {
+          setIsUploadDialogOpen(open)
+          if (!open) {
+            setPendingFiles([])
+            setActiveInsertIndex(null)
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add images</DialogTitle>
+            <DialogDescription>
+              Upload one or more images into a new image block.
+            </DialogDescription>
+          </DialogHeader>
+
+          <label className="flex min-h-44 cursor-pointer flex-col items-center justify-center gap-3 rounded-md border border-dashed p-4 text-center">
+            <Upload className="text-muted-foreground" />
+            <span className="text-sm">Drag and drop or browse your files</span>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={(event) => {
+                const fileList = Array.from(event.target.files ?? [])
+                setPendingFiles(fileList)
+              }}
+            />
+          </label>
+
+          {pendingFiles.length > 0 && (
+            <div className="mt-1 space-y-2">
+              {pendingFiles.map((file) => (
+                <div key={`${file.name}-${file.size}`} className="text-muted-foreground text-sm">
+                  {file.name}
+                </div>
+              ))}
             </div>
+          )}
 
-            <label className="flex min-h-44 cursor-pointer flex-col items-center justify-center gap-3 rounded-md border border-dashed p-4 text-center">
-              <Upload className="text-muted-foreground" />
-              <span className="text-sm">Drag and drop or browse your files</span>
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                className="hidden"
-                onChange={(event) => {
-                  const fileList = Array.from(event.target.files ?? [])
-                  setPendingFiles(fileList)
-                }}
-              />
-            </label>
-
-            {pendingFiles.length > 0 && (
-              <div className="mt-4 space-y-2">
-                {pendingFiles.map((file) => (
-                  <div key={`${file.name}-${file.size}`} className="text-muted-foreground text-sm">
-                    {file.name}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div className="mt-5 flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsUploadDialogOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                onClick={() => void handleUpload()}
-                disabled={pendingFiles.length === 0}
-              >
-                <ImageIcon />
-                Upload images
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsUploadDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={() => void handleUpload()}
+              disabled={pendingFiles.length === 0}
+            >
+              <ImageIcon />
+              Upload images
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   )
 }

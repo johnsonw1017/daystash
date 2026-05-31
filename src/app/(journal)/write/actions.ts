@@ -235,3 +235,82 @@ export const deleteJournalImage = async ({ imageId }: { imageId: string }) => {
 
   return { deletedBlock: false }
 }
+
+export const deleteJournal = async ({ journalId }: { journalId: string }) => {
+  const user = await requireAuth('/dashboard')
+  const supabase = await createServerSideClient()
+
+  const { data: journal, error: journalError } = await supabase
+    .from('journals')
+    .select('id')
+    .eq('id', journalId)
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (journalError) {
+    throw new Error(journalError.message)
+  }
+
+  if (!journal) {
+    throw new Error('Journal not found')
+  }
+
+  const { data: blocks, error: blocksError } = await supabase
+    .from('journal_blocks')
+    .select('id')
+    .eq('journal_id', journalId)
+
+  if (blocksError) {
+    throw new Error(blocksError.message)
+  }
+
+  const blockIds = (blocks ?? []).map((block) => block.id)
+
+  if (blockIds.length > 0) {
+    const { data: images, error: imagesError } = await supabase
+      .from('journal_block_images')
+      .select('cloudinary_public_id')
+      .in('block_id', blockIds)
+
+    if (imagesError) {
+      throw new Error(imagesError.message)
+    }
+
+    for (const image of images ?? []) {
+      const destroyResult = await cloudinary.uploader.destroy(image.cloudinary_public_id)
+      if (!['ok', 'not found'].includes(destroyResult.result || '')) {
+        throw new Error('Failed to delete image from Cloudinary')
+      }
+    }
+
+    const { error: deleteImagesError } = await supabase
+      .from('journal_block_images')
+      .delete()
+      .in('block_id', blockIds)
+
+    if (deleteImagesError) {
+      throw new Error(deleteImagesError.message)
+    }
+  }
+
+  const { error: deleteBlocksError } = await supabase
+    .from('journal_blocks')
+    .delete()
+    .eq('journal_id', journalId)
+
+  if (deleteBlocksError) {
+    throw new Error(deleteBlocksError.message)
+  }
+
+  const { error: deleteJournalError } = await supabase
+    .from('journals')
+    .delete()
+    .eq('id', journalId)
+    .eq('user_id', user.id)
+
+  if (deleteJournalError) {
+    throw new Error(deleteJournalError.message)
+  }
+
+  return { deleted: true }
+}
