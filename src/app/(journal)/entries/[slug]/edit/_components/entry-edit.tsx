@@ -22,7 +22,7 @@ const EntryEdit = ({ slug }: EntryEditProps) => {
     <JournalEditor
       initialJournalId={journal.id}
       initialTitle={journal.title ?? ''}
-      initialContent={journal.content}
+      initialBlocks={journal.blocks}
       successMessage="Journal updated"
       isEditMode
       viewHref={`/entries/${slug}`}
