@@ -1,7 +1,6 @@
 'use server'
 
 import { requireAuth } from '@/lib/auth/require-auth'
-import cloudinary from '@/lib/cloudinary-server'
 import type { JournalBlock, SaveJournalInput } from '@/lib/journals'
 import { createServerSideClient } from '@/lib/supabase/server'
 
@@ -160,7 +159,7 @@ export const deleteJournalImage = async ({ imageId }: { imageId: string }) => {
 
   const { data: imageRow, error: imageError } = await supabase
     .from('journal_block_images')
-    .select('id, block_id, cloudinary_public_id')
+    .select('id, block_id')
     .eq('id', imageId)
     .single()
 
@@ -182,12 +181,6 @@ export const deleteJournalImage = async ({ imageId }: { imageId: string }) => {
 
   if (ownerUserId !== user.id) {
     throw new Error('Unauthorized')
-  }
-
-  const destroyResult = await cloudinary.uploader.destroy(imageRow.cloudinary_public_id)
-
-  if (!['ok', 'not found'].includes(destroyResult.result || '')) {
-    throw new Error('Failed to delete image from Cloudinary')
   }
 
   const { error: deleteRowError } = await supabase
@@ -267,22 +260,6 @@ export const deleteJournal = async ({ journalId }: { journalId: string }) => {
   const blockIds = (blocks ?? []).map((block) => block.id)
 
   if (blockIds.length > 0) {
-    const { data: images, error: imagesError } = await supabase
-      .from('journal_block_images')
-      .select('cloudinary_public_id')
-      .in('block_id', blockIds)
-
-    if (imagesError) {
-      throw new Error(imagesError.message)
-    }
-
-    for (const image of images ?? []) {
-      const destroyResult = await cloudinary.uploader.destroy(image.cloudinary_public_id)
-      if (!['ok', 'not found'].includes(destroyResult.result || '')) {
-        throw new Error('Failed to delete image from Cloudinary')
-      }
-    }
-
     const { error: deleteImagesError } = await supabase
       .from('journal_block_images')
       .delete()
