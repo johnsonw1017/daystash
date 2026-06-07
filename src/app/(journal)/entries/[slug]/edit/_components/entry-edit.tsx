@@ -15,7 +15,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import JournalEditor from '@/app/(journal)/write/_components/journal-editor'
+import JournalEditor from '@/components/journal-editor'
 import { journalQueryKeys, useJournalBySlug } from '@/hooks/use-journals'
 import { toast } from 'sonner'
 
@@ -32,16 +32,18 @@ const EntryEdit = ({ slug }: EntryEditProps) => {
     onSuccess: async () => {
       queryClient.setQueryData(
         journalQueryKeys.list(),
-        (current:
-          | Array<{
-              id: string
-              title: string | null
-              slug: string | null
-              created_at: string
-              updated_at: string
-              excerpt: string
-            }>
-          | undefined) => current?.filter((entry) => entry.id !== journal!.id) ?? []
+        (
+          current:
+            | Array<{
+                id: string
+                title: string | null
+                slug: string | null
+                created_at: string
+                updated_at: string
+                excerpt: string
+              }>
+            | undefined
+        ) => current?.filter((entry) => entry.id !== journal!.id) ?? []
       )
       queryClient.removeQueries({ queryKey: journalQueryKeys.bySlug(slug) })
       await queryClient.invalidateQueries({ queryKey: journalQueryKeys.all })
@@ -72,7 +74,12 @@ const EntryEdit = ({ slug }: EntryEditProps) => {
       headerActions={
         <Dialog>
           <DialogTrigger asChild>
-            <Button type="button" variant="destructive" size="icon" aria-label="Delete journal">
+            <Button
+              type="button"
+              variant="destructive"
+              size="icon"
+              aria-label="Delete journal"
+            >
               <Trash2 />
             </Button>
           </DialogTrigger>
@@ -80,8 +87,8 @@ const EntryEdit = ({ slug }: EntryEditProps) => {
             <DialogHeader>
               <DialogTitle>Delete this journal?</DialogTitle>
               <DialogDescription>
-                Permanently delete will remove this journal from Supabase and cannot be
-                undone.
+                Permanently delete will remove this journal from Supabase and
+                cannot be undone.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
@@ -96,7 +103,9 @@ const EntryEdit = ({ slug }: EntryEditProps) => {
                 disabled={deleteMutation.isPending}
                 onClick={() => deleteMutation.mutate()}
               >
-                {deleteMutation.isPending ? 'Deleting...' : 'Permanently delete'}
+                {deleteMutation.isPending
+                  ? 'Deleting...'
+                  : 'Permanently delete'}
               </Button>
             </DialogFooter>
           </DialogContent>

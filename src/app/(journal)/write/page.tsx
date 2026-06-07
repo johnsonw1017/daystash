@@ -1,4 +1,4 @@
-import JournalEditor from '@/app/(journal)/write/_components/journal-editor'
+import JournalEditor from '@/components/journal-editor'
 
 const WritePage = () => {
   return (
