@@ -7,7 +7,10 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ImageIcon, Plus, Trash2, Upload } from 'lucide-react'
 import { v4 as uuidv4 } from 'uuid'
-import { deleteJournalImage, saveJournalDraft } from '@/app/(journal)/write/actions'
+import {
+  deleteJournalImage,
+  saveJournalDraft,
+} from '@/app/(journal)/write/actions'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -26,6 +29,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { journalQueryKeys } from '@/hooks/use-journals'
 import { cloudinaryLoader } from '@/lib/cloudinary'
@@ -89,13 +93,18 @@ const JournalEditor = ({
   const [title, setTitle] = useState(initialTitle)
   const [errorMessage, setErrorMessage] = useState('')
   const [blocks, setBlocks] = useState<JournalBlock[]>(
-    initialBlocks?.length ? normalizeEditorBlocks(initialBlocks) : [makeTextBlock()]
+    initialBlocks?.length
+      ? normalizeEditorBlocks(initialBlocks)
+      : [makeTextBlock()]
   )
-  const [activeInsertIndex, setActiveInsertIndex] = useState<number | null>(null)
+  const [activeInsertIndex, setActiveInsertIndex] = useState<number | null>(
+    null
+  )
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false)
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
   const pendingFocusIndexRef = useRef<number | null>(null)
   const textAreaRefs = useRef<Array<HTMLTextAreaElement | null>>([])
+  const uploadInputId = 'journal-image-upload'
 
   const sortedBlocks = useMemo(
     () => [...blocks].sort((a, b) => a.position - b.position),
@@ -193,7 +202,9 @@ const JournalEditor = ({
     ) {
       event.preventDefault()
       setBlocks((currentBlocks) => {
-        const nextBlocks = currentBlocks.filter((_, blockIndex) => blockIndex !== index)
+        const nextBlocks = currentBlocks.filter(
+          (_, blockIndex) => blockIndex !== index
+        )
         return reindexBlocks(nextBlocks)
       })
       return
@@ -231,7 +242,10 @@ const JournalEditor = ({
     }
 
     try {
-      const uploadedImages = await uploadImagesToCloudinary(pendingFiles, user.id)
+      const uploadedImages = await uploadImagesToCloudinary(
+        pendingFiles,
+        user.id
+      )
 
       setBlocks((currentBlocks) => {
         const nextBlocks =
@@ -320,7 +334,11 @@ const JournalEditor = ({
                 <Link href={viewHref}>View entry</Link>
               </Button>
             )}
-            <Button type="button" onClick={handleSave} disabled={saveMutation.isPending}>
+            <Button
+              type="button"
+              onClick={handleSave}
+              disabled={saveMutation.isPending}
+            >
               {saveMutation.isPending
                 ? 'Saving...'
                 : isEditMode
@@ -358,7 +376,11 @@ const JournalEditor = ({
                     <Plus />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" side="right" className="min-w-36">
+                <DropdownMenuContent
+                  align="start"
+                  side="right"
+                  className="min-w-36"
+                >
                   <DropdownMenuItem onSelect={() => openUploadDialog(index)}>
                     <ImageIcon />
                     <span>Image</span>
@@ -376,7 +398,8 @@ const JournalEditor = ({
                 onChange={(event) => updateTextBlock(index, event.target.value)}
                 onKeyDown={(event) => handleTextKeyDown(event, index)}
                 placeholder={
-                  sortedBlocks.length === 1 && block.text_content.trim().length === 0
+                  sortedBlocks.length === 1 &&
+                  block.text_content.trim().length === 0
                     ? 'Start writing...'
                     : undefined
                 }
@@ -437,7 +460,9 @@ const JournalEditor = ({
 
                 <Input
                   value={block.caption ?? ''}
-                  onChange={(event) => updateImageCaption(index, event.target.value)}
+                  onChange={(event) =>
+                    updateImageCaption(index, event.target.value)
+                  }
                   onKeyDown={(event) => handleImageBlockKeyDown(event, index)}
                   placeholder="Add a caption (optional)"
                   className="text-sm"
@@ -466,10 +491,14 @@ const JournalEditor = ({
             </DialogDescription>
           </DialogHeader>
 
-          <label className="flex min-h-44 cursor-pointer flex-col items-center justify-center gap-3 rounded-md border border-dashed p-4 text-center">
+          <Label
+            htmlFor={uploadInputId}
+            className="flex min-h-44 cursor-pointer flex-col items-center justify-center gap-3 rounded-md border border-dashed p-4 text-center"
+          >
             <Upload className="text-muted-foreground" />
             <span className="text-sm">Drag and drop or browse your files</span>
-            <input
+            <Input
+              id={uploadInputId}
               type="file"
               accept="image/*"
               multiple
@@ -479,12 +508,15 @@ const JournalEditor = ({
                 setPendingFiles(fileList)
               }}
             />
-          </label>
+          </Label>
 
           {pendingFiles.length > 0 && (
             <div className="mt-1 space-y-2">
               {pendingFiles.map((file) => (
-                <div key={`${file.name}-${file.size}`} className="text-muted-foreground text-sm">
+                <div
+                  key={`${file.name}-${file.size}`}
+                  className="text-muted-foreground text-sm"
+                >
                   {file.name}
                 </div>
               ))}
