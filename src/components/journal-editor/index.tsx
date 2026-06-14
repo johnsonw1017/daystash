@@ -50,7 +50,7 @@ const JournalEditor = ({
             value={title}
             onChange={(event) => actions.setTitle(event.target.value)}
             placeholder="Title"
-            className="placeholder:text-muted-foreground h-14 overflow-hidden border-0 bg-transparent px-0 py-0 font-serif text-3xl leading-tight font-semibold shadow-none focus-visible:ring-0 md:h-16 md:text-4xl"
+            className="placeholder:text-muted-foreground h-14 overflow-hidden border-0 bg-transparent px-0 py-0 font-serif text-3xl leading-tight font-semibold shadow-none focus-visible:ring-0 md:h-16 md:text-4xl dark:bg-transparent"
           />
           <div className="flex items-center gap-2">
             {isEditMode && viewHref && (
@@ -108,9 +108,13 @@ const JournalEditor = ({
             ) : (
               <ImageBlock
                 block={block as ImageJournalBlock}
-                onCaptionChange={(value) => actions.updateImageCaption(index, value)}
+                onCaptionChange={(value) =>
+                  actions.updateImageCaption(index, value)
+                }
                 onAddBelow={() => actions.addTextBlockBelow(index)}
-                onRemoveImage={(imageIndex) => actions.removeImage(index, imageIndex)}
+                onRemoveImage={(imageIndex) =>
+                  actions.removeImage(index, imageIndex)
+                }
               />
             )}
           </div>
