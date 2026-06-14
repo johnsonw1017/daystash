@@ -14,7 +14,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
-const JournalEditorDialogHost = () => {
+const JournalDialog = () => {
   const {
     closeDialog,
     dialogState,
@@ -94,4 +94,4 @@ const JournalEditorDialogHost = () => {
   }
 }
 
-export default JournalEditorDialogHost
+export default JournalDialog

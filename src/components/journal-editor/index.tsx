@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { createJournalBlocksStore } from '@/components/journal-editor/atoms'
 import BlockMenu from '@/components/journal-editor/blocks/block-menu'
 import ResolveBlock from '@/components/journal-editor/blocks/resolve-block'
-import JournalEditorDialogHost from '@/components/journal-editor/dialog-host'
+import JournalDialog from '@/components/journal-editor/journal-dialog'
 import useJournalBlocks from '@/components/journal-editor/hooks/use-journal-blocks'
 import JournalHeader from '@/components/journal-editor/journal-header'
 import type { JournalEditorProps } from '@/components/journal-editor/types'
@@ -14,7 +14,7 @@ const JournalEditorContent = () => {
   const { blocks } = useJournalBlocks()
 
   return (
-    <>
+    <section className="mx-auto flex w-full max-w-[800px] flex-col gap-4">
       <JournalHeader />
 
       <div className="space-y-2">
@@ -32,8 +32,8 @@ const JournalEditorContent = () => {
         ))}
       </div>
 
-      <JournalEditorDialogHost />
-    </>
+      <JournalDialog />
+    </section>
   )
 }
 
@@ -60,9 +60,7 @@ const JournalEditor = ({
 
   return (
     <JotaiProvider store={store}>
-      <section className="mx-auto flex w-full max-w-[800px] flex-col gap-4">
-        <JournalEditorContent />
-      </section>
+      <JournalEditorContent />
     </JotaiProvider>
   )
 }

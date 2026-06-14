@@ -1,5 +1,6 @@
 'use client'
 
+import { useCallback } from 'react'
 import { useAtom, useSetAtom } from 'jotai'
 import {
   blocksAtom,
@@ -48,14 +49,20 @@ const useTextBlock = (blockId: string) => {
     )
   }
 
-  const setTextareaRef = (node: HTMLTextAreaElement | null) => {
-    if (blockIndex === -1) return
-    setTextAreaRefs((currentRefs) => {
-      const nextRefs = [...currentRefs]
-      nextRefs[blockIndex] = node
-      return nextRefs
-    })
-  }
+  const setTextareaRef = useCallback(
+    (node: HTMLTextAreaElement | null) => {
+      if (blockIndex === -1) return
+
+      setTextAreaRefs((currentRefs) => {
+        if (currentRefs[blockIndex] === node) return currentRefs
+
+        const nextRefs = [...currentRefs]
+        nextRefs[blockIndex] = node
+        return nextRefs
+      })
+    },
+    [blockIndex, setTextAreaRefs]
+  )
 
   return {
     addBelow,
