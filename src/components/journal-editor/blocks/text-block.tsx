@@ -1,26 +1,19 @@
 'use client'
 
 import type { KeyboardEvent } from 'react'
+import useTextBlock from '@/components/journal-editor/hooks/use-text-block'
 import type { TextJournalBlock } from '@/components/journal-editor/types'
 import { Textarea } from '@/components/ui/textarea'
 
 type TextBlockProps = {
   block: TextJournalBlock
-  blockCount: number
-  onChange: (value: string) => void
-  onAddBelow: () => void
-  onRemove: () => void
-  textareaRef: (node: HTMLTextAreaElement | null) => void
+  blockId: string
 }
 
-const TextBlock = ({
-  block,
-  blockCount,
-  onChange,
-  onAddBelow,
-  onRemove,
-  textareaRef,
-}: TextBlockProps) => {
+const TextBlock = ({ block, blockId }: TextBlockProps) => {
+  const { addBelow, blockCount, remove, setTextareaRef, updateText } =
+    useTextBlock(blockId)
+
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (
       event.key === 'Backspace' &&
@@ -28,21 +21,21 @@ const TextBlock = ({
       blockCount > 1
     ) {
       event.preventDefault()
-      onRemove()
+      remove()
       return
     }
 
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
-      onAddBelow()
+      addBelow()
     }
   }
 
   return (
     <Textarea
-      ref={textareaRef}
+      ref={setTextareaRef}
       value={block.text_content}
-      onChange={(event) => onChange(event.target.value)}
+      onChange={(event) => updateText(event.target.value)}
       onKeyDown={handleKeyDown}
       placeholder={
         blockCount === 1 && block.text_content.trim().length === 0

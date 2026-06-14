@@ -1,6 +1,12 @@
 'use client'
 
+import { useAtomValue, useSetAtom } from 'jotai'
 import { ImageIcon, Plus, Type } from 'lucide-react'
+import {
+  blocksAtom,
+  uploadDialogStateAtom,
+} from '@/components/journal-editor/atoms'
+import useTextBlock from '@/components/journal-editor/hooks/use-text-block'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -10,11 +16,15 @@ import {
 } from '@/components/ui/dropdown-menu'
 
 type BlockMenuProps = {
-  onAddText: () => void
-  onAddImage: () => void
+  blockId: string
 }
 
-const BlockMenu = ({ onAddText, onAddImage }: BlockMenuProps) => {
+const BlockMenu = ({ blockId }: BlockMenuProps) => {
+  const blocks = useAtomValue(blocksAtom)
+  const setUploadDialogState = useSetAtom(uploadDialogStateAtom)
+  const { addBelow } = useTextBlock(blockId)
+  const blockIndex = blocks.findIndex((block) => block.id === blockId)
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -29,11 +39,21 @@ const BlockMenu = ({ onAddText, onAddImage }: BlockMenuProps) => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" side="right" className="min-w-36">
-        <DropdownMenuItem onSelect={onAddText}>
+        <DropdownMenuItem onSelect={addBelow}>
           <Type />
           <span>Text</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={onAddImage}>
+        <DropdownMenuItem
+          onSelect={() => {
+            if (blockIndex !== -1) {
+              setUploadDialogState({
+                activeInsertIndex: blockIndex,
+                isOpen: true,
+                pendingFiles: [],
+              })
+            }
+          }}
+        >
           <ImageIcon />
           <span>Image</span>
         </DropdownMenuItem>

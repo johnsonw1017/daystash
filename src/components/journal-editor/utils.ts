@@ -14,12 +14,14 @@ export const normalizeEditorBlocks = (blocks: JournalBlock[]) => {
       if (block.type === 'text') {
         return {
           ...block,
+          id: block.id ?? uuidv4(),
           position: index,
         }
       }
 
       return {
         ...block,
+        id: block.id ?? uuidv4(),
         position: index,
         images: block.images.map((image, imageIndex) => ({
           ...image,

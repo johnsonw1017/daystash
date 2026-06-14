@@ -1,11 +1,15 @@
 'use client'
 
+import { Provider as JotaiProvider } from 'jotai'
 import Link from 'next/link'
+import { useState } from 'react'
+import { createJournalBlocksStore } from '@/components/journal-editor/atoms'
 import BlockMenu from '@/components/journal-editor/blocks/block-menu'
-import ImageBlock from '@/components/journal-editor/blocks/image/image-block'
-import ImageUploadDialog from '@/components/journal-editor/blocks/image/image-upload-dialog'
+import ImageBlock, {
+  ImageUploadDialog,
+} from '@/components/journal-editor/blocks/image-block'
 import TextBlock from '@/components/journal-editor/blocks/text-block'
-import useJournalEditor from '@/components/journal-editor/use-journal-editor'
+import useJournalBlocks from '@/components/journal-editor/hooks/use-journal-blocks'
 import type {
   ImageJournalBlock,
   JournalEditorProps,
@@ -25,6 +29,7 @@ const JournalEditor = ({
   viewHref,
   headerActions,
 }: JournalEditorProps) => {
+  const [store] = useState(() => createJournalBlocksStore({ initialBlocks }))
   const {
     actions,
     blocks,
@@ -32,13 +37,12 @@ const JournalEditor = ({
     isUploadDialogOpen,
     pendingFiles,
     saveMutation,
-    textAreaRefs,
     title,
     uploadInputId,
-  } = useJournalEditor({
-    initialBlocks,
+  } = useJournalBlocks({
     initialJournalId,
     initialTitle,
+    store,
     successMessage,
   })
 
@@ -81,54 +85,41 @@ const JournalEditor = ({
         </Alert>
       )}
 
-      <div className="space-y-2">
-        {blocks.map((block, index) => (
-          <div
-            key={block.id ?? `${block.type}-${index}`}
-            className="group relative overflow-visible"
-          >
-            <div className="absolute top-2 -left-10">
-              <BlockMenu
-                onAddText={() => actions.addTextBlockBelow(index)}
-                onAddImage={() => actions.openUploadDialog(index)}
-              />
+      <JotaiProvider store={store}>
+        <div className="space-y-2">
+          {blocks.map((block, index) => (
+            <div
+              key={block.id ?? `${block.type}-${index}`}
+              className="group relative overflow-visible"
+            >
+              <div className="absolute top-2 -left-10">
+                <BlockMenu blockId={block.id!} />
+              </div>
+
+              {block.type === 'text' ? (
+                <TextBlock
+                  block={block as TextJournalBlock}
+                  blockId={block.id!}
+                />
+              ) : (
+                <ImageBlock
+                  block={block as ImageJournalBlock}
+                  blockId={block.id!}
+                />
+              )}
             </div>
+          ))}
+        </div>
 
-            {block.type === 'text' ? (
-              <TextBlock
-                block={block as TextJournalBlock}
-                blockCount={blocks.length}
-                onChange={(value) => actions.updateTextBlock(index, value)}
-                onAddBelow={() => actions.addTextBlockBelow(index)}
-                onRemove={() => actions.removeTextBlock(index)}
-                textareaRef={(node) => {
-                  textAreaRefs.current[index] = node
-                }}
-              />
-            ) : (
-              <ImageBlock
-                block={block as ImageJournalBlock}
-                onCaptionChange={(value) =>
-                  actions.updateImageCaption(index, value)
-                }
-                onAddBelow={() => actions.addTextBlockBelow(index)}
-                onRemoveImage={(imageIndex) =>
-                  actions.removeImage(index, imageIndex)
-                }
-              />
-            )}
-          </div>
-        ))}
-      </div>
-
-      <ImageUploadDialog
-        isOpen={isUploadDialogOpen}
-        pendingFiles={pendingFiles}
-        uploadInputId={uploadInputId}
-        onOpenChange={actions.handleUploadDialogOpenChange}
-        onFilesChange={actions.setPendingFiles}
-        onUpload={actions.uploadImages}
-      />
+        <ImageUploadDialog
+          isOpen={isUploadDialogOpen}
+          pendingFiles={pendingFiles}
+          uploadInputId={uploadInputId}
+          onOpenChange={actions.handleUploadDialogOpenChange}
+          onFilesChange={actions.setPendingFiles}
+          onUpload={actions.uploadImages}
+        />
+      </JotaiProvider>
     </section>
   )
 }
