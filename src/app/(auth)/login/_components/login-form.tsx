@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 import { login } from '@/actions/auth'
 import { Button } from '@/components/ui/button'
@@ -22,6 +21,7 @@ import {
   FieldGroup,
   FieldLabel,
 } from '@/components/ui/field'
+import { useRefreshAuthUser } from '@/hooks/use-auth-user'
 import { Input } from '@/components/ui/input'
 import { DEFAULT_POST_LOGIN_REDIRECT } from '@/lib/auth/redirect'
 
@@ -35,7 +35,7 @@ type LoginSchema = z.infer<typeof loginSchema>
 
 const LoginForm = () => {
   const [isPending, startTransition] = useTransition()
-  const queryClient = useQueryClient()
+  const refreshAuthUser = useRefreshAuthUser()
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get('redirectTo') ?? ''
@@ -60,7 +60,7 @@ const LoginForm = () => {
         return
       }
 
-      await queryClient.invalidateQueries({ queryKey: ['auth-user'] })
+      await refreshAuthUser()
       router.replace(result?.redirectTo ?? DEFAULT_POST_LOGIN_REDIRECT)
     })
   }

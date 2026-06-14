@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
+import HeaderControls from '@/components/header/header-controls'
 import Logo from '@/components/header/logo'
-import HeaderAuth from '@/components/header/header-auth'
 import Providers from '@/components/providers'
 import { Toaster } from '@/components/ui/sonner'
 import './globals.css'
@@ -24,7 +24,7 @@ const RootLayout = ({
           <header className="sticky top-0 z-50 h-16">
             <div className="flex h-full items-center justify-between px-3">
               <Logo />
-              <HeaderAuth />
+              <HeaderControls />
             </div>
           </header>
           <main>{children}</main>

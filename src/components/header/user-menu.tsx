@@ -11,16 +11,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { useQueryClient } from '@tanstack/react-query'
 import { logout } from '@/actions/auth'
+import { useAuthUser, useRefreshAuthUser } from '@/hooks/use-auth-user'
+import { useProfile } from '@/hooks/use-profile'
 
-type UserMenuProps = {
-  isLoggedIn: boolean
-  firstName?: string
-}
-
-const UserMenu = ({ isLoggedIn, firstName }: UserMenuProps) => {
-  const queryClient = useQueryClient()
+const UserMenu = () => {
+  const authUser = useAuthUser()
+  const { data: profile } = useProfile()
+  const refreshAuthUser = useRefreshAuthUser()
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -33,7 +31,7 @@ const UserMenu = ({ isLoggedIn, firstName }: UserMenuProps) => {
       return
     }
 
-    await queryClient.invalidateQueries({ queryKey: ['auth-user'] })
+    await refreshAuthUser()
     router.replace('/login')
   }
 
@@ -41,7 +39,11 @@ const UserMenu = ({ isLoggedIn, firstName }: UserMenuProps) => {
     return null
   }
 
-  if (!isLoggedIn) {
+  if (authUser.isLoading) {
+    return null
+  }
+
+  if (!authUser.isLoggedIn) {
     return (
       <Button asChild size="sm">
         <Link href={loginHref}>Login</Link>
@@ -54,7 +56,7 @@ const UserMenu = ({ isLoggedIn, firstName }: UserMenuProps) => {
       <DropdownMenuTrigger asChild>
         <Button size="sm" aria-label="Open user menu">
           <User className="size-5" />
-          <span>{firstName || 'Account'}</span>
+          <span>{profile?.full_name || 'Account'}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
