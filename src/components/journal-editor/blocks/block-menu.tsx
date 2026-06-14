@@ -4,7 +4,7 @@ import { useAtomValue, useSetAtom } from 'jotai'
 import { ImageIcon, Plus, Type } from 'lucide-react'
 import {
   blocksAtom,
-  uploadDialogStateAtom,
+  editorDialogStateAtom,
 } from '@/components/journal-editor/atoms'
 import useTextBlock from '@/components/journal-editor/hooks/use-text-block'
 import { Button } from '@/components/ui/button'
@@ -21,7 +21,7 @@ type BlockMenuProps = {
 
 const BlockMenu = ({ blockId }: BlockMenuProps) => {
   const blocks = useAtomValue(blocksAtom)
-  const setUploadDialogState = useSetAtom(uploadDialogStateAtom)
+  const setEditorDialogState = useSetAtom(editorDialogStateAtom)
   const { addBelow } = useTextBlock(blockId)
   const blockIndex = blocks.findIndex((block) => block.id === blockId)
 
@@ -46,10 +46,13 @@ const BlockMenu = ({ blockId }: BlockMenuProps) => {
         <DropdownMenuItem
           onSelect={() => {
             if (blockIndex !== -1) {
-              setUploadDialogState({
-                activeInsertIndex: blockIndex,
+              setEditorDialogState({
+                type: 'image-upload',
                 isOpen: true,
-                pendingFiles: [],
+                context: {
+                  insertBelowIndex: blockIndex,
+                  pendingFiles: [],
+                },
               })
             }
           }}

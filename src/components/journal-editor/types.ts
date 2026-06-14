@@ -11,5 +11,34 @@ export type JournalEditorProps = {
   headerActions?: ReactNode
 }
 
+export type JournalEditorConfig = Pick<
+  JournalEditorProps,
+  'headerActions' | 'isEditMode' | 'successMessage' | 'viewHref'
+> & {
+  successMessage: string
+}
+
 export type TextJournalBlock = Extract<JournalBlock, { type: 'text' }>
 export type ImageJournalBlock = Extract<JournalBlock, { type: 'image' }>
+
+export type ResolveBlockProps = {
+  block: JournalBlock
+  blockId: string
+}
+
+export type ImageUploadDialogContext = {
+  insertBelowIndex: number
+  pendingFiles: File[]
+}
+
+export type JournalEditorDialogState =
+  | {
+      type: null
+      isOpen: false
+      context: null
+    }
+  | {
+      type: 'image-upload'
+      isOpen: true
+      context: ImageUploadDialogContext
+    }
