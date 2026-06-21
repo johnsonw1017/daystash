@@ -177,7 +177,11 @@ export const deleteJournalImage = async ({ imageId }: { imageId: string }) => {
     throw new Error(ownerError.message)
   }
 
-  const ownerUserId = (blockOwner as { journals: { user_id: string } }).journals.user_id
+  const ownerUserId = blockOwner?.journals?.[0]?.user_id
+
+  if (!ownerUserId) {
+    throw new Error('Journal owner not found')
+  }
 
   if (ownerUserId !== user.id) {
     throw new Error('Unauthorized')
