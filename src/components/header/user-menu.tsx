@@ -14,6 +14,7 @@ import {
 import { logout } from '@/actions/auth'
 import { useAuthUser, useRefreshAuthUser } from '@/hooks/use-auth-user'
 import { useProfile } from '@/hooks/use-profile'
+import { Suspense } from 'react'
 
 const UserMenu = () => {
   const authUser = useAuthUser()
@@ -78,4 +79,12 @@ const UserMenu = () => {
   )
 }
 
-export default UserMenu
+const UserMenuWrapper = () => {
+  return (
+    <Suspense fallback={null}>
+      <UserMenu />
+    </Suspense>
+  )
+}
+
+export default UserMenuWrapper
