@@ -1,22 +1,17 @@
 'use client'
 
-import { v4 as uuidv4 } from 'uuid'
 import { useAtom } from 'jotai'
 import { toast } from 'sonner'
-import {
-  blocksAtom,
-  editorDialogStateAtom,
-} from '@/components/journal-editor/atoms'
-import type { ImageJournalBlock } from '@/components/journal-editor/types'
-import { reindexBlocks } from '@/components/journal-editor/utils'
+import { editorDialogStateAtom } from '@/components/journal-editor/atoms'
+import useJournalBlocks from '@/components/journal-editor/hooks/use-journal-blocks'
 import { uploadImagesToCloudinary } from '@/lib/image-upload'
 import supabase from '@/lib/supabase/client'
 
 const uploadInputId = 'journal-image-upload'
 
 const useJournalDialog = () => {
-  const [, setBlocks] = useAtom(blocksAtom)
   const [dialogState, setDialogState] = useAtom(editorDialogStateAtom)
+  const { insertBlockBelow } = useJournalBlocks()
 
   const closeDialog = () => {
     setDialogState({
@@ -45,7 +40,7 @@ const useJournalDialog = () => {
   const uploadImages = async () => {
     if (!dialogState.isOpen || dialogState.type !== 'image-upload') return
 
-    const { insertBelowIndex, pendingFiles } = dialogState.context
+    const { insertBelowBlockId, pendingFiles } = dialogState.context
 
     if (pendingFiles.length === 0) return
 
@@ -65,29 +60,7 @@ const useJournalDialog = () => {
         user.id
       )
 
-      setBlocks((currentBlocks) => {
-        const nextBlocks =
-          currentBlocks.length === 1 &&
-          currentBlocks[0]?.type === 'text' &&
-          currentBlocks[0].text_content.trim().length === 0
-            ? []
-            : [...currentBlocks]
-
-        const imageBlock: ImageJournalBlock = {
-          id: uuidv4(),
-          type: 'image',
-          position: 0,
-          caption: '',
-          images: uploadedImages.map((image, imageIndex) => ({
-            ...image,
-            position: imageIndex,
-            alt_text: null,
-          })),
-        }
-
-        nextBlocks.splice(insertBelowIndex + 1, 0, imageBlock)
-        return reindexBlocks(nextBlocks)
-      })
+      insertBlockBelow(insertBelowBlockId, 'image', { images: uploadedImages })
 
       closeDialog()
       toast.success('Image block added')

@@ -27,7 +27,7 @@ export type ResolveBlockProps = {
 }
 
 export type ImageUploadDialogContext = {
-  insertBelowIndex: number
+  insertBelowBlockId: string
   pendingFiles: File[]
 }
 

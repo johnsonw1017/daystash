@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import type { KeyboardEvent } from 'react'
 import { Trash2 } from 'lucide-react'
-import useImageBlock from '@/components/journal-editor/hooks/use-image-block'
+import useJournalBlocks from '@/components/journal-editor/hooks/use-journal-blocks'
 import type { ImageJournalBlock } from '@/components/journal-editor/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -54,12 +54,12 @@ const ImageItem = ({
 }
 
 const ImageBlock = ({ block, blockId }: ImageBlockProps) => {
-  const { addBelow, removeImage, updateCaption } = useImageBlock(blockId)
+  const { insertBlockBelow, removeImage, updateImageCaption } = useJournalBlocks()
 
   const handleCaptionKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
-      addBelow()
+      insertBlockBelow(blockId, 'text')
     }
   }
 
@@ -74,7 +74,7 @@ const ImageBlock = ({ block, blockId }: ImageBlockProps) => {
               publicId={image.cloudinary_public_id}
               width={image.width}
               height={image.height}
-              onRemove={() => removeImage(imageIndex)}
+              onRemove={() => removeImage(blockId, imageIndex)}
             />
           ))}
         </div>
@@ -84,13 +84,13 @@ const ImageBlock = ({ block, blockId }: ImageBlockProps) => {
           publicId={block.images[0].cloudinary_public_id}
           width={block.images[0].width}
           height={block.images[0].height}
-          onRemove={() => removeImage(0)}
+          onRemove={() => removeImage(blockId, 0)}
         />
       ) : null}
 
       <Input
         value={block.caption ?? ''}
-        onChange={(event) => updateCaption(event.target.value)}
+        onChange={(event) => updateImageCaption(blockId, event.target.value)}
         onKeyDown={handleCaptionKeyDown}
         placeholder="Add a caption (optional)"
         className="text-sm"

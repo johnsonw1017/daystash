@@ -1,7 +1,8 @@
 'use client'
 
+import { useCallback } from 'react'
 import type { KeyboardEvent } from 'react'
-import useTextBlock from '@/components/journal-editor/hooks/use-text-block'
+import useJournalBlocks from '@/components/journal-editor/hooks/use-journal-blocks'
 import type { TextJournalBlock } from '@/components/journal-editor/types'
 import { Textarea } from '@/components/ui/textarea'
 
@@ -11,8 +12,21 @@ type TextBlockProps = {
 }
 
 const TextBlock = ({ block, blockId }: TextBlockProps) => {
-  const { addBelow, blockCount, remove, setTextareaRef, updateText } =
-    useTextBlock(blockId)
+  const {
+    blocks,
+    insertBlockBelow,
+    removeBlock,
+    setTextareaRef: registerTextareaRef,
+    updateTextBlock,
+  } = useJournalBlocks()
+  const blockCount = blocks.length
+
+  const setTextareaRef = useCallback(
+    (node: HTMLTextAreaElement | null) => {
+      registerTextareaRef(blockId, node)
+    },
+    [blockId, registerTextareaRef]
+  )
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (
@@ -21,13 +35,13 @@ const TextBlock = ({ block, blockId }: TextBlockProps) => {
       blockCount > 1
     ) {
       event.preventDefault()
-      remove()
+      removeBlock(blockId)
       return
     }
 
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
-      addBelow()
+      insertBlockBelow(blockId, 'text')
     }
   }
 
@@ -35,7 +49,7 @@ const TextBlock = ({ block, blockId }: TextBlockProps) => {
     <Textarea
       ref={setTextareaRef}
       value={block.text_content}
-      onChange={(event) => updateText(event.target.value)}
+      onChange={(event) => updateTextBlock(blockId, event.target.value)}
       onKeyDown={handleKeyDown}
       placeholder={
         blockCount === 1 && block.text_content.trim().length === 0
