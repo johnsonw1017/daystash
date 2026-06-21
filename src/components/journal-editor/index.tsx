@@ -2,7 +2,7 @@
 
 import type { DragEndEvent } from '@dnd-kit/react'
 import { DragDropProvider } from '@dnd-kit/react'
-import { useSortable } from '@dnd-kit/react/sortable'
+import { isSortableOperation, useSortable } from '@dnd-kit/react/sortable'
 import { Provider as JotaiProvider } from 'jotai'
 import { useState, type ReactNode } from 'react'
 import { createJournalBlocksStore } from '@/components/journal-editor/atoms'
@@ -52,12 +52,23 @@ const JournalEditorContent = () => {
   const handleDragEnd = ({ canceled, operation }: DragEndEvent) => {
     if (canceled) return
 
+    if (isSortableOperation(operation)) {
+      const { source } = operation
+      if (!source) return
+
+      moveBlock(source.initialIndex, source.index)
+      return
+    }
+
     const activeId = operation.source?.id
     const overId = operation.target?.id
 
     if (typeof activeId !== 'string' || typeof overId !== 'string') return
 
-    moveBlock(activeId, overId)
+    const fromIndex = blocks.findIndex((block) => block.id === activeId)
+    const toIndex = blocks.findIndex((block) => block.id === overId)
+
+    moveBlock(fromIndex, toIndex)
   }
 
   return (

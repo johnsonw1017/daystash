@@ -199,14 +199,18 @@ const useJournalBlocks = () => {
   )
 
   const moveBlock = useCallback(
-    (activeId: string, overId: string) => {
-      if (activeId === overId) return
+    (fromIndex: number, toIndex: number) => {
+      if (fromIndex === toIndex) return
 
       setBlocks((currentBlocks) => {
-        const fromIndex = currentBlocks.findIndex((block) => block.id === activeId)
-        const toIndex = currentBlocks.findIndex((block) => block.id === overId)
-
-        if (fromIndex === -1 || toIndex === -1) return currentBlocks
+        if (
+          fromIndex < 0 ||
+          toIndex < 0 ||
+          fromIndex >= currentBlocks.length ||
+          toIndex >= currentBlocks.length
+        ) {
+          return currentBlocks
+        }
 
         const nextBlocks = [...currentBlocks]
         const [movedBlock] = nextBlocks.splice(fromIndex, 1)
