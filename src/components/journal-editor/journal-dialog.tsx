@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { ImageIcon, Upload } from 'lucide-react'
 import useJournalDialog from '@/components/journal-editor/hooks/use-journal-dialog'
 import { Button } from '@/components/ui/button'
@@ -13,8 +14,10 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { cn } from '@/lib/utils'
 
 const JournalDialog = () => {
+  const [isDraggingFiles, setIsDraggingFiles] = useState(false)
   const {
     closeDialog,
     dialogState,
@@ -42,7 +45,38 @@ const JournalDialog = () => {
 
             <Label
               htmlFor={uploadInputId}
-              className="flex min-h-44 cursor-pointer flex-col items-center justify-center gap-3 rounded-md border border-dashed p-4 text-center"
+              className={cn(
+                'flex min-h-44 cursor-pointer flex-col items-center justify-center gap-3 rounded-md border border-dashed p-4 text-center transition-colors',
+                isDraggingFiles ? 'border-foreground bg-muted/60' : 'border-border'
+              )}
+              onDragEnter={(event) => {
+                event.preventDefault()
+                setIsDraggingFiles(true)
+              }}
+              onDragOver={(event) => {
+                event.preventDefault()
+                event.dataTransfer.dropEffect = 'copy'
+                setIsDraggingFiles(true)
+              }}
+              onDragLeave={(event) => {
+                event.preventDefault()
+
+                if (event.currentTarget.contains(event.relatedTarget as Node)) {
+                  return
+                }
+
+                setIsDraggingFiles(false)
+              }}
+              onDrop={(event) => {
+                event.preventDefault()
+                setIsDraggingFiles(false)
+
+                const droppedFiles = Array.from(event.dataTransfer.files).filter(
+                  (file) => file.type.startsWith('image/')
+                )
+
+                setPendingFiles(droppedFiles)
+              }}
             >
               <Upload className="text-muted-foreground" />
               <span className="text-sm">
