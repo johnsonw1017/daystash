@@ -14,9 +14,11 @@ type TextBlockProps = {
 const TextBlock = ({ block, blockId }: TextBlockProps) => {
   const {
     blocks,
-    insertBlockBelow,
+    focusTextBlock,
+    mergeTextBlock,
     removeBlock,
     setTextareaRef: registerTextareaRef,
+    splitTextBlock,
     updateTextBlock,
   } = useJournalBlocks()
   const blockCount = blocks.length
@@ -29,11 +31,25 @@ const TextBlock = ({ block, blockId }: TextBlockProps) => {
   )
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (
-      event.key === 'Backspace' &&
-      block.text_content.trim().length === 0 &&
-      blockCount > 1
-    ) {
+    const { selectionStart, selectionEnd, value } = event.currentTarget
+    const blockIndex = blocks.findIndex((candidate) => candidate.id === blockId)
+    const previousBlock = blockIndex > 0 ? blocks[blockIndex - 1] : undefined
+    const nextBlock = blockIndex >= 0 ? blocks[blockIndex + 1] : undefined
+    const previousTextBlock = previousBlock?.type === 'text' ? previousBlock : null
+    const nextTextBlock = nextBlock?.type === 'text' ? nextBlock : null
+    const hasCollapsedSelection = selectionStart === selectionEnd
+    const isAtStart = selectionStart === 0
+    const isAtEnd = selectionStart === value.length
+    const isEmptyBlock = block.text_content.trim().length === 0
+
+    if (event.key === 'Backspace' && hasCollapsedSelection && isAtStart && previousTextBlock) {
+      event.preventDefault()
+      focusTextBlock(previousTextBlock.id!, previousTextBlock.text_content.length)
+      mergeTextBlock(blockId, 'previous')
+      return
+    }
+
+    if (event.key === 'Backspace' && isEmptyBlock && blockCount > 1) {
       event.preventDefault()
       removeBlock(blockId)
       return
@@ -41,7 +57,18 @@ const TextBlock = ({ block, blockId }: TextBlockProps) => {
 
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
-      insertBlockBelow(blockId, 'text')
+      splitTextBlock(blockId, selectionStart, selectionEnd)
+      return
+    }
+
+    if (event.key === 'Delete') {
+      if (!hasCollapsedSelection || !isAtEnd || !nextTextBlock) {
+        return
+      }
+
+      event.preventDefault()
+      focusTextBlock(blockId, selectionStart)
+      mergeTextBlock(blockId, 'next')
     }
   }
 

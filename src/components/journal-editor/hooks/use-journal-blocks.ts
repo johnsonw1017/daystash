@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 import { deleteJournalImage } from '@/app/(journal)/write/actions'
 import {
   blocksAtom,
-  pendingFocusBlockIdAtom,
+  pendingTextSelectionAtom,
   textAreaRefsAtom,
 } from '@/components/journal-editor/atoms'
 import {
@@ -24,12 +24,13 @@ type InsertBlockType = JournalBlock['type']
 type InsertBlockOptions = {
   images?: Parameters<typeof makeImageBlock>[0]
 }
+type MergeTextBlockDirection = 'previous' | 'next'
 
 const useJournalBlocks = () => {
   const [blocks] = useAtom(blocksAtom)
   const setBlocks = useSetAtom(blocksAtom)
-  const [pendingFocusBlockId, setPendingFocusBlockId] = useAtom(
-    pendingFocusBlockIdAtom
+  const [pendingTextSelection, setPendingTextSelection] = useAtom(
+    pendingTextSelectionAtom
   )
   const [textAreaRefs] = useAtom(textAreaRefsAtom)
   const setTextAreaRefs = useSetAtom(textAreaRefsAtom)
@@ -42,16 +43,22 @@ const useJournalBlocks = () => {
   })
 
   useEffect(() => {
-    if (pendingFocusBlockId === null) return
+    if (pendingTextSelection === null) return
 
-    const target = textAreaRefs[pendingFocusBlockId]
+    const target = textAreaRefs[pendingTextSelection.blockId]
     if (!target) return
 
     target.focus()
-    const length = target.value.length
-    target.setSelectionRange(length, length)
-    setPendingFocusBlockId(null)
-  }, [blocks, pendingFocusBlockId, setPendingFocusBlockId, textAreaRefs])
+    target.setSelectionRange(pendingTextSelection.start, pendingTextSelection.end)
+    setPendingTextSelection(null)
+  }, [blocks, pendingTextSelection, setPendingTextSelection, textAreaRefs])
+
+  const focusTextBlock = useCallback(
+    (blockId: string, start: number, end = start) => {
+      setPendingTextSelection({ blockId, start, end })
+    },
+    [setPendingTextSelection]
+  )
 
   const setTextareaRef = useCallback(
     (blockId: string, node: HTMLTextAreaElement | null) => {
@@ -103,10 +110,40 @@ const useJournalBlocks = () => {
       })
 
       if (blockType === 'text') {
-        setPendingFocusBlockId(nextBlock.id ?? null)
+        if (nextBlock.id) {
+          focusTextBlock(nextBlock.id, 0)
+        }
       }
     },
-    [setBlocks, setPendingFocusBlockId]
+    [focusTextBlock, setBlocks]
+  )
+
+  const splitTextBlock = useCallback(
+    (blockId: string, start: number, end: number) => {
+      const nextBlock = makeTextBlock()
+
+      setBlocks((currentBlocks) => {
+        const blockIndex = currentBlocks.findIndex((block) => block.id === blockId)
+        const block = currentBlocks[blockIndex]
+
+        if (block?.type !== 'text') return currentBlocks
+
+        const before = block.text_content.slice(0, start)
+        const after = block.text_content.slice(end)
+
+        return reindexBlocks([
+          ...currentBlocks.slice(0, blockIndex),
+          { ...block, text_content: before },
+          { ...nextBlock, text_content: after },
+          ...currentBlocks.slice(blockIndex + 1),
+        ])
+      })
+
+      if (nextBlock.id) {
+        focusTextBlock(nextBlock.id, 0)
+      }
+    },
+    [focusTextBlock, setBlocks]
   )
 
   const updateTextBlock = useCallback(
@@ -148,6 +185,32 @@ const useJournalBlocks = () => {
           reindexBlocks(currentBlocks.filter((block) => block.id !== blockId))
         )
       )
+    },
+    [setBlocks]
+  )
+
+  const mergeTextBlock = useCallback(
+    (blockId: string, direction: MergeTextBlockDirection) => {
+      setBlocks((currentBlocks) => {
+        const blockIndex = currentBlocks.findIndex((block) => block.id === blockId)
+        const sourceIndex = direction === 'previous' ? blockIndex - 1 : blockIndex
+        const targetIndex = direction === 'previous' ? blockIndex : blockIndex + 1
+        const sourceBlock = currentBlocks[sourceIndex]
+        const targetBlock = currentBlocks[targetIndex]
+
+        if (sourceBlock?.type !== 'text' || targetBlock?.type !== 'text') {
+          return currentBlocks
+        }
+
+        return reindexBlocks([
+          ...currentBlocks.slice(0, sourceIndex),
+          {
+            ...sourceBlock,
+            text_content: sourceBlock.text_content + targetBlock.text_content,
+          },
+          ...currentBlocks.slice(targetIndex + 1),
+        ])
+      })
     },
     [setBlocks]
   )
@@ -227,10 +290,13 @@ const useJournalBlocks = () => {
   return {
     blocks,
     insertBlockBelow,
+    focusTextBlock,
+    mergeTextBlock,
     moveBlock,
     removeBlock,
     removeImage,
     setTextareaRef,
+    splitTextBlock,
     updateImageCaption,
     updateTextBlock,
   }

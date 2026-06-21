@@ -21,7 +21,11 @@ export const journalEditorConfigAtom = atom<JournalEditorConfig>({
   successMessage: 'Journal saved',
   viewHref: undefined,
 })
-export const pendingFocusBlockIdAtom = atom<string | null>(null)
+export const pendingTextSelectionAtom = atom<{
+  blockId: string
+  start: number
+  end: number
+} | null>(null)
 export const textAreaRefsAtom = atom<Record<string, HTMLTextAreaElement | null>>({})
 export const titleAtom = atom('')
 
@@ -66,7 +70,7 @@ export const createJournalBlocksStore = ({
     viewHref,
   })
   store.set(journalIdAtom, initialJournalId)
-  store.set(pendingFocusBlockIdAtom, null)
+  store.set(pendingTextSelectionAtom, null)
   store.set(textAreaRefsAtom, {})
   store.set(editorDialogStateAtom, initialDialogState)
   store.set(titleAtom, initialTitle)

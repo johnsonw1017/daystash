@@ -1,5 +1,10 @@
 import { v4 as uuidv4 } from 'uuid'
-import type { JournalBlock, JournalBlockImage } from '@/lib/journals'
+import type {
+  ImageJournalBlock,
+  JournalBlock,
+  JournalBlockImage,
+  TextJournalBlock,
+} from '@/lib/journals'
 
 type NewJournalBlockImage = Pick<
   JournalBlockImage,
@@ -10,14 +15,16 @@ type NewJournalBlockImage = Pick<
   alt_text?: string | null
 }
 
-export const makeTextBlock = (text = ''): JournalBlock => ({
+export const makeTextBlock = (text = ''): TextJournalBlock => ({
   id: uuidv4(),
   type: 'text',
   position: 0,
   text_content: text,
 })
 
-export const makeImageBlock = (images: NewJournalBlockImage[]): JournalBlock => ({
+export const makeImageBlock = (
+  images: NewJournalBlockImage[]
+): ImageJournalBlock => ({
   id: uuidv4(),
   type: 'image',
   position: 0,
