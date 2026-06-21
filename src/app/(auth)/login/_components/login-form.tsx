@@ -1,6 +1,6 @@
 'use client'
 
-import { useTransition } from 'react'
+import { Suspense, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Controller, useForm } from 'react-hook-form'
@@ -155,4 +155,12 @@ const LoginForm = () => {
   )
 }
 
-export default LoginForm
+const LoginFormWrapper = () => {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
+  )
+}
+
+export default LoginFormWrapper
