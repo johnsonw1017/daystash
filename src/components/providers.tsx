@@ -5,6 +5,7 @@ import { Provider as JotaiProvider } from 'jotai'
 import { useHydrateAtoms } from 'jotai/utils'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { queryClientAtom } from 'jotai-tanstack-query'
+import AuthStateSync from '@/components/auth/auth-state-sync'
 
 type ProvidersProps = {
   children: React.ReactNode
@@ -43,6 +44,7 @@ const Providers = ({ children }: ProvidersProps) => {
     <QueryClientProvider client={queryClient}>
       <JotaiProvider>
         <HydrateQueryClient queryClient={queryClient}>
+          <AuthStateSync />
           {children}
         </HydrateQueryClient>
       </JotaiProvider>

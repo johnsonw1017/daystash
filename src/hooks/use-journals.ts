@@ -1,23 +1,8 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
+import type { JournalBlock, JournalDetail, JournalListItem } from '@/lib/journals'
 import supabase from '@/lib/supabase/client'
-
-export type JournalSummary = {
-  id: string
-  title: string | null
-  slug: string | null
-  created_at: string
-  updated_at: string
-}
-
-export type JournalListItem = JournalSummary & {
-  excerpt: string
-}
-
-export type JournalDetail = JournalSummary & {
-  content: string
-}
 
 export const journalQueryKeys = {
   all: ['journals'] as const,
@@ -111,23 +96,50 @@ const fetchJournalBySlug = async (slug: string): Promise<JournalDetail | null> =
 
   const { data: blocks, error: blocksError } = await supabase
     .from('journal_blocks')
-    .select('text_content, position')
+    .select(
+      'id, type, position, text_content, caption, journal_block_images(id, block_id, cloudinary_public_id, position, alt_text, width, height)'
+    )
     .eq('journal_id', journal.id)
-    .eq('type', 'text')
     .order('position', { ascending: true })
 
   if (blocksError) {
     throw new Error(blocksError.message)
   }
 
-  const content = (blocks ?? [])
-    .map((block) => block.text_content?.trim() ?? '')
-    .filter(Boolean)
-    .join('\n\n')
+  const normalizedBlocks: JournalBlock[] = (blocks ?? []).map((block) => {
+    if (block.type === 'image') {
+      const images = (block.journal_block_images ?? [])
+        .sort((a, b) => a.position - b.position)
+        .map((image) => ({
+          id: image.id,
+          block_id: image.block_id,
+          cloudinary_public_id: image.cloudinary_public_id,
+          position: image.position,
+          alt_text: image.alt_text,
+          width: image.width,
+          height: image.height,
+        }))
+
+      return {
+        id: block.id,
+        type: 'image',
+        position: block.position,
+        caption: block.caption,
+        images,
+      }
+    }
+
+    return {
+      id: block.id,
+      type: 'text',
+      position: block.position,
+      text_content: block.text_content ?? '',
+    }
+  })
 
   return {
     ...journal,
-    content,
+    blocks: normalizedBlocks,
   }
 }
 
