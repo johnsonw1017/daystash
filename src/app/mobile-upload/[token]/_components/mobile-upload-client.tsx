@@ -4,12 +4,16 @@ import { useState } from 'react'
 import { LoaderCircle, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { uploadImagesToCloudinary } from '@/lib/image-upload'
 
 type MobileUploadClientProps = {
   token: string
   userId: string
 }
+
+const mobileUploadInputId = 'mobile-upload-input'
 
 const MobileUploadClient = ({ token, userId }: MobileUploadClientProps) => {
   const [isUploading, setIsUploading] = useState(false)
@@ -74,7 +78,10 @@ const MobileUploadClient = ({ token, userId }: MobileUploadClientProps) => {
         </p>
       </div>
 
-      <label className="flex min-h-64 cursor-pointer flex-col items-center justify-center gap-4 rounded-xl border border-dashed p-6 text-center">
+      <Label
+        htmlFor={mobileUploadInputId}
+        className="min-h-64 cursor-pointer flex-col justify-center gap-4 rounded-xl border border-dashed p-6 text-center"
+      >
         <div className="bg-muted rounded-full p-3">
           {isUploading ? <LoaderCircle className="animate-spin" /> : <Upload />}
         </div>
@@ -86,7 +93,8 @@ const MobileUploadClient = ({ token, userId }: MobileUploadClientProps) => {
             You can keep this page open and upload more than once.
           </p>
         </div>
-        <input
+        <Input
+          id={mobileUploadInputId}
           type="file"
           accept="image/*"
           multiple
@@ -98,7 +106,7 @@ const MobileUploadClient = ({ token, userId }: MobileUploadClientProps) => {
             event.target.value = ''
           }}
         />
-      </label>
+      </Label>
 
       <Button type="button" variant="outline" disabled>
         {uploadedCount === 0
