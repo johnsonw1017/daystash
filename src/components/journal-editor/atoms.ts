@@ -4,7 +4,7 @@ import { atom, createStore } from 'jotai'
 import type { Store } from 'jotai/vanilla/store'
 import type {
   JournalEditorConfig,
-  JournalEditorDialogState,
+  ImageDialogState,
 } from '@/components/journal-editor/types'
 import type { JournalBlock } from '@/lib/journals'
 import {
@@ -28,14 +28,18 @@ export const pendingTextSelectionAtom = atom<{
 } | null>(null)
 export const textAreaRefsAtom = atom<Record<string, HTMLTextAreaElement | null>>({})
 export const titleAtom = atom('')
+export const editorSessionIdAtom = atom('')
 
-const initialDialogState: JournalEditorDialogState = {
-  type: null,
+const initialImageDialogState: ImageDialogState = {
   isOpen: false,
-  context: null,
+  insertBelowBlockId: '',
+  mobileTargetBlockId: null,
+  mobileSession: null,
+  mode: 'device',
+  pendingFiles: [],
 }
 
-export const editorDialogStateAtom = atom<JournalEditorDialogState>(initialDialogState)
+export const imageDialogStateAtom = atom<ImageDialogState>(initialImageDialogState)
 
 type CreateJournalBlocksStoreParams = {
   initialBlocks?: JournalBlock[]
@@ -72,7 +76,8 @@ export const createJournalBlocksStore = ({
   store.set(journalIdAtom, initialJournalId)
   store.set(pendingTextSelectionAtom, null)
   store.set(textAreaRefsAtom, {})
-  store.set(editorDialogStateAtom, initialDialogState)
+  store.set(imageDialogStateAtom, initialImageDialogState)
+  store.set(editorSessionIdAtom, crypto.randomUUID())
   store.set(titleAtom, initialTitle)
 
   return store

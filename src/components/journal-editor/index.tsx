@@ -7,8 +7,8 @@ import { Provider as JotaiProvider } from 'jotai'
 import { useState, type ReactNode } from 'react'
 import { createJournalBlocksStore } from '@/components/journal-editor/atoms'
 import BlockMenu from '@/components/journal-editor/blocks/block-menu'
+import ImageDialog from '@/components/journal-editor/image-dialog'
 import ResolveBlock from '@/components/journal-editor/blocks/resolve-block'
-import JournalDialog from '@/components/journal-editor/journal-dialog'
 import useJournalBlocks from '@/components/journal-editor/hooks/use-journal-blocks'
 import JournalHeader from '@/components/journal-editor/journal-header'
 import type { JournalEditorProps } from '@/components/journal-editor/types'
@@ -85,7 +85,7 @@ const JournalEditorContent = () => {
         </div>
       </DragDropProvider>
 
-      <JournalDialog />
+      <ImageDialog />
     </section>
   )
 }

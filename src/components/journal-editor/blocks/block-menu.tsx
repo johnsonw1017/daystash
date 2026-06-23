@@ -3,7 +3,7 @@
 import type { RefCallback } from 'react'
 import { useSetAtom } from 'jotai'
 import { GripVertical, ImageIcon, Plus, Type } from 'lucide-react'
-import { editorDialogStateAtom } from '@/components/journal-editor/atoms'
+import { imageDialogStateAtom } from '@/components/journal-editor/atoms'
 import useJournalBlocks from '@/components/journal-editor/hooks/use-journal-blocks'
 import { Button, buttonVariants } from '@/components/ui/button'
 import {
@@ -20,7 +20,7 @@ type BlockMenuProps = {
 }
 
 const BlockMenu = ({ blockId, dragHandleRef }: BlockMenuProps) => {
-  const setEditorDialogState = useSetAtom(editorDialogStateAtom)
+  const setImageDialogState = useSetAtom(imageDialogStateAtom)
   const { insertBlockBelow } = useJournalBlocks()
 
   return (
@@ -56,13 +56,13 @@ const BlockMenu = ({ blockId, dragHandleRef }: BlockMenuProps) => {
           </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={() => {
-              setEditorDialogState({
-                type: 'image-upload',
+              setImageDialogState({
                 isOpen: true,
-                context: {
-                  insertBelowBlockId: blockId,
-                  pendingFiles: [],
-                },
+                insertBelowBlockId: blockId,
+                mobileTargetBlockId: null,
+                mobileSession: null,
+                mode: 'device',
+                pendingFiles: [],
               })
             }}
           >

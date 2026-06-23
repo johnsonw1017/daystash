@@ -26,19 +26,14 @@ export type ResolveBlockProps = {
   blockId: string
 }
 
-export type ImageUploadDialogContext = {
+export type ImageDialogState = {
+  isOpen: boolean
   insertBelowBlockId: string
+  mobileTargetBlockId: string | null
+  mobileSession: {
+    expiresAt: string
+    token: string
+  } | null
+  mode: 'device' | 'phone'
   pendingFiles: File[]
 }
-
-export type JournalEditorDialogState =
-  | {
-      type: null
-      isOpen: false
-      context: null
-    }
-  | {
-      type: 'image-upload'
-      isOpen: true
-      context: ImageUploadDialogContext
-    }
