@@ -31,6 +31,7 @@ const useImageDialog = () => {
   const [isCreatingMobileSession, setIsCreatingMobileSession] = useState(false)
   const [isUploadingImages, setIsUploadingImages] = useState(false)
   const consumeInFlightRef = useRef(false)
+  const pollingStoppedRef = useRef(false)
 
   const updateImageUploadContext = useCallback(
     (updater: (context: ImageDialogState) => ImageDialogState) => {
@@ -75,6 +76,8 @@ const useImageDialog = () => {
     setIsCreatingMobileSession(true)
 
     try {
+      pollingStoppedRef.current = false
+
       const response = await fetch('/api/mobile-upload/session', {
         method: 'POST',
         headers: {
@@ -146,8 +149,10 @@ const useImageDialog = () => {
     const token = dialogState.mobileSession?.token
     if (!token) return
 
+    pollingStoppedRef.current = false
+
     const consumeStagedImages = async () => {
-      if (consumeInFlightRef.current) return
+      if (consumeInFlightRef.current || pollingStoppedRef.current) return
 
       consumeInFlightRef.current = true
 
@@ -161,6 +166,18 @@ const useImageDialog = () => {
         })
 
         if (!response.ok) {
+          if (response.status === 401) {
+            pollingStoppedRef.current = true
+            toast.error('Phone upload ended. Please log in again.')
+            return
+          }
+
+          if (response.status === 404) {
+            pollingStoppedRef.current = true
+            toast.error('Phone upload session expired. Start a new QR session.')
+            return
+          }
+
           throw new Error('Could not consume staged images')
         }
 
@@ -196,6 +213,7 @@ const useImageDialog = () => {
           mobileTargetBlockId: insertedBlockId,
         }))
       } catch {
+        pollingStoppedRef.current = true
         toast.error('Phone upload sync stopped')
       } finally {
         consumeInFlightRef.current = false

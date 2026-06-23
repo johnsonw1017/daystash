@@ -34,13 +34,15 @@ export const POST = async (request: Request) => {
       return NextResponse.json({ error: 'Invalid or expired token' }, { status: 404 })
     }
 
+    const consumedAt = new Date().toISOString()
     const { data: rows, error: rowsError } = await supabase
       .from('mobile_upload_session_images')
+      .update({ consumed_at: consumedAt })
+      .eq('session_id', session.id)
+      .is('consumed_at', null)
       .select(
         'id, cloudinary_public_id, width, height, alt_text, position, created_at, consumed_at'
       )
-      .eq('session_id', session.id)
-      .is('consumed_at', null)
       .order('position', { ascending: true })
 
     if (rowsError) {
@@ -51,17 +53,6 @@ export const POST = async (request: Request) => {
 
     if (!images.length) {
       return NextResponse.json({ images: [] })
-    }
-
-    const consumedAt = new Date().toISOString()
-    const ids = images.map((image) => image.id)
-    const { error: updateError } = await supabase
-      .from('mobile_upload_session_images')
-      .update({ consumed_at: consumedAt })
-      .in('id', ids)
-
-    if (updateError) {
-      throw new Error(updateError.message)
     }
 
     return NextResponse.json({
