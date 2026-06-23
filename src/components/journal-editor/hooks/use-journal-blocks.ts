@@ -118,6 +118,59 @@ const useJournalBlocks = () => {
     [focusTextBlock, setBlocks]
   )
 
+  const insertImagesBelow = useCallback(
+    (blockId: string, images: NonNullable<InsertBlockOptions['images']>) => {
+      const blockExists = blocks.some((block) => block.id === blockId)
+      if (!blockExists) return null
+
+      const nextBlock = makeImageBlock(images)
+
+      setBlocks((currentBlocks) => {
+        const blockIndex = currentBlocks.findIndex((block) => block.id === blockId)
+        if (blockIndex === -1) return currentBlocks
+
+        const nextBlocks =
+          currentBlocks.length === 1 &&
+          currentBlocks[0]?.type === 'text' &&
+          currentBlocks[0].text_content.trim().length === 0
+            ? []
+            : [...currentBlocks]
+
+        nextBlocks.splice(blockIndex + 1, 0, nextBlock)
+        return reindexBlocks(nextBlocks)
+      })
+
+      return nextBlock.id ?? null
+    },
+    [blocks, setBlocks]
+  )
+
+  const appendImagesToBlock = useCallback(
+    (blockId: string, images: NonNullable<InsertBlockOptions['images']>) => {
+      setBlocks((currentBlocks) => {
+        const blockIndex = currentBlocks.findIndex((block) => block.id === blockId)
+        const block = currentBlocks[blockIndex]
+
+        if (!block || block.type !== 'image') return currentBlocks
+
+        const nextBlocks = [...currentBlocks]
+        nextBlocks[blockIndex] = {
+          ...block,
+          images: [
+            ...block.images,
+            ...images.map((image, imageIndex) => ({
+              ...image,
+              position: block.images.length + imageIndex,
+              alt_text: image.alt_text ?? null,
+            })),
+          ],
+        }
+        return nextBlocks
+      })
+    },
+    [setBlocks]
+  )
+
   const splitTextBlock = useCallback(
     (blockId: string, start: number, end: number) => {
       const nextBlock = makeTextBlock()
@@ -288,8 +341,10 @@ const useJournalBlocks = () => {
   )
 
   return {
+    appendImagesToBlock,
     blocks,
     insertBlockBelow,
+    insertImagesBelow,
     focusTextBlock,
     mergeTextBlock,
     moveBlock,
