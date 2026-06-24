@@ -1,5 +1,8 @@
 import { randomUUID } from 'crypto'
-import { createServerSideClient } from '@/lib/supabase/server'
+import {
+  createAdminClient,
+  createServerSideClient,
+} from '@/lib/supabase/server'
 import { MOBILE_UPLOAD_SESSION_TTL_MS } from '@/lib/mobile-upload'
 
 type SessionRow = {
@@ -43,8 +46,13 @@ export const createMobileUploadSession = async ({
   return data as SessionRow
 }
 
-export const getMobileUploadSessionByToken = async (token: string) => {
-  const supabase = await createServerSideClient()
+export const getMobileUploadSessionByToken = async (
+  token: string,
+  options?: { useAdminClient?: boolean }
+) => {
+  const supabase = options?.useAdminClient
+    ? createAdminClient()
+    : await createServerSideClient()
 
   const { data, error } = await supabase
     .from('mobile_upload_sessions')
