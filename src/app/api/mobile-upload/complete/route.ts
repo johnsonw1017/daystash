@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getMobileUploadSessionByToken } from '@/lib/mobile-upload-server'
 import { mobileUploadCompleteRequestSchema } from '@/lib/mobile-upload'
-import { createServerSideClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/server'
 
 export const POST = async (request: Request) => {
   const payload = mobileUploadCompleteRequestSchema.safeParse(await request.json())
@@ -11,13 +11,15 @@ export const POST = async (request: Request) => {
   }
 
   try {
-    const session = await getMobileUploadSessionByToken(payload.data.token)
+    const session = await getMobileUploadSessionByToken(payload.data.token, {
+      useAdminClient: true,
+    })
 
     if (!session) {
       return NextResponse.json({ error: 'Invalid or expired token' }, { status: 404 })
     }
 
-    const supabase = await createServerSideClient()
+    const supabase = createAdminClient()
     const { data: lastImage, error: lastImageError } = await supabase
       .from('mobile_upload_session_images')
       .select('position')

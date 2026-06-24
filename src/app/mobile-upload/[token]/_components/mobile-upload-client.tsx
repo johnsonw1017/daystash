@@ -74,7 +74,8 @@ const MobileUploadClient = ({ token, userId }: MobileUploadClientProps) => {
       <div className="space-y-2 text-center">
         <h1 className="text-2xl font-semibold">Upload to Daystash</h1>
         <p className="text-muted-foreground text-sm">
-          Choose photos here. They will appear in your desktop editor as a staged image block.
+          Choose photos here. They will appear in your desktop editor as a
+          staged image block.
         </p>
       </div>
 
@@ -98,7 +99,6 @@ const MobileUploadClient = ({ token, userId }: MobileUploadClientProps) => {
           type="file"
           accept="image/*"
           multiple
-          capture="environment"
           className="hidden"
           disabled={isUploading}
           onChange={(event) => {
