@@ -177,9 +177,12 @@ export const deleteJournalImage = async ({ imageId }: { imageId: string }) => {
     throw new Error(ownerError.message)
   }
 
-  const ownerUserId = Array.isArray(blockOwner?.journals)
-    ? blockOwner.journals[0]?.user_id
-    : blockOwner?.journals?.user_id
+  type BlockOwnerJournalRelation = { user_id: string } | Array<{ user_id: string }> | null
+
+  const journalsRelation = blockOwner?.journals as BlockOwnerJournalRelation | undefined
+  const ownerUserId = Array.isArray(journalsRelation)
+    ? journalsRelation[0]?.user_id
+    : journalsRelation?.user_id
 
   if (!ownerUserId) {
     throw new Error('Journal owner not found')
