@@ -24,6 +24,54 @@ const getCurrentUserId = async () => {
   return user?.id ?? null
 }
 
+type JournalSummaryRow = {
+  id: string
+  title: string | null
+  slug: string | null
+  created_at: string
+  updated_at: string
+  blocks: unknown
+  has_unsaved_draft: boolean | null
+}
+
+type JournalDetailRow = JournalSummaryRow & {
+  draft_blocks: unknown
+}
+
+const mapJournalSummaryRow = (journal: JournalSummaryRow): JournalListItem => {
+  const blocks = parseJournalBlocks(journal.blocks)
+
+  return {
+    id: journal.id,
+    title: journal.title,
+    slug: journal.slug,
+    created_at: journal.created_at,
+    updated_at: journal.updated_at,
+    has_unsaved_draft: journal.has_unsaved_draft ?? false,
+    excerpt: getJournalExcerpt(blocks),
+  }
+}
+
+const mapJournalDetailRow = (journal: JournalDetailRow): JournalDetail => {
+  const blocks = parseJournalBlocks(journal.blocks)
+  const draftBlocks = journal.draft_blocks
+    ? parseJournalBlocks(journal.draft_blocks)
+    : null
+  const hasUnsavedDraft = journal.has_unsaved_draft ?? false
+
+  return {
+    id: journal.id,
+    title: journal.title,
+    slug: journal.slug,
+    created_at: journal.created_at,
+    updated_at: journal.updated_at,
+    has_unsaved_draft: hasUnsavedDraft,
+    blocks,
+    draft_blocks: draftBlocks,
+    activeBlocks: hasUnsavedDraft && draftBlocks?.length ? draftBlocks : blocks,
+  }
+}
+
 const fetchJournals = async (): Promise<JournalListItem[]> => {
   const userId = await getCurrentUserId()
 
@@ -41,19 +89,7 @@ const fetchJournals = async (): Promise<JournalListItem[]> => {
     throw new Error(error.message)
   }
 
-  return (data ?? []).map((journal) => {
-    const blocks = parseJournalBlocks(journal.blocks)
-
-    return {
-      id: journal.id,
-      title: journal.title,
-      slug: journal.slug,
-      created_at: journal.created_at,
-      updated_at: journal.updated_at,
-      has_unsaved_draft: journal.has_unsaved_draft ?? false,
-      excerpt: getJournalExcerpt(blocks),
-    }
-  })
+  return (data ?? []).map((journal) => mapJournalSummaryRow(journal as JournalSummaryRow))
 }
 
 const fetchJournalBySlug = async (slug: string): Promise<JournalDetail | null> => {
@@ -80,23 +116,7 @@ const fetchJournalBySlug = async (slug: string): Promise<JournalDetail | null> =
     return null
   }
 
-  const blocks = parseJournalBlocks(journal.blocks)
-  const draftBlocks = journal.draft_blocks
-    ? parseJournalBlocks(journal.draft_blocks)
-    : null
-
-  return {
-    id: journal.id,
-    title: journal.title,
-    slug: journal.slug,
-    created_at: journal.created_at,
-    updated_at: journal.updated_at,
-    has_unsaved_draft: journal.has_unsaved_draft ?? false,
-    blocks,
-    draft_blocks: draftBlocks,
-    activeBlocks:
-      journal.has_unsaved_draft && draftBlocks?.length ? draftBlocks : blocks,
-  }
+  return mapJournalDetailRow(journal as JournalDetailRow)
 }
 
 export const useJournals = () =>

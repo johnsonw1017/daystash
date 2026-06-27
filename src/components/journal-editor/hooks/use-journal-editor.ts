@@ -34,6 +34,10 @@ type InsertBlockOptions = {
   images?: Parameters<typeof makeImageBlock>[0]
 }
 type MergeTextBlockDirection = 'previous' | 'next'
+type MutationBlockResponse = {
+  journalId?: string
+  blocks: JournalBlock[]
+}
 
 const useJournalEditor = () => {
   const queryClient = useQueryClient()
@@ -58,6 +62,67 @@ const useJournalEditor = () => {
   const isDirty =
     JSON.stringify(normalizedBlocks) !== JSON.stringify(lastSavedDraftBlocks) ||
     title !== lastSavedTitle
+
+  const applySavedState = useCallback(
+    ({
+      blocks: nextBlocks,
+      hasDraft,
+      nextJournalId,
+      successMessage,
+      syncPublishedBlocks = false,
+    }: {
+      blocks: JournalBlock[]
+      hasDraft: boolean
+      nextJournalId?: string
+      successMessage: string
+      syncPublishedBlocks?: boolean
+    }) => {
+      if (nextJournalId) {
+        setJournalId(nextJournalId)
+      }
+
+      setBlocks(nextBlocks)
+      setLastSavedDraftBlocks(nextBlocks)
+      setLastSavedTitle(title)
+      setHasPersistedDraft(hasDraft)
+
+      if (syncPublishedBlocks) {
+        setPublishedBlocks(nextBlocks)
+      }
+
+      void queryClient.invalidateQueries({ queryKey: journalQueryKeys.all })
+      toast.success(successMessage)
+    },
+    [
+      queryClient,
+      setBlocks,
+      setHasPersistedDraft,
+      setJournalId,
+      setLastSavedDraftBlocks,
+      setLastSavedTitle,
+      setPublishedBlocks,
+      title,
+    ]
+  )
+
+  const handleMutationError = useCallback(
+    ({
+      message,
+      toastMessage,
+    }: {
+      message: string
+      toastMessage: string
+    }) => {
+      setErrorMessage(message)
+      toast.error(toastMessage)
+    },
+    [setErrorMessage]
+  )
+
+  const runMutation = useCallback((callback: () => void) => {
+    setErrorMessage('')
+    callback()
+  }, [setErrorMessage])
 
   useEffect(() => {
     if (pendingTextSelection === null) return
@@ -341,18 +406,18 @@ const useJournalEditor = () => {
         title,
         blocks: normalizedBlocks,
       }),
-    onSuccess: (response) => {
-      setJournalId(response.journalId)
-      setBlocks(response.blocks)
-      setLastSavedDraftBlocks(response.blocks)
-      setLastSavedTitle(title)
-      setHasPersistedDraft(true)
-      void queryClient.invalidateQueries({ queryKey: journalQueryKeys.all })
-      toast.success('Draft saved')
-    },
+    onSuccess: (response) =>
+      applySavedState({
+        blocks: response.blocks,
+        hasDraft: true,
+        nextJournalId: response.journalId,
+        successMessage: 'Draft saved',
+      }),
     onError: () => {
-      setErrorMessage('Could not save draft. Try again.')
-      toast.error('Could not save draft')
+      handleMutationError({
+        message: 'Could not save draft. Try again.',
+        toastMessage: 'Could not save draft',
+      })
     },
   })
 
@@ -363,29 +428,25 @@ const useJournalEditor = () => {
         title,
         blocks: normalizedBlocks,
       }),
-    onSuccess: (response) => {
-      setJournalId(response.journalId)
-      setBlocks(response.blocks)
-      setPublishedBlocks(response.blocks)
-      setLastSavedDraftBlocks(response.blocks)
-      setLastSavedTitle(title)
-      setHasPersistedDraft(false)
-      void queryClient.invalidateQueries({ queryKey: journalQueryKeys.all })
-      toast.success(editorConfig.successMessage)
-    },
+    onSuccess: (response) =>
+      applySavedState({
+        blocks: response.blocks,
+        hasDraft: false,
+        nextJournalId: response.journalId,
+        successMessage: editorConfig.successMessage,
+        syncPublishedBlocks: true,
+      }),
     onError: () => {
-      setErrorMessage('Could not publish changes. Try again.')
-      toast.error('Could not publish journal')
+      handleMutationError({
+        message: 'Could not publish changes. Try again.',
+        toastMessage: 'Could not publish journal',
+      })
     },
   })
 
   const discardMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (): Promise<MutationBlockResponse> => {
       if (!journalId) {
-        setBlocks(publishedBlocks)
-        setLastSavedDraftBlocks(publishedBlocks)
-        setLastSavedTitle(title)
-        setHasPersistedDraft(false)
         return { blocks: publishedBlocks }
       }
 
@@ -394,35 +455,27 @@ const useJournalEditor = () => {
         blocks: normalizedBlocks,
       })
     },
-    onSuccess: (response) => {
-      setBlocks(response.blocks)
-      setLastSavedDraftBlocks(response.blocks)
-      setPublishedBlocks(response.blocks)
-      setLastSavedTitle(title)
-      setHasPersistedDraft(false)
-      void queryClient.invalidateQueries({ queryKey: journalQueryKeys.all })
-      toast.success('Draft discarded')
-    },
+    onSuccess: (response) =>
+      applySavedState({
+        blocks: response.blocks,
+        hasDraft: false,
+        nextJournalId: response.journalId,
+        successMessage: 'Draft discarded',
+        syncPublishedBlocks: true,
+      }),
     onError: () => {
-      setErrorMessage('Could not discard draft. Try again.')
-      toast.error('Could not discard draft')
+      handleMutationError({
+        message: 'Could not discard draft. Try again.',
+        toastMessage: 'Could not discard draft',
+      })
     },
   })
 
-  const saveDraft = () => {
-    setErrorMessage('')
-    saveDraftMutation.mutate()
-  }
+  const saveDraft = () => runMutation(() => saveDraftMutation.mutate())
 
-  const publish = () => {
-    setErrorMessage('')
-    publishMutation.mutate()
-  }
+  const publish = () => runMutation(() => publishMutation.mutate())
 
-  const discard = () => {
-    setErrorMessage('')
-    discardMutation.mutate()
-  }
+  const discard = () => runMutation(() => discardMutation.mutate())
 
   return {
     appendImagesToBlock,
