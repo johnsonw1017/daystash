@@ -6,6 +6,13 @@ import { Trash2 } from 'lucide-react'
 import useJournalBlocks from '@/components/journal-editor/hooks/use-journal-blocks'
 import type { ImageJournalBlock } from '@/components/journal-editor/types'
 import { Button } from '@/components/ui/button'
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from '@/components/ui/carousel'
 import { Input } from '@/components/ui/input'
 import { cloudinaryLoader } from '@/lib/cloudinary'
 
@@ -66,17 +73,24 @@ const ImageBlock = ({ block, blockId }: ImageBlockProps) => {
   return (
     <div className="space-y-3">
       {block.images.length > 1 ? (
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {block.images.map((image, imageIndex) => (
-            <ImageItem
-              key={image.id ?? image.cloudinary_public_id}
-              alt={image.alt_text || 'Journal image'}
-              publicId={image.cloudinary_public_id}
-              width={image.width}
-              height={image.height}
-              onRemove={() => removeImage(blockId, imageIndex)}
-            />
-          ))}
+        <div className="px-12">
+          <Carousel opts={{ loop: false }}>
+            <CarouselContent>
+              {block.images.map((image, imageIndex) => (
+                <CarouselItem key={image.id ?? image.cloudinary_public_id}>
+                  <ImageItem
+                    alt={image.alt_text || 'Journal image'}
+                    publicId={image.cloudinary_public_id}
+                    width={image.width}
+                    height={image.height}
+                    onRemove={() => removeImage(blockId, imageIndex)}
+                  />
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious />
+            <CarouselNext />
+          </Carousel>
         </div>
       ) : block.images[0] ? (
         <ImageItem
