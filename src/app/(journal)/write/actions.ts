@@ -1,53 +1,74 @@
 'use server'
 
 import { requireAuth } from '@/lib/auth/require-auth'
-import type { JournalBlock, SaveJournalInput } from '@/lib/journals'
-import { createServerSideClient } from '@/lib/supabase/server'
+import {
+  getReferencedAssetIds,
+  normalizeJournalBlocks,
+  parseJournalBlocks,
+  type JournalBlock,
+  type PublishJournalInput,
+  type RegisterJournalAssetsInput,
+  type SaveJournalDraftInput,
+} from '@/lib/journals'
+import { createAdminClient } from '@/lib/supabase/server'
 
-const normalizeBlocks = (blocks: JournalBlock[]): JournalBlock[] => {
-  const normalized = blocks
-    .map((block, index) => {
-      if (block.type === 'text') {
-        return {
-          ...block,
-          position: index,
-          text_content: block.text_content,
-        }
-      }
-
-      return {
-        ...block,
-        position: index,
-        caption: block.caption?.trim() || null,
-        images: block.images.map((image, imageIndex) => ({
-          ...image,
-          position: imageIndex,
-          alt_text: image.alt_text?.trim() || null,
-        })),
-      }
-    })
-    .filter((block) => (block.type === 'text' ? block.text_content.trim().length > 0 : block.images.length > 0))
-
-  if (!normalized.length) {
-    return [{ type: 'text', position: 0, text_content: '' }]
-  }
-
-  return normalized.map((block, index) => ({ ...block, position: index }))
+type OwnedJournalRow = {
+  id: string
+  title: string | null
+  blocks: unknown
+  draft_blocks: unknown
+  has_unsaved_draft: boolean
 }
 
-export const saveJournalDraft = async ({ journalId, title, blocks }: SaveJournalInput) => {
-  const user = await requireAuth('/write')
-  const supabase = await createServerSideClient()
+type JournalAssetRow = {
+  id: string
+  width: number
+  height: number
+}
 
+const getOwnedJournal = async ({
+  journalId,
+  userId,
+}: {
+  journalId: string
+  userId: string
+}) => {
+  const supabase = createAdminClient()
+  const { data, error } = await supabase
+    .from('journals')
+    .select('id, title, blocks, draft_blocks, has_unsaved_draft')
+    .eq('id', journalId)
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  if (!data) {
+    throw new Error('Journal not found')
+  }
+
+  return data as OwnedJournalRow
+}
+
+const ensureJournal = async ({
+  journalId,
+  title,
+  userId,
+}: {
+  journalId?: string
+  title: string
+  userId: string
+}) => {
+  const supabase = createAdminClient()
   const cleanedTitle = title.trim() || 'Untitled Journal'
-  const normalizedBlocks = normalizeBlocks(blocks)
-  let nextJournalId = journalId
 
-  if (!nextJournalId) {
+  if (!journalId) {
     const { data, error } = await supabase
       .from('journals')
       .insert({
-        user_id: user.id,
+        user_id: userId,
         title: cleanedTitle,
       })
       .select('id')
@@ -57,245 +78,272 @@ export const saveJournalDraft = async ({ journalId, title, blocks }: SaveJournal
       throw new Error(error?.message || 'Failed to create journal')
     }
 
-    nextJournalId = data.id
-  } else {
-    const { error } = await supabase
-      .from('journals')
-      .update({
-        title: cleanedTitle,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', nextJournalId)
-      .eq('user_id', user.id)
-
-    if (error) {
-      throw new Error(error.message)
+    return {
+      journalId: data.id,
+      title: cleanedTitle,
     }
   }
 
-  const { data: existingBlocks, error: existingBlocksError } = await supabase
-    .from('journal_blocks')
-    .select('id')
-    .eq('journal_id', nextJournalId)
+  await getOwnedJournal({ journalId, userId })
 
-  if (existingBlocksError) {
-    throw new Error(existingBlocksError.message)
+  return {
+    journalId,
+    title: cleanedTitle,
   }
-
-  const existingBlockIds = (existingBlocks ?? []).map((block) => block.id)
-
-  if (existingBlockIds.length) {
-    const { error: deleteImagesError } = await supabase
-      .from('journal_block_images')
-      .delete()
-      .in('block_id', existingBlockIds)
-
-    if (deleteImagesError) {
-      throw new Error(deleteImagesError.message)
-    }
-  }
-
-  const { error: deleteBlocksError } = await supabase
-    .from('journal_blocks')
-    .delete()
-    .eq('journal_id', nextJournalId)
-
-  if (deleteBlocksError) {
-    throw new Error(deleteBlocksError.message)
-  }
-
-  const blockRows = normalizedBlocks.map((block) => ({
-    type: block.type,
-    journal_id: nextJournalId,
-    position: block.position,
-    text_content: block.type === 'text' ? block.text_content : '',
-    caption: block.type === 'image' ? block.caption : null,
-  }))
-
-  const { data: insertedBlocks, error: insertBlocksError } = await supabase
-    .from('journal_blocks')
-    .insert(blockRows)
-    .select('id, position, type')
-
-  if (insertBlocksError) {
-    throw new Error(insertBlocksError.message)
-  }
-
-  const imageRows = (insertedBlocks ?? []).flatMap((insertedBlock) => {
-    const matchingBlock = normalizedBlocks.find(
-      (block) => block.position === insertedBlock.position && block.type === 'image'
-    )
-
-    if (!matchingBlock || matchingBlock.type !== 'image') {
-      return []
-    }
-
-    return matchingBlock.images.map((image, imagePosition) => ({
-      block_id: insertedBlock.id,
-      cloudinary_public_id: image.cloudinary_public_id,
-      position: imagePosition,
-      alt_text: image.alt_text,
-      width: image.width,
-      height: image.height,
-    }))
-  })
-
-  if (imageRows.length > 0) {
-    const { error: insertImagesError } = await supabase
-      .from('journal_block_images')
-      .insert(imageRows)
-
-    if (insertImagesError) {
-      throw new Error(insertImagesError.message)
-    }
-  }
-
-  return { journalId: nextJournalId }
 }
 
-export const deleteJournalImage = async ({ imageId }: { imageId: string }) => {
-  const user = await requireAuth('/write')
-  const supabase = await createServerSideClient()
+const getJournalAssets = async (journalId: string) => {
+  const supabase = createAdminClient()
+  const { data, error } = await supabase
+    .from('journal_assets')
+    .select('id, cloudinary_public_id, width, height')
+    .eq('journal_id', journalId)
 
-  const { data: imageRow, error: imageError } = await supabase
-    .from('journal_block_images')
-    .select('id, block_id')
-    .eq('id', imageId)
-    .single()
-
-  if (imageError || !imageRow) {
-    throw new Error(imageError?.message || 'Image not found')
+  if (error) {
+    throw new Error(error.message)
   }
 
-  const { data: blockOwner, error: ownerError } = await supabase
-    .from('journal_blocks')
-    .select('journals!inner(user_id)')
-    .eq('id', imageRow.block_id)
-    .single()
+  return (data ?? []) as JournalAssetRow[]
+}
 
-  if (ownerError) {
-    throw new Error(ownerError.message)
+const deleteJournalAssets = async ({
+  assetIds,
+  journalId,
+}: {
+  assetIds: string[]
+  journalId: string
+}) => {
+  if (!assetIds.length) {
+    return
   }
 
-  type BlockOwnerJournalRelation = { user_id: string } | Array<{ user_id: string }> | null
-
-  const journalsRelation = blockOwner?.journals as BlockOwnerJournalRelation | undefined
-  const ownerUserId = Array.isArray(journalsRelation)
-    ? journalsRelation[0]?.user_id
-    : journalsRelation?.user_id
-
-  if (!ownerUserId) {
-    throw new Error('Journal owner not found')
-  }
-
-  if (ownerUserId !== user.id) {
-    throw new Error('Unauthorized')
-  }
-
-  const { error: deleteRowError } = await supabase
-    .from('journal_block_images')
+  const supabase = createAdminClient()
+  const { error: deleteError } = await supabase
+    .from('journal_assets')
     .delete()
-    .eq('id', imageRow.id)
+    .eq('journal_id', journalId)
+    .in('id', assetIds)
 
-  if (deleteRowError) {
-    throw new Error(deleteRowError.message)
+  if (deleteError) {
+    throw new Error(deleteError.message)
   }
+}
 
-  const { data: remainingImages, error: remainingError } = await supabase
-    .from('journal_block_images')
-    .select('id')
-    .eq('block_id', imageRow.block_id)
-    .order('position', { ascending: true })
+const syncJournalTitle = async ({
+  journalId,
+  title,
+}: {
+  journalId: string
+  title: string
+}) => {
+  const supabase = createAdminClient()
+  const { error } = await supabase
+    .from('journals')
+    .update({
+      title,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', journalId)
 
-  if (remainingError) {
-    throw new Error(remainingError.message)
+  if (error) {
+    throw new Error(error.message)
   }
+}
 
-  if (!remainingImages?.length) {
-    const { error: deleteBlockError } = await supabase
-      .from('journal_blocks')
-      .delete()
-      .eq('id', imageRow.block_id)
+export const registerJournalAssets = async ({
+  journalId,
+  title,
+  assets,
+}: RegisterJournalAssetsInput) => {
+  const user = await requireAuth('/write')
+  const nextJournal = await ensureJournal({
+    journalId,
+    title,
+    userId: user.id,
+  })
 
-    if (deleteBlockError) {
-      throw new Error(deleteBlockError.message)
+  await syncJournalTitle(nextJournal)
+
+  if (!assets.length) {
+    return {
+      journalId: nextJournal.journalId,
+      assets: [],
     }
-
-    return { deletedBlock: true }
   }
 
-  for (const [position, image] of remainingImages.entries()) {
-    const { error: updatePositionError } = await supabase
-      .from('journal_block_images')
-      .update({ position })
-      .eq('id', image.id)
+  const supabase = createAdminClient()
+  const { data, error } = await supabase
+    .from('journal_assets')
+    .insert(
+      assets.map((asset) => ({
+        journal_id: nextJournal.journalId,
+        user_id: user.id,
+        cloudinary_public_id: asset.publicId,
+        width: asset.width,
+        height: asset.height,
+      }))
+    )
+    .select('id, cloudinary_public_id, width, height')
 
-    if (updatePositionError) {
-      throw new Error(updatePositionError.message)
-    }
+  if (error) {
+    throw new Error(error.message)
   }
 
-  return { deletedBlock: false }
+  const altTextByPublicId = new Map(
+    assets.map((asset) => [asset.publicId, asset.altText?.trim() || null])
+  )
+
+  return {
+    journalId: nextJournal.journalId,
+    assets: (data ?? []).map((asset) => ({
+      assetId: asset.id,
+      publicId: asset.cloudinary_public_id,
+      width: asset.width,
+      height: asset.height,
+      altText: altTextByPublicId.get(asset.cloudinary_public_id) ?? null,
+    })),
+  }
+}
+
+export const saveJournalDraft = async ({
+  journalId,
+  title,
+  blocks,
+}: SaveJournalDraftInput) => {
+  const user = await requireAuth('/write')
+  const nextJournal = await ensureJournal({
+    journalId,
+    title,
+    userId: user.id,
+  })
+  const normalizedBlocks = normalizeJournalBlocks(blocks)
+  const supabase = createAdminClient()
+
+  const { error } = await supabase
+    .from('journals')
+    .update({
+      title: nextJournal.title,
+      draft_blocks: normalizedBlocks,
+      has_unsaved_draft: true,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', nextJournal.journalId)
+    .eq('user_id', user.id)
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return {
+    journalId: nextJournal.journalId,
+    blocks: normalizedBlocks,
+  }
+}
+
+export const publishJournal = async ({
+  journalId,
+  title,
+  blocks,
+}: PublishJournalInput) => {
+  const user = await requireAuth('/write')
+  const nextJournal = await ensureJournal({
+    journalId,
+    title,
+    userId: user.id,
+  })
+
+  const normalizedBlocks = normalizeJournalBlocks(blocks)
+  const referencedAssetIds = getReferencedAssetIds(normalizedBlocks)
+  const existingAssets = await getJournalAssets(nextJournal.journalId)
+  const orphanedAssetIds = existingAssets
+    .filter((asset) => !referencedAssetIds.has(asset.id))
+    .map((asset) => asset.id)
+
+  await deleteJournalAssets({
+    assetIds: orphanedAssetIds,
+    journalId: nextJournal.journalId,
+  })
+
+  const supabase = createAdminClient()
+  const { error } = await supabase
+    .from('journals')
+    .update({
+      title: nextJournal.title,
+      blocks: normalizedBlocks,
+      draft_blocks: null,
+      has_unsaved_draft: false,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', nextJournal.journalId)
+    .eq('user_id', user.id)
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return {
+    journalId: nextJournal.journalId,
+    blocks: normalizedBlocks,
+  }
+}
+
+export const discardJournalDraft = async ({
+  journalId,
+  blocks,
+}: {
+  journalId: string
+  blocks?: JournalBlock[]
+}) => {
+  const user = await requireAuth('/write')
+  const journal = await getOwnedJournal({ journalId, userId: user.id })
+  const publishedBlocks = parseJournalBlocks(journal.blocks)
+  const draftBlocks = blocks
+    ? normalizeJournalBlocks(blocks)
+    : parseJournalBlocks(journal.draft_blocks)
+  const publishedAssetIds = getReferencedAssetIds(publishedBlocks)
+  const draftOnlyAssetIds = [...getReferencedAssetIds(draftBlocks)].filter(
+    (assetId) => !publishedAssetIds.has(assetId)
+  )
+
+  await deleteJournalAssets({
+    assetIds: draftOnlyAssetIds,
+    journalId,
+  })
+
+  const supabase = createAdminClient()
+  const { error } = await supabase
+    .from('journals')
+    .update({
+      draft_blocks: null,
+      has_unsaved_draft: false,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', journalId)
+    .eq('user_id', user.id)
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return {
+    journalId,
+    blocks: publishedBlocks,
+  }
 }
 
 export const deleteJournal = async ({ journalId }: { journalId: string }) => {
   const user = await requireAuth('/dashboard')
-  const supabase = await createServerSideClient()
+  await getOwnedJournal({ journalId, userId: user.id })
 
-  const { data: journal, error: journalError } = await supabase
-    .from('journals')
-    .select('id')
-    .eq('id', journalId)
-    .eq('user_id', user.id)
-    .maybeSingle()
-
-  if (journalError) {
-    throw new Error(journalError.message)
-  }
-
-  if (!journal) {
-    throw new Error('Journal not found')
-  }
-
-  const { data: blocks, error: blocksError } = await supabase
-    .from('journal_blocks')
-    .select('id')
-    .eq('journal_id', journalId)
-
-  if (blocksError) {
-    throw new Error(blocksError.message)
-  }
-
-  const blockIds = (blocks ?? []).map((block) => block.id)
-
-  if (blockIds.length > 0) {
-    const { error: deleteImagesError } = await supabase
-      .from('journal_block_images')
-      .delete()
-      .in('block_id', blockIds)
-
-    if (deleteImagesError) {
-      throw new Error(deleteImagesError.message)
-    }
-  }
-
-  const { error: deleteBlocksError } = await supabase
-    .from('journal_blocks')
-    .delete()
-    .eq('journal_id', journalId)
-
-  if (deleteBlocksError) {
-    throw new Error(deleteBlocksError.message)
-  }
-
-  const { error: deleteJournalError } = await supabase
+  const supabase = createAdminClient()
+  const { error } = await supabase
     .from('journals')
     .delete()
     .eq('id', journalId)
     .eq('user_id', user.id)
 
-  if (deleteJournalError) {
-    throw new Error(deleteJournalError.message)
+  if (error) {
+    throw new Error(error.message)
   }
 
   return { deleted: true }

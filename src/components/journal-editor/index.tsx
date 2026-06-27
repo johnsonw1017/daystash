@@ -9,7 +9,7 @@ import { createJournalBlocksStore } from '@/components/journal-editor/atoms'
 import BlockMenu from '@/components/journal-editor/blocks/block-menu'
 import ImageDialog from '@/components/journal-editor/image-dialog'
 import ResolveBlock from '@/components/journal-editor/blocks/resolve-block'
-import useJournalBlocks from '@/components/journal-editor/hooks/use-journal-blocks'
+import useJournalEditor from '@/components/journal-editor/hooks/use-journal-editor'
 import JournalHeader from '@/components/journal-editor/journal-header'
 import type { JournalEditorProps } from '@/components/journal-editor/types'
 import { cn } from '@/lib/utils'
@@ -47,7 +47,7 @@ const SortableBlockRow = ({ blockId, index, children }: SortableBlockRowProps) =
 }
 
 const JournalEditorContent = () => {
-  const { blocks, moveBlock } = useJournalBlocks()
+  const { blocks, moveBlock } = useJournalEditor()
 
   const handleDragEnd = ({ canceled, operation }: DragEndEvent) => {
     if (canceled) return
@@ -78,8 +78,8 @@ const JournalEditorContent = () => {
       <DragDropProvider onDragEnd={handleDragEnd}>
         <div className="space-y-2">
           {blocks.map((block, index) => (
-            <SortableBlockRow key={block.id!} blockId={block.id!} index={index}>
-              <ResolveBlock block={block} blockId={block.id!} />
+            <SortableBlockRow key={block.id} blockId={block.id} index={index}>
+              <ResolveBlock block={block} blockId={block.id} />
             </SortableBlockRow>
           ))}
         </div>
@@ -94,6 +94,8 @@ const JournalEditor = ({
   initialJournalId,
   initialTitle = '',
   initialBlocks,
+  initialPublishedBlocks,
+  initialHasUnsavedDraft = false,
   successMessage = 'Journal saved',
   isEditMode = false,
   viewHref,
@@ -103,7 +105,9 @@ const JournalEditor = ({
     createJournalBlocksStore({
       headerActions,
       initialBlocks,
+      initialHasUnsavedDraft,
       initialJournalId,
+      initialPublishedBlocks,
       initialTitle,
       isEditMode,
       successMessage,

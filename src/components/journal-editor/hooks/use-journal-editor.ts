@@ -1,23 +1,32 @@
 'use client'
 
 import { useCallback, useEffect } from 'react'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAtom, useSetAtom } from 'jotai'
-import { toast } from 'sonner'
-import { deleteJournalImage } from '@/app/(journal)/write/actions'
+import {
+  discardJournalDraft,
+  publishJournal,
+  saveJournalDraft,
+} from '@/app/(journal)/write/actions'
 import {
   blocksAtom,
+  errorMessageAtom,
+  hasPersistedDraftAtom,
+  journalEditorConfigAtom,
+  journalIdAtom,
+  lastSavedDraftBlocksAtom,
+  lastSavedTitleAtom,
   pendingTextSelectionAtom,
+  publishedBlocksAtom,
   textAreaRefsAtom,
+  titleAtom,
 } from '@/components/journal-editor/atoms'
-import {
-  makeImageBlock,
-  makeTextBlock,
-  reindexBlocks,
-} from '@/components/journal-editor/utils'
+import { makeImageBlock, makeTextBlock, normalizeEditorBlocks } from '@/components/journal-editor/utils'
+import { journalQueryKeys } from '@/hooks/use-journals'
 import type { JournalBlock } from '@/lib/journals'
+import { toast } from 'sonner'
 
-const ensureEditorHasBlock = (blocks: ReturnType<typeof reindexBlocks>) =>
+const ensureEditorHasBlock = (blocks: JournalBlock[]) =>
   blocks.length ? blocks : [makeTextBlock()]
 
 type InsertBlockType = JournalBlock['type']
@@ -26,21 +35,29 @@ type InsertBlockOptions = {
 }
 type MergeTextBlockDirection = 'previous' | 'next'
 
-const useJournalBlocks = () => {
-  const [blocks] = useAtom(blocksAtom)
-  const setBlocks = useSetAtom(blocksAtom)
+const useJournalEditor = () => {
+  const queryClient = useQueryClient()
+  const [blocks, setBlocks] = useAtom(blocksAtom)
+  const [errorMessage, setErrorMessage] = useAtom(errorMessageAtom)
+  const [hasPersistedDraft, setHasPersistedDraft] = useAtom(hasPersistedDraftAtom)
+  const [editorConfig] = useAtom(journalEditorConfigAtom)
+  const [journalId, setJournalId] = useAtom(journalIdAtom)
+  const [lastSavedDraftBlocks, setLastSavedDraftBlocks] = useAtom(
+    lastSavedDraftBlocksAtom
+  )
+  const [lastSavedTitle, setLastSavedTitle] = useAtom(lastSavedTitleAtom)
   const [pendingTextSelection, setPendingTextSelection] = useAtom(
     pendingTextSelectionAtom
   )
+  const [publishedBlocks, setPublishedBlocks] = useAtom(publishedBlocksAtom)
   const [textAreaRefs] = useAtom(textAreaRefsAtom)
   const setTextAreaRefs = useSetAtom(textAreaRefsAtom)
+  const [title, setTitle] = useAtom(titleAtom)
 
-  const deleteImageMutation = useMutation({
-    mutationFn: async (imageId: string) => deleteJournalImage({ imageId }),
-    onError: () => {
-      toast.error('Could not delete image')
-    },
-  })
+  const normalizedBlocks = normalizeEditorBlocks(blocks)
+  const isDirty =
+    JSON.stringify(normalizedBlocks) !== JSON.stringify(lastSavedDraftBlocks) ||
+    title !== lastSavedTitle
 
   useEffect(() => {
     if (pendingTextSelection === null) return
@@ -100,19 +117,16 @@ const useJournalBlocks = () => {
           blockType !== 'text' &&
           currentBlocks.length === 1 &&
           currentBlocks[0]?.type === 'text' &&
-          currentBlocks[0].text_content.trim().length === 0
-            // Replace the initial empty text placeholder when inserting any non-text block.
+          currentBlocks[0].content.trim().length === 0
             ? []
             : [...currentBlocks]
 
         nextBlocks.splice(blockIndex + 1, 0, nextBlock)
-        return reindexBlocks(nextBlocks)
+        return nextBlocks
       })
 
       if (blockType === 'text') {
-        if (nextBlock.id) {
-          focusTextBlock(nextBlock.id, 0)
-        }
+        focusTextBlock(nextBlock.id, 0)
       }
     },
     [focusTextBlock, setBlocks]
@@ -132,15 +146,15 @@ const useJournalBlocks = () => {
         const nextBlocks =
           currentBlocks.length === 1 &&
           currentBlocks[0]?.type === 'text' &&
-          currentBlocks[0].text_content.trim().length === 0
+          currentBlocks[0].content.trim().length === 0
             ? []
             : [...currentBlocks]
 
         nextBlocks.splice(blockIndex + 1, 0, nextBlock)
-        return reindexBlocks(nextBlocks)
+        return nextBlocks
       })
 
-      return nextBlock.id ?? null
+      return nextBlock.id
     },
     [blocks, setBlocks]
   )
@@ -158,10 +172,9 @@ const useJournalBlocks = () => {
           ...block,
           images: [
             ...block.images,
-            ...images.map((image, imageIndex) => ({
+            ...images.map((image) => ({
               ...image,
-              position: block.images.length + imageIndex,
-              alt_text: image.alt_text ?? null,
+              altText: image.altText ?? null,
             })),
           ],
         }
@@ -181,20 +194,18 @@ const useJournalBlocks = () => {
 
         if (block?.type !== 'text') return currentBlocks
 
-        const before = block.text_content.slice(0, start)
-        const after = block.text_content.slice(end)
+        const before = block.content.slice(0, start)
+        const after = block.content.slice(end)
 
-        return reindexBlocks([
+        return [
           ...currentBlocks.slice(0, blockIndex),
-          { ...block, text_content: before },
-          { ...nextBlock, text_content: after },
+          { ...block, content: before },
+          { ...nextBlock, content: after },
           ...currentBlocks.slice(blockIndex + 1),
-        ])
+        ]
       })
 
-      if (nextBlock.id) {
-        focusTextBlock(nextBlock.id, 0)
-      }
+      focusTextBlock(nextBlock.id, 0)
     },
     [focusTextBlock, setBlocks]
   )
@@ -208,7 +219,7 @@ const useJournalBlocks = () => {
         if (!block || block.type !== 'text') return currentBlocks
 
         const nextBlocks = [...currentBlocks]
-        nextBlocks[blockIndex] = { ...block, text_content: value }
+        nextBlocks[blockIndex] = { ...block, content: value }
         return nextBlocks
       })
     },
@@ -234,9 +245,7 @@ const useJournalBlocks = () => {
   const removeBlock = useCallback(
     (blockId: string) => {
       setBlocks((currentBlocks) =>
-        ensureEditorHasBlock(
-          reindexBlocks(currentBlocks.filter((block) => block.id !== blockId))
-        )
+        ensureEditorHasBlock(currentBlocks.filter((block) => block.id !== blockId))
       )
     },
     [setBlocks]
@@ -255,31 +264,21 @@ const useJournalBlocks = () => {
           return currentBlocks
         }
 
-        return reindexBlocks([
+        return [
           ...currentBlocks.slice(0, sourceIndex),
           {
             ...sourceBlock,
-            text_content: sourceBlock.text_content + targetBlock.text_content,
+            content: sourceBlock.content + targetBlock.content,
           },
           ...currentBlocks.slice(targetIndex + 1),
-        ])
+        ]
       })
     },
     [setBlocks]
   )
 
   const removeImage = useCallback(
-    async (blockId: string, imageIndex: number) => {
-      const block = blocks.find((candidate) => candidate.id === blockId)
-      if (!block || block.type !== 'image') return
-
-      const imageToRemove = block.images[imageIndex]
-      if (!imageToRemove) return
-
-      if (imageToRemove.id) {
-        await deleteImageMutation.mutateAsync(imageToRemove.id)
-      }
-
+    (blockId: string, imageIndex: number) => {
       setBlocks((currentBlocks) => {
         const currentBlockIndex = currentBlocks.findIndex(
           (candidate) => candidate.id === blockId
@@ -288,18 +287,13 @@ const useJournalBlocks = () => {
 
         if (!currentBlock || currentBlock.type !== 'image') return currentBlocks
 
-        const nextImages = currentBlock.images
-          .filter((_, currentImageIndex) => currentImageIndex !== imageIndex)
-          .map((image, currentImageIndex) => ({
-            ...image,
-            position: currentImageIndex,
-          }))
+        const nextImages = currentBlock.images.filter(
+          (_, currentImageIndex) => currentImageIndex !== imageIndex
+        )
 
         if (!nextImages.length) {
           return ensureEditorHasBlock(
-            reindexBlocks(
-              currentBlocks.filter((candidate) => candidate.id !== blockId)
-            )
+            currentBlocks.filter((candidate) => candidate.id !== blockId)
           )
         }
 
@@ -311,7 +305,7 @@ const useJournalBlocks = () => {
         return nextBlocks
       })
     },
-    [blocks, deleteImageMutation, setBlocks]
+    [setBlocks]
   )
 
   const moveBlock = useCallback(
@@ -334,27 +328,131 @@ const useJournalBlocks = () => {
         if (!movedBlock) return currentBlocks
 
         nextBlocks.splice(toIndex, 0, movedBlock)
-        return reindexBlocks(nextBlocks)
+        return nextBlocks
       })
     },
     [setBlocks]
   )
 
+  const saveDraftMutation = useMutation({
+    mutationFn: async () =>
+      saveJournalDraft({
+        journalId,
+        title,
+        blocks: normalizedBlocks,
+      }),
+    onSuccess: (response) => {
+      setJournalId(response.journalId)
+      setBlocks(response.blocks)
+      setLastSavedDraftBlocks(response.blocks)
+      setLastSavedTitle(title)
+      setHasPersistedDraft(true)
+      void queryClient.invalidateQueries({ queryKey: journalQueryKeys.all })
+      toast.success('Draft saved')
+    },
+    onError: () => {
+      setErrorMessage('Could not save draft. Try again.')
+      toast.error('Could not save draft')
+    },
+  })
+
+  const publishMutation = useMutation({
+    mutationFn: async () =>
+      publishJournal({
+        journalId,
+        title,
+        blocks: normalizedBlocks,
+      }),
+    onSuccess: (response) => {
+      setJournalId(response.journalId)
+      setBlocks(response.blocks)
+      setPublishedBlocks(response.blocks)
+      setLastSavedDraftBlocks(response.blocks)
+      setLastSavedTitle(title)
+      setHasPersistedDraft(false)
+      void queryClient.invalidateQueries({ queryKey: journalQueryKeys.all })
+      toast.success(editorConfig.successMessage)
+    },
+    onError: () => {
+      setErrorMessage('Could not publish changes. Try again.')
+      toast.error('Could not publish journal')
+    },
+  })
+
+  const discardMutation = useMutation({
+    mutationFn: async () => {
+      if (!journalId) {
+        setBlocks(publishedBlocks)
+        setLastSavedDraftBlocks(publishedBlocks)
+        setLastSavedTitle(title)
+        setHasPersistedDraft(false)
+        return { blocks: publishedBlocks }
+      }
+
+      return discardJournalDraft({
+        journalId,
+        blocks: normalizedBlocks,
+      })
+    },
+    onSuccess: (response) => {
+      setBlocks(response.blocks)
+      setLastSavedDraftBlocks(response.blocks)
+      setPublishedBlocks(response.blocks)
+      setLastSavedTitle(title)
+      setHasPersistedDraft(false)
+      void queryClient.invalidateQueries({ queryKey: journalQueryKeys.all })
+      toast.success('Draft discarded')
+    },
+    onError: () => {
+      setErrorMessage('Could not discard draft. Try again.')
+      toast.error('Could not discard draft')
+    },
+  })
+
+  const saveDraft = () => {
+    setErrorMessage('')
+    saveDraftMutation.mutate()
+  }
+
+  const publish = () => {
+    setErrorMessage('')
+    publishMutation.mutate()
+  }
+
+  const discard = () => {
+    setErrorMessage('')
+    discardMutation.mutate()
+  }
+
   return {
     appendImagesToBlock,
     blocks,
+    discard,
+    errorMessage,
+    focusTextBlock,
+    hasPersistedDraft,
+    headerActions: editorConfig.headerActions,
     insertBlockBelow,
     insertImagesBelow,
-    focusTextBlock,
+    isDirty,
+    isDiscarding: discardMutation.isPending,
+    isEditMode: editorConfig.isEditMode ?? false,
+    isPublishing: publishMutation.isPending,
+    isSavingDraft: saveDraftMutation.isPending,
     mergeTextBlock,
     moveBlock,
+    publish,
     removeBlock,
     removeImage,
+    saveDraft,
     setTextareaRef,
+    setTitle,
     splitTextBlock,
+    title,
     updateImageCaption,
     updateTextBlock,
+    viewHref: editorConfig.viewHref,
   }
 }
 
-export default useJournalBlocks
+export default useJournalEditor

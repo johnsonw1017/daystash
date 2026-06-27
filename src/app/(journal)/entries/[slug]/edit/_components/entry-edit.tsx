@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dialog'
 import JournalEditor from '@/components/journal-editor'
 import { journalQueryKeys, useJournalBySlug } from '@/hooks/use-journals'
+import type { JournalListItem } from '@/lib/journals'
 import { toast } from 'sonner'
 
 type EntryEditProps = {
@@ -32,18 +33,8 @@ const EntryEdit = ({ slug }: EntryEditProps) => {
     onSuccess: async () => {
       queryClient.setQueryData(
         journalQueryKeys.list(),
-        (
-          current:
-            | Array<{
-                id: string
-                title: string | null
-                slug: string | null
-                created_at: string
-                updated_at: string
-                excerpt: string
-              }>
-            | undefined
-        ) => current?.filter((entry) => entry.id !== journal!.id) ?? []
+        (current: JournalListItem[] | undefined) =>
+          current?.filter((entry) => entry.id !== journal!.id) ?? []
       )
       queryClient.removeQueries({ queryKey: journalQueryKeys.bySlug(slug) })
       await queryClient.invalidateQueries({ queryKey: journalQueryKeys.all })
@@ -67,8 +58,10 @@ const EntryEdit = ({ slug }: EntryEditProps) => {
     <JournalEditor
       initialJournalId={journal.id}
       initialTitle={journal.title ?? ''}
-      initialBlocks={journal.blocks}
-      successMessage="Journal updated"
+      initialBlocks={journal.activeBlocks}
+      initialPublishedBlocks={journal.blocks}
+      initialHasUnsavedDraft={journal.has_unsaved_draft}
+      successMessage="Journal published"
       isEditMode
       viewHref={`/entries/${slug}`}
       headerActions={

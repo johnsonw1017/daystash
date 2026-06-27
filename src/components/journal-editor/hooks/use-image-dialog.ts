@@ -3,11 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAtom } from 'jotai'
 import { toast } from 'sonner'
+import { registerJournalAssets } from '@/app/(journal)/write/actions'
 import {
   editorSessionIdAtom,
   imageDialogStateAtom,
+  journalIdAtom,
+  titleAtom,
 } from '@/components/journal-editor/atoms'
-import useJournalBlocks from '@/components/journal-editor/hooks/use-journal-blocks'
+import useJournalEditor from '@/components/journal-editor/hooks/use-journal-editor'
 import type { ImageDialogState } from '@/components/journal-editor/types'
 import { uploadImagesToCloudinary } from '@/lib/image-upload'
 import type { StagedMobileUploadImage } from '@/lib/mobile-upload'
@@ -27,7 +30,9 @@ const closedImageDialogState: ImageDialogState = {
 const useImageDialog = () => {
   const [dialogState, setDialogState] = useAtom(imageDialogStateAtom)
   const [editorSessionId] = useAtom(editorSessionIdAtom)
-  const { appendImagesToBlock, insertImagesBelow } = useJournalBlocks()
+  const [journalId, setJournalId] = useAtom(journalIdAtom)
+  const [title] = useAtom(titleAtom)
+  const { appendImagesToBlock, insertImagesBelow } = useJournalEditor()
   const [isCreatingMobileSession, setIsCreatingMobileSession] = useState(false)
   const [isUploadingImages, setIsUploadingImages] = useState(false)
   const consumeInFlightRef = useRef(false)
@@ -130,8 +135,19 @@ const useImageDialog = () => {
 
     try {
       const uploadedImages = await uploadImagesToCloudinary(pendingFiles, user.id)
+      const registeredAssets = await registerJournalAssets({
+        journalId,
+        title,
+        assets: uploadedImages.map((image) => ({
+          publicId: image.publicId,
+          width: image.width,
+          height: image.height,
+        })),
+      })
 
-      insertImagesBelow(insertBelowBlockId, uploadedImages)
+      setJournalId(registeredAssets.journalId)
+
+      insertImagesBelow(insertBelowBlockId, registeredAssets.assets)
 
       closeDialog()
       toast.success('Image block added')
@@ -187,12 +203,20 @@ const useImageDialog = () => {
 
         if (!payload.images.length) return
 
-        const nextImages = payload.images.map((image) => ({
-          cloudinary_public_id: image.cloudinary_public_id,
-          width: image.width,
-          height: image.height,
-          alt_text: image.alt_text,
-        }))
+        const registeredAssets = await registerJournalAssets({
+          journalId,
+          title,
+          assets: payload.images.map((image) => ({
+            publicId: image.publicId,
+            width: image.width,
+            height: image.height,
+            altText: image.altText,
+          })),
+        })
+
+        setJournalId(registeredAssets.journalId)
+
+        const nextImages = registeredAssets.assets
 
         const targetBlockId = dialogState.mobileTargetBlockId
 
@@ -233,6 +257,9 @@ const useImageDialog = () => {
     appendImagesToBlock,
     dialogState,
     insertImagesBelow,
+    journalId,
+    setJournalId,
+    title,
     updateImageUploadContext,
   ])
 

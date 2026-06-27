@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react'
 import type { KeyboardEvent } from 'react'
-import useJournalBlocks from '@/components/journal-editor/hooks/use-journal-blocks'
+import useJournalEditor from '@/components/journal-editor/hooks/use-journal-editor'
 import type { TextJournalBlock } from '@/components/journal-editor/types'
 import { Textarea } from '@/components/ui/textarea'
 
@@ -20,7 +20,7 @@ const TextBlock = ({ block, blockId }: TextBlockProps) => {
     setTextareaRef: registerTextareaRef,
     splitTextBlock,
     updateTextBlock,
-  } = useJournalBlocks()
+  } = useJournalEditor()
   const blockCount = blocks.length
 
   const setTextareaRef = useCallback(
@@ -40,11 +40,11 @@ const TextBlock = ({ block, blockId }: TextBlockProps) => {
     const hasCollapsedSelection = selectionStart === selectionEnd
     const isAtStart = selectionStart === 0
     const isAtEnd = selectionStart === value.length
-    const isEmptyBlock = block.text_content.trim().length === 0
+    const isEmptyBlock = block.content.trim().length === 0
 
     if (event.key === 'Backspace' && hasCollapsedSelection && isAtStart && previousTextBlock) {
       event.preventDefault()
-      focusTextBlock(previousTextBlock.id!, previousTextBlock.text_content.length)
+      focusTextBlock(previousTextBlock.id, previousTextBlock.content.length)
       mergeTextBlock(blockId, 'previous')
       return
     }
@@ -75,11 +75,11 @@ const TextBlock = ({ block, blockId }: TextBlockProps) => {
   return (
     <Textarea
       ref={setTextareaRef}
-      value={block.text_content}
+      value={block.content}
       onChange={(event) => updateTextBlock(blockId, event.target.value)}
       onKeyDown={handleKeyDown}
       placeholder={
-        blockCount === 1 && block.text_content.trim().length === 0
+        blockCount === 1 && block.content.trim().length === 0
           ? 'Start writing...'
           : undefined
       }

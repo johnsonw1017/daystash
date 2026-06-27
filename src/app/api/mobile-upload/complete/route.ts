@@ -36,10 +36,10 @@ export const POST = async (request: Request) => {
       .from('mobile_upload_session_images')
       .insert({
         session_id: session.id,
-        cloudinary_public_id: payload.data.image.cloudinary_public_id,
+        cloudinary_public_id: payload.data.image.publicId,
         width: payload.data.image.width,
         height: payload.data.image.height,
-        alt_text: payload.data.image.alt_text ?? null,
+        alt_text: payload.data.image.altText ?? null,
         position: ((lastImage as { position: number } | null)?.position ?? -1) + 1,
       })
 
