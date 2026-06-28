@@ -1,23 +1,18 @@
 'use client'
 
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAtom, useSetAtom } from 'jotai'
-import {
-  discardJournalDraft,
-  publishJournal,
-  saveJournalDraft,
-} from '@/app/(journal)/write/actions'
+import { saveJournal } from '@/app/(journal)/write/actions'
 import {
   blocksAtom,
   errorMessageAtom,
-  hasPersistedDraftAtom,
   journalEditorConfigAtom,
   journalIdAtom,
-  lastSavedDraftBlocksAtom,
   lastSavedTitleAtom,
   pendingTextSelectionAtom,
-  publishedBlocksAtom,
+  savedBlocksAtom,
+  sessionAssetIdsAtom,
   textAreaRefsAtom,
   titleAtom,
 } from '@/components/journal-editor/atoms'
@@ -34,61 +29,49 @@ type InsertBlockOptions = {
   images?: Parameters<typeof makeImageBlock>[0]
 }
 type MergeTextBlockDirection = 'previous' | 'next'
-type MutationBlockResponse = {
-  journalId?: string
-  blocks: JournalBlock[]
-}
 
 const useJournalEditor = () => {
   const queryClient = useQueryClient()
   const [blocks, setBlocks] = useAtom(blocksAtom)
   const [errorMessage, setErrorMessage] = useAtom(errorMessageAtom)
-  const [hasPersistedDraft, setHasPersistedDraft] = useAtom(hasPersistedDraftAtom)
   const [editorConfig] = useAtom(journalEditorConfigAtom)
   const [journalId, setJournalId] = useAtom(journalIdAtom)
-  const [lastSavedDraftBlocks, setLastSavedDraftBlocks] = useAtom(
-    lastSavedDraftBlocksAtom
-  )
   const [lastSavedTitle, setLastSavedTitle] = useAtom(lastSavedTitleAtom)
   const [pendingTextSelection, setPendingTextSelection] = useAtom(
     pendingTextSelectionAtom
   )
-  const [publishedBlocks, setPublishedBlocks] = useAtom(publishedBlocksAtom)
+  const [savedBlocks, setSavedBlocks] = useAtom(savedBlocksAtom)
+  const [sessionAssetIds] = useAtom(sessionAssetIdsAtom)
   const [textAreaRefs] = useAtom(textAreaRefsAtom)
   const setTextAreaRefs = useSetAtom(textAreaRefsAtom)
   const [title, setTitle] = useAtom(titleAtom)
+  const latestJournalIdRef = useRef(journalId)
+  const latestIsDirtyRef = useRef(false)
+  const latestSessionAssetIdsRef = useRef<string[]>([])
+  const cleanupSentRef = useRef(false)
 
   const normalizedBlocks = normalizeEditorBlocks(blocks)
   const isDirty =
-    JSON.stringify(normalizedBlocks) !== JSON.stringify(lastSavedDraftBlocks) ||
+    JSON.stringify(normalizedBlocks) !== JSON.stringify(savedBlocks) ||
     title !== lastSavedTitle
 
   const applySavedState = useCallback(
     ({
       blocks: nextBlocks,
-      hasDraft,
       nextJournalId,
       successMessage,
-      syncPublishedBlocks = false,
     }: {
       blocks: JournalBlock[]
-      hasDraft: boolean
       nextJournalId?: string
       successMessage: string
-      syncPublishedBlocks?: boolean
     }) => {
       if (nextJournalId) {
         setJournalId(nextJournalId)
       }
 
       setBlocks(nextBlocks)
-      setLastSavedDraftBlocks(nextBlocks)
+      setSavedBlocks(nextBlocks)
       setLastSavedTitle(title)
-      setHasPersistedDraft(hasDraft)
-
-      if (syncPublishedBlocks) {
-        setPublishedBlocks(nextBlocks)
-      }
 
       void queryClient.invalidateQueries({ queryKey: journalQueryKeys.all })
       toast.success(successMessage)
@@ -96,11 +79,9 @@ const useJournalEditor = () => {
     [
       queryClient,
       setBlocks,
-      setHasPersistedDraft,
       setJournalId,
-      setLastSavedDraftBlocks,
       setLastSavedTitle,
-      setPublishedBlocks,
+      setSavedBlocks,
       title,
     ]
   )
@@ -123,6 +104,66 @@ const useJournalEditor = () => {
     setErrorMessage('')
     callback()
   }, [setErrorMessage])
+
+  useEffect(() => {
+    latestJournalIdRef.current = journalId
+    latestIsDirtyRef.current = isDirty
+    latestSessionAssetIdsRef.current = sessionAssetIds
+    cleanupSentRef.current = false
+  }, [isDirty, journalId, sessionAssetIds])
+
+  const discardSessionChanges = useCallback(() => {
+    if (cleanupSentRef.current) return
+
+    const nextJournalId = latestJournalIdRef.current
+    const nextSessionAssetIds = latestSessionAssetIdsRef.current
+
+    if (!nextJournalId) return
+    if (!latestIsDirtyRef.current && nextSessionAssetIds.length === 0) return
+
+    cleanupSentRef.current = true
+
+    const payload = JSON.stringify({
+      journalId: nextJournalId,
+      sessionAssetIds: nextSessionAssetIds,
+    })
+
+    if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
+      navigator.sendBeacon(
+        '/api/journals/discard-session',
+        new Blob([payload], { type: 'application/json' })
+      )
+      return
+    }
+
+    void fetch('/api/journals/discard-session', {
+      method: 'POST',
+      body: payload,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      keepalive: true,
+    })
+  }, [])
+
+  useEffect(() => {
+    const handlePageHide = () => {
+      discardSessionChanges()
+    }
+
+    window.addEventListener('pagehide', handlePageHide)
+
+    return () => {
+      window.removeEventListener('pagehide', handlePageHide)
+    }
+  }, [discardSessionChanges])
+
+  useEffect(
+    () => () => {
+      discardSessionChanges()
+    },
+    [discardSessionChanges]
+  )
 
   useEffect(() => {
     if (pendingTextSelection === null) return
@@ -399,9 +440,9 @@ const useJournalEditor = () => {
     [setBlocks]
   )
 
-  const saveDraftMutation = useMutation({
+  const saveMutation = useMutation({
     mutationFn: async () =>
-      saveJournalDraft({
+      saveJournal({
         journalId,
         title,
         blocks: normalizedBlocks,
@@ -409,95 +450,35 @@ const useJournalEditor = () => {
     onSuccess: (response) =>
       applySavedState({
         blocks: response.blocks,
-        hasDraft: true,
-        nextJournalId: response.journalId,
-        successMessage: 'Draft saved',
-      }),
-    onError: () => {
-      handleMutationError({
-        message: 'Could not save draft. Try again.',
-        toastMessage: 'Could not save draft',
-      })
-    },
-  })
-
-  const publishMutation = useMutation({
-    mutationFn: async () =>
-      publishJournal({
-        journalId,
-        title,
-        blocks: normalizedBlocks,
-      }),
-    onSuccess: (response) =>
-      applySavedState({
-        blocks: response.blocks,
-        hasDraft: false,
         nextJournalId: response.journalId,
         successMessage: editorConfig.successMessage,
-        syncPublishedBlocks: true,
       }),
     onError: () => {
       handleMutationError({
-        message: 'Could not publish changes. Try again.',
-        toastMessage: 'Could not publish journal',
+        message: 'Could not save changes. Try again.',
+        toastMessage: 'Could not save journal',
       })
     },
   })
 
-  const discardMutation = useMutation({
-    mutationFn: async (): Promise<MutationBlockResponse> => {
-      if (!journalId) {
-        return { blocks: publishedBlocks }
-      }
-
-      return discardJournalDraft({
-        journalId,
-        blocks: normalizedBlocks,
-      })
-    },
-    onSuccess: (response) =>
-      applySavedState({
-        blocks: response.blocks,
-        hasDraft: false,
-        nextJournalId: response.journalId,
-        successMessage: 'Draft discarded',
-        syncPublishedBlocks: true,
-      }),
-    onError: () => {
-      handleMutationError({
-        message: 'Could not discard draft. Try again.',
-        toastMessage: 'Could not discard draft',
-      })
-    },
-  })
-
-  const saveDraft = () => runMutation(() => saveDraftMutation.mutate())
-
-  const publish = () => runMutation(() => publishMutation.mutate())
-
-  const discard = () => runMutation(() => discardMutation.mutate())
+  const save = () => runMutation(() => saveMutation.mutate())
 
   return {
     appendImagesToBlock,
     blocks,
-    discard,
     errorMessage,
     focusTextBlock,
-    hasPersistedDraft,
     headerActions: editorConfig.headerActions,
     insertBlockBelow,
     insertImagesBelow,
     isDirty,
-    isDiscarding: discardMutation.isPending,
     isEditMode: editorConfig.isEditMode ?? false,
-    isPublishing: publishMutation.isPending,
-    isSavingDraft: saveDraftMutation.isPending,
+    isSaving: saveMutation.isPending,
     mergeTextBlock,
     moveBlock,
-    publish,
+    save,
     removeBlock,
     removeImage,
-    saveDraft,
     setTextareaRef,
     setTitle,
     splitTextBlock,

@@ -8,7 +8,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { useJournals } from '@/hooks/use-journals'
 
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
@@ -43,12 +42,9 @@ const DashboardJournals = () => {
             const cardBody = (
               <Card className="h-full">
                 <CardHeader>
-                  <div className="flex items-start justify-between gap-3">
-                    <CardTitle className="line-clamp-1 text-base font-medium">
-                      {dateFormatter.format(new Date(journal.created_at))} - {title}
-                    </CardTitle>
-                    {journal.has_unsaved_draft && <Badge>Draft</Badge>}
-                  </div>
+                  <CardTitle className="line-clamp-1 text-base font-medium">
+                    {dateFormatter.format(new Date(journal.created_at))} - {title}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <CardDescription className="line-clamp-4 leading-relaxed">

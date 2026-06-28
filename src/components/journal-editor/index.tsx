@@ -94,8 +94,6 @@ const JournalEditor = ({
   initialJournalId,
   initialTitle = '',
   initialBlocks,
-  initialPublishedBlocks,
-  initialHasUnsavedDraft = false,
   successMessage = 'Journal saved',
   isEditMode = false,
   viewHref,
@@ -105,9 +103,7 @@ const JournalEditor = ({
     createJournalBlocksStore({
       headerActions,
       initialBlocks,
-      initialHasUnsavedDraft,
       initialJournalId,
-      initialPublishedBlocks,
       initialTitle,
       isEditMode,
       successMessage,

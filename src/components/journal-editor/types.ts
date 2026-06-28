@@ -5,8 +5,6 @@ export type JournalEditorProps = {
   initialJournalId?: string
   initialTitle?: string
   initialBlocks?: JournalBlock[]
-  initialPublishedBlocks?: JournalBlock[]
-  initialHasUnsavedDraft?: boolean
   successMessage?: string
   isEditMode?: boolean
   viewHref?: string
@@ -15,11 +13,7 @@ export type JournalEditorProps = {
 
 export type JournalEditorConfig = Pick<
   JournalEditorProps,
-  | 'headerActions'
-  | 'initialHasUnsavedDraft'
-  | 'isEditMode'
-  | 'successMessage'
-  | 'viewHref'
+  'headerActions' | 'isEditMode' | 'successMessage' | 'viewHref'
 > & {
   successMessage: string
 }

@@ -31,11 +31,6 @@ type JournalSummaryRow = {
   created_at: string
   updated_at: string
   blocks: unknown
-  has_unsaved_draft: boolean | null
-}
-
-type JournalDetailRow = JournalSummaryRow & {
-  draft_blocks: unknown
 }
 
 const mapJournalSummaryRow = (journal: JournalSummaryRow): JournalListItem => {
@@ -47,17 +42,12 @@ const mapJournalSummaryRow = (journal: JournalSummaryRow): JournalListItem => {
     slug: journal.slug,
     created_at: journal.created_at,
     updated_at: journal.updated_at,
-    has_unsaved_draft: journal.has_unsaved_draft ?? false,
     excerpt: getJournalExcerpt(blocks),
   }
 }
 
-const mapJournalDetailRow = (journal: JournalDetailRow): JournalDetail => {
+const mapJournalDetailRow = (journal: JournalSummaryRow): JournalDetail => {
   const blocks = parseJournalBlocks(journal.blocks)
-  const draftBlocks = journal.draft_blocks
-    ? parseJournalBlocks(journal.draft_blocks)
-    : null
-  const hasUnsavedDraft = journal.has_unsaved_draft ?? false
 
   return {
     id: journal.id,
@@ -65,10 +55,7 @@ const mapJournalDetailRow = (journal: JournalDetailRow): JournalDetail => {
     slug: journal.slug,
     created_at: journal.created_at,
     updated_at: journal.updated_at,
-    has_unsaved_draft: hasUnsavedDraft,
     blocks,
-    draft_blocks: draftBlocks,
-    activeBlocks: hasUnsavedDraft && draftBlocks?.length ? draftBlocks : blocks,
   }
 }
 
@@ -81,7 +68,7 @@ const fetchJournals = async (): Promise<JournalListItem[]> => {
 
   const { data, error } = await supabase
     .from('journals')
-    .select('id, title, slug, created_at, updated_at, blocks, has_unsaved_draft')
+    .select('id, title, slug, created_at, updated_at, blocks')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
 
@@ -101,9 +88,7 @@ const fetchJournalBySlug = async (slug: string): Promise<JournalDetail | null> =
 
   const { data: journal, error } = await supabase
     .from('journals')
-    .select(
-      'id, title, slug, created_at, updated_at, blocks, draft_blocks, has_unsaved_draft'
-    )
+    .select('id, title, slug, created_at, updated_at, blocks')
     .eq('user_id', userId)
     .eq('slug', slug)
     .maybeSingle()
@@ -116,7 +101,7 @@ const fetchJournalBySlug = async (slug: string): Promise<JournalDetail | null> =
     return null
   }
 
-  return mapJournalDetailRow(journal as JournalDetailRow)
+  return mapJournalDetailRow(journal as JournalSummaryRow)
 }
 
 export const useJournals = () =>

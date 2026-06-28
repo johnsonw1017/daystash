@@ -58,10 +58,8 @@ const EntryEdit = ({ slug }: EntryEditProps) => {
     <JournalEditor
       initialJournalId={journal.id}
       initialTitle={journal.title ?? ''}
-      initialBlocks={journal.activeBlocks}
-      initialPublishedBlocks={journal.blocks}
-      initialHasUnsavedDraft={journal.has_unsaved_draft}
-      successMessage="Journal published"
+      initialBlocks={journal.blocks}
+      successMessage="Journal saved"
       isEditMode
       viewHref={`/entries/${slug}`}
       headerActions={

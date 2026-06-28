@@ -5,10 +5,8 @@ import {
   getReferencedAssetIds,
   normalizeJournalBlocks,
   parseJournalBlocks,
-  type JournalBlock,
-  type PublishJournalInput,
+  type SaveJournalInput,
   type RegisterJournalAssetsInput,
-  type SaveJournalDraftInput,
 } from '@/lib/journals'
 import { createAdminClient } from '@/lib/supabase/server'
 
@@ -129,21 +127,19 @@ const deleteJournalAssets = async ({
   }
 }
 
-const syncJournalTitle = async ({
+const deleteJournalRecord = async ({
   journalId,
-  title,
+  userId,
 }: {
   journalId: string
-  title: string
+  userId: string
 }) => {
   const supabase = createAdminClient()
   const { error } = await supabase
     .from('journals')
-    .update({
-      title,
-      updated_at: new Date().toISOString(),
-    })
+    .delete()
     .eq('id', journalId)
+    .eq('user_id', userId)
 
   if (error) {
     throw new Error(error.message)
@@ -161,8 +157,6 @@ export const registerJournalAssets = async ({
     title,
     userId: user.id,
   })
-
-  await syncJournalTitle(nextJournal)
 
   if (!assets.length) {
     return {
@@ -205,46 +199,11 @@ export const registerJournalAssets = async ({
   }
 }
 
-export const saveJournalDraft = async ({
+export const saveJournal = async ({
   journalId,
   title,
   blocks,
-}: SaveJournalDraftInput) => {
-  const user = await requireAuth('/write')
-  const nextJournal = await ensureJournal({
-    journalId,
-    title,
-    userId: user.id,
-  })
-  const normalizedBlocks = normalizeJournalBlocks(blocks)
-  const supabase = createAdminClient()
-
-  const { error } = await supabase
-    .from('journals')
-    .update({
-      title: nextJournal.title,
-      draft_blocks: normalizedBlocks,
-      has_unsaved_draft: true,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', nextJournal.journalId)
-    .eq('user_id', user.id)
-
-  if (error) {
-    throw new Error(error.message)
-  }
-
-  return {
-    journalId: nextJournal.journalId,
-    blocks: normalizedBlocks,
-  }
-}
-
-export const publishJournal = async ({
-  journalId,
-  title,
-  blocks,
-}: PublishJournalInput) => {
+}: SaveJournalInput) => {
   const user = await requireAuth('/write')
   const nextJournal = await ensureJournal({
     journalId,
@@ -287,26 +246,35 @@ export const publishJournal = async ({
   }
 }
 
-export const discardJournalDraft = async ({
+export const discardJournalSessionChanges = async ({
   journalId,
-  blocks,
+  sessionAssetIds,
 }: {
   journalId: string
-  blocks?: JournalBlock[]
+  sessionAssetIds: string[]
 }) => {
   const user = await requireAuth('/write')
   const journal = await getOwnedJournal({ journalId, userId: user.id })
-  const publishedBlocks = parseJournalBlocks(journal.blocks)
-  const draftBlocks = blocks
-    ? normalizeJournalBlocks(blocks)
-    : parseJournalBlocks(journal.draft_blocks)
-  const publishedAssetIds = getReferencedAssetIds(publishedBlocks)
-  const draftOnlyAssetIds = [...getReferencedAssetIds(draftBlocks)].filter(
-    (assetId) => !publishedAssetIds.has(assetId)
+  const savedBlocks = parseJournalBlocks(journal.blocks)
+  const savedAssetIds = getReferencedAssetIds(savedBlocks)
+  const staleSessionAssetIds = [...new Set(sessionAssetIds)].filter(
+    (assetId) => !savedAssetIds.has(assetId)
   )
 
+  if (!savedBlocks.length) {
+    const allAssetIds = (await getJournalAssets(journalId)).map((asset) => asset.id)
+
+    await deleteJournalAssets({
+      assetIds: allAssetIds,
+      journalId,
+    })
+    await deleteJournalRecord({ journalId, userId: user.id })
+
+    return { discarded: true, deletedJournal: true }
+  }
+
   await deleteJournalAssets({
-    assetIds: draftOnlyAssetIds,
+    assetIds: staleSessionAssetIds,
     journalId,
   })
 
@@ -325,10 +293,7 @@ export const discardJournalDraft = async ({
     throw new Error(error.message)
   }
 
-  return {
-    journalId,
-    blocks: publishedBlocks,
-  }
+  return { discarded: true, deletedJournal: false }
 }
 
 export const deleteJournal = async ({ journalId }: { journalId: string }) => {

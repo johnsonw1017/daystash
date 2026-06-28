@@ -21,13 +21,7 @@ export type ImageJournalBlock = {
 
 export type JournalBlock = TextJournalBlock | ImageJournalBlock
 
-export type SaveJournalDraftInput = {
-  journalId?: string
-  title: string
-  blocks: JournalBlock[]
-}
-
-export type PublishJournalInput = {
+export type SaveJournalInput = {
   journalId?: string
   title: string
   blocks: JournalBlock[]
@@ -50,7 +44,6 @@ export type JournalSummary = {
   slug: string | null
   created_at: string
   updated_at: string
-  has_unsaved_draft: boolean
 }
 
 export type JournalListItem = JournalSummary & {
@@ -59,8 +52,6 @@ export type JournalListItem = JournalSummary & {
 
 export type JournalDetail = JournalSummary & {
   blocks: JournalBlock[]
-  draft_blocks: JournalBlock[] | null
-  activeBlocks: JournalBlock[]
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>

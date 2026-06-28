@@ -8,6 +8,7 @@ import {
   editorSessionIdAtom,
   imageDialogStateAtom,
   journalIdAtom,
+  sessionAssetIdsAtom,
   titleAtom,
 } from '@/components/journal-editor/atoms'
 import useJournalEditor from '@/components/journal-editor/hooks/use-journal-editor'
@@ -31,6 +32,7 @@ const useImageDialog = () => {
   const [dialogState, setDialogState] = useAtom(imageDialogStateAtom)
   const [editorSessionId] = useAtom(editorSessionIdAtom)
   const [journalId, setJournalId] = useAtom(journalIdAtom)
+  const [, setSessionAssetIds] = useAtom(sessionAssetIdsAtom)
   const [title] = useAtom(titleAtom)
   const { appendImagesToBlock, insertImagesBelow } = useJournalEditor()
   const [isCreatingMobileSession, setIsCreatingMobileSession] = useState(false)
@@ -146,6 +148,10 @@ const useImageDialog = () => {
       })
 
       setJournalId(registeredAssets.journalId)
+      setSessionAssetIds((currentAssetIds) => [
+        ...currentAssetIds,
+        ...registeredAssets.assets.map((asset) => asset.assetId),
+      ])
 
       insertImagesBelow(insertBelowBlockId, registeredAssets.assets)
 
@@ -215,6 +221,10 @@ const useImageDialog = () => {
         })
 
         setJournalId(registeredAssets.journalId)
+        setSessionAssetIds((currentAssetIds) => [
+          ...currentAssetIds,
+          ...registeredAssets.assets.map((asset) => asset.assetId),
+        ])
 
         const nextImages = registeredAssets.assets
 
@@ -259,6 +269,7 @@ const useImageDialog = () => {
     insertImagesBelow,
     journalId,
     setJournalId,
+    setSessionAssetIds,
     title,
     updateImageUploadContext,
   ])
