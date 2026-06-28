@@ -12,19 +12,17 @@ import { createAdminClient } from '@/lib/supabase/server'
 
 type OwnedJournalRow = {
   id: string
-  title: string | null
   blocks: unknown
-  draft_blocks: unknown
-  has_unsaved_draft: boolean
 }
 
 type JournalAssetRow = {
   id: string
+  cloudinary_public_id: string
   width: number
   height: number
 }
 
-const getOwnedJournal = async ({
+const ensureOwnedJournal = async ({
   journalId,
   userId,
 }: {
@@ -34,7 +32,33 @@ const getOwnedJournal = async ({
   const supabase = createAdminClient()
   const { data, error } = await supabase
     .from('journals')
-    .select('id, title, blocks, draft_blocks, has_unsaved_draft')
+    .select('id')
+    .eq('id', journalId)
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  if (!data) {
+    throw new Error('Journal not found')
+  }
+
+  return data
+}
+
+const getOwnedJournalBlocks = async ({
+  journalId,
+  userId,
+}: {
+  journalId: string
+  userId: string
+}) => {
+  const supabase = createAdminClient()
+  const { data, error } = await supabase
+    .from('journals')
+    .select('id, blocks')
     .eq('id', journalId)
     .eq('user_id', userId)
     .maybeSingle()
@@ -82,7 +106,7 @@ const ensureJournal = async ({
     }
   }
 
-  await getOwnedJournal({ journalId, userId })
+  await ensureOwnedJournal({ journalId, userId })
 
   return {
     journalId,
@@ -170,6 +194,7 @@ export const registerJournalAssets = async ({
     .from('journal_assets')
     .insert(
       assets.map((asset) => ({
+        id: crypto.randomUUID(),
         journal_id: nextJournal.journalId,
         user_id: user.id,
         cloudinary_public_id: asset.publicId,
@@ -183,10 +208,6 @@ export const registerJournalAssets = async ({
     throw new Error(error.message)
   }
 
-  const altTextByPublicId = new Map(
-    assets.map((asset) => [asset.publicId, asset.altText?.trim() || null])
-  )
-
   return {
     journalId: nextJournal.journalId,
     assets: (data ?? []).map((asset) => ({
@@ -194,7 +215,7 @@ export const registerJournalAssets = async ({
       publicId: asset.cloudinary_public_id,
       width: asset.width,
       height: asset.height,
-      altText: altTextByPublicId.get(asset.cloudinary_public_id) ?? null,
+      altText: null,
     })),
   }
 }
@@ -254,7 +275,7 @@ export const discardJournalSessionChanges = async ({
   sessionAssetIds: string[]
 }) => {
   const user = await requireAuth('/write')
-  const journal = await getOwnedJournal({ journalId, userId: user.id })
+  const journal = await getOwnedJournalBlocks({ journalId, userId: user.id })
   const savedBlocks = parseJournalBlocks(journal.blocks)
   const savedAssetIds = getReferencedAssetIds(savedBlocks)
   const staleSessionAssetIds = [...new Set(sessionAssetIds)].filter(
@@ -298,7 +319,7 @@ export const discardJournalSessionChanges = async ({
 
 export const deleteJournal = async ({ journalId }: { journalId: string }) => {
   const user = await requireAuth('/dashboard')
-  await getOwnedJournal({ journalId, userId: user.id })
+  await ensureOwnedJournal({ journalId, userId: user.id })
 
   const supabase = createAdminClient()
   const { error } = await supabase

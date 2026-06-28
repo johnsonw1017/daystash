@@ -9,7 +9,6 @@ import { createServerSideClient } from '@/lib/supabase/server'
 type SessionImageRow = StagedMobileUploadImage & {
   consumed_at: string | null
   cloudinary_public_id: string
-  alt_text: string | null
   position: number
 }
 
@@ -43,9 +42,7 @@ export const POST = async (request: Request) => {
       .update({ consumed_at: consumedAt })
       .eq('session_id', session.id)
       .is('consumed_at', null)
-      .select(
-        'id, cloudinary_public_id, width, height, alt_text, position, created_at, consumed_at'
-      )
+      .select('id, cloudinary_public_id, width, height, position, created_at, consumed_at')
       .order('position', { ascending: true })
 
     if (rowsError) {
@@ -64,7 +61,6 @@ export const POST = async (request: Request) => {
         publicId: image.cloudinary_public_id,
         width: image.width,
         height: image.height,
-        altText: image.alt_text,
         created_at: image.created_at,
       })),
     })

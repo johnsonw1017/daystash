@@ -238,7 +238,6 @@ const useImageDialog = () => {
               publicId: image.publicId,
               width: image.width,
               height: image.height,
-              altText: image.altText,
             })),
           })
         } catch {
