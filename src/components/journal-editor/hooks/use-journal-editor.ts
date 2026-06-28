@@ -41,7 +41,7 @@ const useJournalEditor = () => {
     pendingTextSelectionAtom
   )
   const [savedBlocks, setSavedBlocks] = useAtom(savedBlocksAtom)
-  const [sessionAssetIds] = useAtom(sessionAssetIdsAtom)
+  const [sessionAssetIds, setSessionAssetIds] = useAtom(sessionAssetIdsAtom)
   const [textAreaRefs] = useAtom(textAreaRefsAtom)
   const setTextAreaRefs = useSetAtom(textAreaRefsAtom)
   const [title, setTitle] = useAtom(titleAtom)
@@ -49,6 +49,7 @@ const useJournalEditor = () => {
   const latestIsDirtyRef = useRef(false)
   const latestSessionAssetIdsRef = useRef<string[]>([])
   const cleanupSentRef = useRef(false)
+  const isSavingRef = useRef(false)
 
   const normalizedBlocks = normalizeEditorBlocks(blocks)
   const isDirty =
@@ -67,11 +68,17 @@ const useJournalEditor = () => {
     }) => {
       if (nextJournalId) {
         setJournalId(nextJournalId)
+        latestJournalIdRef.current = nextJournalId
       }
 
       setBlocks(nextBlocks)
       setSavedBlocks(nextBlocks)
       setLastSavedTitle(title)
+      setSessionAssetIds([])
+      latestIsDirtyRef.current = false
+      latestSessionAssetIdsRef.current = []
+      cleanupSentRef.current = false
+      isSavingRef.current = false
 
       void queryClient.invalidateQueries({ queryKey: journalQueryKeys.all })
       toast.success(successMessage)
@@ -82,6 +89,7 @@ const useJournalEditor = () => {
       setJournalId,
       setLastSavedTitle,
       setSavedBlocks,
+      setSessionAssetIds,
       title,
     ]
   )
@@ -114,6 +122,7 @@ const useJournalEditor = () => {
 
   const discardSessionChanges = useCallback(() => {
     if (cleanupSentRef.current) return
+    if (isSavingRef.current) return
 
     const nextJournalId = latestJournalIdRef.current
     const nextSessionAssetIds = latestSessionAssetIdsRef.current
@@ -454,6 +463,7 @@ const useJournalEditor = () => {
         successMessage: editorConfig.successMessage,
       }),
     onError: () => {
+      isSavingRef.current = false
       handleMutationError({
         message: 'Could not save changes. Try again.',
         toastMessage: 'Could not save journal',
@@ -461,7 +471,11 @@ const useJournalEditor = () => {
     },
   })
 
-  const save = () => runMutation(() => saveMutation.mutate())
+  const save = () =>
+    runMutation(() => {
+      isSavingRef.current = true
+      saveMutation.mutate()
+    })
 
   return {
     appendImagesToBlock,

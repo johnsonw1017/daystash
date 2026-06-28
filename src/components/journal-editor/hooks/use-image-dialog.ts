@@ -40,6 +40,25 @@ const useImageDialog = () => {
   const consumeInFlightRef = useRef(false)
   const pollingStoppedRef = useRef(false)
 
+  const releaseStagedImages = useCallback(async (imageIds: string[], token: string) => {
+    if (!imageIds.length) return
+
+    const response = await fetch('/api/mobile-upload/release', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        token,
+        imageIds,
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error('Could not release staged images')
+    }
+  }, [])
+
   const updateImageUploadContext = useCallback(
     (updater: (context: ImageDialogState) => ImageDialogState) => {
       setDialogState((currentState) => {
@@ -209,16 +228,26 @@ const useImageDialog = () => {
 
         if (!payload.images.length) return
 
-        const registeredAssets = await registerJournalAssets({
-          journalId,
-          title,
-          assets: payload.images.map((image) => ({
-            publicId: image.publicId,
-            width: image.width,
-            height: image.height,
-            altText: image.altText,
-          })),
-        })
+        let registeredAssets: Awaited<ReturnType<typeof registerJournalAssets>>
+
+        try {
+          registeredAssets = await registerJournalAssets({
+            journalId,
+            title,
+            assets: payload.images.map((image) => ({
+              publicId: image.publicId,
+              width: image.width,
+              height: image.height,
+              altText: image.altText,
+            })),
+          })
+        } catch {
+          await releaseStagedImages(
+            payload.images.map((image) => image.id),
+            token
+          )
+          throw new Error('Could not register staged images')
+        }
 
         setJournalId(registeredAssets.journalId)
         setSessionAssetIds((currentAssetIds) => [
@@ -272,6 +301,7 @@ const useImageDialog = () => {
     setSessionAssetIds,
     title,
     updateImageUploadContext,
+    releaseStagedImages,
   ])
 
   return {

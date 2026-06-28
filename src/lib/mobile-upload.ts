@@ -21,6 +21,11 @@ export const mobileUploadConsumeRequestSchema = z.object({
   token: z.string().min(1),
 })
 
+export const mobileUploadReleaseRequestSchema = z.object({
+  token: z.string().min(1),
+  imageIds: z.array(z.string().min(1)).min(1),
+})
+
 export type StagedMobileUploadImage = {
   id: string
   publicId: string
