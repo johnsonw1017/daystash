@@ -10,10 +10,10 @@ export const mobileUploadSessionRequestSchema = z.object({
 export const mobileUploadCompleteRequestSchema = z.object({
   token: z.string().min(1),
   image: z.object({
-    cloudinary_public_id: z.string().min(1),
+    publicId: z.string().min(1),
     width: z.number().int().positive(),
     height: z.number().int().positive(),
-    alt_text: z.string().trim().min(1).nullable().optional(),
+    altText: z.string().trim().min(1).nullable().optional(),
   }),
 })
 
@@ -21,12 +21,16 @@ export const mobileUploadConsumeRequestSchema = z.object({
   token: z.string().min(1),
 })
 
+export const mobileUploadReleaseRequestSchema = z.object({
+  token: z.string().min(1),
+  imageIds: z.array(z.string().min(1)).min(1),
+})
+
 export type StagedMobileUploadImage = {
   id: string
-  cloudinary_public_id: string
+  publicId: string
   width: number
   height: number
-  alt_text: string | null
-  position: number
+  altText: string | null
   created_at: string
 }

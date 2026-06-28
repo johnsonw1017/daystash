@@ -1,66 +1,36 @@
 import { v4 as uuidv4 } from 'uuid'
-import type {
-  ImageJournalBlock,
-  JournalBlock,
-  JournalBlockImage,
-  TextJournalBlock,
+import {
+  normalizeJournalBlocks,
+  type ImageJournalBlock,
+  type JournalBlock,
+  type JournalImageAsset,
+  type TextJournalBlock,
 } from '@/lib/journals'
 
-type NewJournalBlockImage = Pick<
-  JournalBlockImage,
-  'cloudinary_public_id' | 'width' | 'height'
+type NewJournalImageAsset = Pick<
+  JournalImageAsset,
+  'assetId' | 'publicId' | 'width' | 'height'
 > & {
-  id?: string
-  block_id?: string
-  alt_text?: string | null
+  altText?: string | null
 }
 
-export const makeTextBlock = (text = ''): TextJournalBlock => ({
+export const makeTextBlock = (content = ''): TextJournalBlock => ({
   id: uuidv4(),
   type: 'text',
-  position: 0,
-  text_content: text,
+  content,
 })
 
 export const makeImageBlock = (
-  images: NewJournalBlockImage[]
+  images: NewJournalImageAsset[]
 ): ImageJournalBlock => ({
   id: uuidv4(),
   type: 'image',
-  position: 0,
   caption: '',
-  images: images.map((image, imageIndex) => ({
+  images: images.map((image) => ({
     ...image,
-    position: imageIndex,
-    alt_text: image.alt_text ?? null,
+    altText: image.altText ?? null,
   })),
 })
 
-export const normalizeEditorBlocks = (blocks: JournalBlock[]) => {
-  const filtered = blocks
-    .map((block, index) => {
-      if (block.type === 'text') {
-        return {
-          ...block,
-          id: block.id ?? uuidv4(),
-          position: index,
-        }
-      }
-
-      return {
-        ...block,
-        id: block.id ?? uuidv4(),
-        position: index,
-        images: block.images.map((image, imageIndex) => ({
-          ...image,
-          position: imageIndex,
-        })),
-      }
-    })
-    .filter((block) => (block.type === 'text' ? true : block.images.length > 0))
-
-  return filtered.length ? filtered : [makeTextBlock()]
-}
-
-export const reindexBlocks = (blocks: JournalBlock[]) =>
-  blocks.map((block, index) => ({ ...block, position: index }))
+export const normalizeEditorBlocks = (blocks: JournalBlock[]) =>
+  normalizeJournalBlocks(blocks)

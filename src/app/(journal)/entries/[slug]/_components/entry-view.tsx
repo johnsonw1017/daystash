@@ -58,13 +58,13 @@ const EntryView = ({ slug }: EntryViewProps) => {
         {journal.blocks.map((block) => {
           if (block.type === 'text') {
             return (
-              <p key={block.id ?? `text-${block.position}`} className="whitespace-pre-wrap">
-                {block.text_content}
+              <p key={block.id} className="whitespace-pre-wrap">
+                {block.content}
               </p>
             )
           }
 
-          const key = block.id ?? `image-${block.position}`
+          const key = block.id
 
           return (
             <figure key={key} className="space-y-2">
@@ -74,11 +74,11 @@ const EntryView = ({ slug }: EntryViewProps) => {
                     <CarouselContent>
                       {block.images.map((image) => {
                         return (
-                          <CarouselItem key={image.id ?? image.cloudinary_public_id}>
+                          <CarouselItem key={image.assetId}>
                             <Image
                               loader={cloudinaryLoader}
-                              src={image.cloudinary_public_id}
-                              alt={image.alt_text || 'Journal image'}
+                              src={image.publicId}
+                              alt={image.altText || 'Journal image'}
                               width={image.width}
                               height={image.height}
                               className="h-auto w-full rounded-md object-contain"
@@ -94,8 +94,8 @@ const EntryView = ({ slug }: EntryViewProps) => {
               ) : block.images[0] ? (
                 <Image
                   loader={cloudinaryLoader}
-                  src={block.images[0].cloudinary_public_id}
-                  alt={block.images[0].alt_text || 'Journal image'}
+                  src={block.images[0].publicId}
+                  alt={block.images[0].altText || 'Journal image'}
                   width={block.images[0].width}
                   height={block.images[0].height}
                   className="h-auto w-full rounded-md object-contain"

@@ -4,7 +4,7 @@ import type { RefCallback } from 'react'
 import { useSetAtom } from 'jotai'
 import { GripVertical, ImageIcon, Plus, Type } from 'lucide-react'
 import { imageDialogStateAtom } from '@/components/journal-editor/atoms'
-import useJournalBlocks from '@/components/journal-editor/hooks/use-journal-blocks'
+import useJournalEditor from '@/components/journal-editor/hooks/use-journal-editor'
 import { Button, buttonVariants } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -21,7 +21,7 @@ type BlockMenuProps = {
 
 const BlockMenu = ({ blockId, dragHandleRef }: BlockMenuProps) => {
   const setImageDialogState = useSetAtom(imageDialogStateAtom)
-  const { insertBlockBelow } = useJournalBlocks()
+  const { insertBlockBelow } = useJournalEditor()
 
   return (
     <div className="flex items-center gap-1">

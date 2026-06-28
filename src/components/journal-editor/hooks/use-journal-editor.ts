@@ -1,23 +1,27 @@
 'use client'
 
-import { useCallback, useEffect } from 'react'
-import { useMutation } from '@tanstack/react-query'
+import { useCallback, useEffect, useRef } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAtom, useSetAtom } from 'jotai'
-import { toast } from 'sonner'
-import { deleteJournalImage } from '@/app/(journal)/write/actions'
+import { saveJournal } from '@/app/(journal)/write/actions'
 import {
   blocksAtom,
+  errorMessageAtom,
+  journalEditorConfigAtom,
+  journalIdAtom,
+  lastSavedTitleAtom,
   pendingTextSelectionAtom,
+  savedBlocksAtom,
+  sessionAssetIdsAtom,
   textAreaRefsAtom,
+  titleAtom,
 } from '@/components/journal-editor/atoms'
-import {
-  makeImageBlock,
-  makeTextBlock,
-  reindexBlocks,
-} from '@/components/journal-editor/utils'
+import { makeImageBlock, makeTextBlock, normalizeEditorBlocks } from '@/components/journal-editor/utils'
+import { journalQueryKeys } from '@/hooks/use-journals'
 import type { JournalBlock } from '@/lib/journals'
+import { toast } from 'sonner'
 
-const ensureEditorHasBlock = (blocks: ReturnType<typeof reindexBlocks>) =>
+const ensureEditorHasBlock = (blocks: JournalBlock[]) =>
   blocks.length ? blocks : [makeTextBlock()]
 
 type InsertBlockType = JournalBlock['type']
@@ -26,21 +30,149 @@ type InsertBlockOptions = {
 }
 type MergeTextBlockDirection = 'previous' | 'next'
 
-const useJournalBlocks = () => {
-  const [blocks] = useAtom(blocksAtom)
-  const setBlocks = useSetAtom(blocksAtom)
+const useJournalEditor = () => {
+  const queryClient = useQueryClient()
+  const [blocks, setBlocks] = useAtom(blocksAtom)
+  const [errorMessage, setErrorMessage] = useAtom(errorMessageAtom)
+  const [editorConfig] = useAtom(journalEditorConfigAtom)
+  const [journalId, setJournalId] = useAtom(journalIdAtom)
+  const [lastSavedTitle, setLastSavedTitle] = useAtom(lastSavedTitleAtom)
   const [pendingTextSelection, setPendingTextSelection] = useAtom(
     pendingTextSelectionAtom
   )
+  const [savedBlocks, setSavedBlocks] = useAtom(savedBlocksAtom)
+  const [sessionAssetIds, setSessionAssetIds] = useAtom(sessionAssetIdsAtom)
   const [textAreaRefs] = useAtom(textAreaRefsAtom)
   const setTextAreaRefs = useSetAtom(textAreaRefsAtom)
+  const [title, setTitle] = useAtom(titleAtom)
+  const latestJournalIdRef = useRef(journalId)
+  const latestIsDirtyRef = useRef(false)
+  const latestSessionAssetIdsRef = useRef<string[]>([])
+  const cleanupSentRef = useRef(false)
+  const isSavingRef = useRef(false)
 
-  const deleteImageMutation = useMutation({
-    mutationFn: async (imageId: string) => deleteJournalImage({ imageId }),
-    onError: () => {
-      toast.error('Could not delete image')
+  const normalizedBlocks = normalizeEditorBlocks(blocks)
+  const isDirty =
+    JSON.stringify(normalizedBlocks) !== JSON.stringify(savedBlocks) ||
+    title !== lastSavedTitle
+
+  const applySavedState = useCallback(
+    ({
+      blocks: nextBlocks,
+      nextJournalId,
+      successMessage,
+    }: {
+      blocks: JournalBlock[]
+      nextJournalId?: string
+      successMessage: string
+    }) => {
+      if (nextJournalId) {
+        setJournalId(nextJournalId)
+        latestJournalIdRef.current = nextJournalId
+      }
+
+      setBlocks(nextBlocks)
+      setSavedBlocks(nextBlocks)
+      setLastSavedTitle(title)
+      setSessionAssetIds([])
+      latestIsDirtyRef.current = false
+      latestSessionAssetIdsRef.current = []
+      cleanupSentRef.current = false
+      isSavingRef.current = false
+
+      void queryClient.invalidateQueries({ queryKey: journalQueryKeys.all })
+      toast.success(successMessage)
     },
-  })
+    [
+      queryClient,
+      setBlocks,
+      setJournalId,
+      setLastSavedTitle,
+      setSavedBlocks,
+      setSessionAssetIds,
+      title,
+    ]
+  )
+
+  const handleMutationError = useCallback(
+    ({
+      message,
+      toastMessage,
+    }: {
+      message: string
+      toastMessage: string
+    }) => {
+      setErrorMessage(message)
+      toast.error(toastMessage)
+    },
+    [setErrorMessage]
+  )
+
+  const runMutation = useCallback((callback: () => void) => {
+    setErrorMessage('')
+    callback()
+  }, [setErrorMessage])
+
+  useEffect(() => {
+    latestJournalIdRef.current = journalId
+    latestIsDirtyRef.current = isDirty
+    latestSessionAssetIdsRef.current = sessionAssetIds
+    cleanupSentRef.current = false
+  }, [isDirty, journalId, sessionAssetIds])
+
+  const discardSessionChanges = useCallback(() => {
+    if (cleanupSentRef.current) return
+    if (isSavingRef.current) return
+
+    const nextJournalId = latestJournalIdRef.current
+    const nextSessionAssetIds = latestSessionAssetIdsRef.current
+
+    if (!nextJournalId) return
+    if (!latestIsDirtyRef.current && nextSessionAssetIds.length === 0) return
+
+    cleanupSentRef.current = true
+
+    const payload = JSON.stringify({
+      journalId: nextJournalId,
+      sessionAssetIds: nextSessionAssetIds,
+    })
+
+    if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
+      navigator.sendBeacon(
+        '/api/journals/discard-session',
+        new Blob([payload], { type: 'application/json' })
+      )
+      return
+    }
+
+    void fetch('/api/journals/discard-session', {
+      method: 'POST',
+      body: payload,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      keepalive: true,
+    })
+  }, [])
+
+  useEffect(() => {
+    const handlePageHide = () => {
+      discardSessionChanges()
+    }
+
+    window.addEventListener('pagehide', handlePageHide)
+
+    return () => {
+      window.removeEventListener('pagehide', handlePageHide)
+    }
+  }, [discardSessionChanges])
+
+  useEffect(
+    () => () => {
+      discardSessionChanges()
+    },
+    [discardSessionChanges]
+  )
 
   useEffect(() => {
     if (pendingTextSelection === null) return
@@ -100,19 +232,16 @@ const useJournalBlocks = () => {
           blockType !== 'text' &&
           currentBlocks.length === 1 &&
           currentBlocks[0]?.type === 'text' &&
-          currentBlocks[0].text_content.trim().length === 0
-            // Replace the initial empty text placeholder when inserting any non-text block.
+          currentBlocks[0].content.trim().length === 0
             ? []
             : [...currentBlocks]
 
         nextBlocks.splice(blockIndex + 1, 0, nextBlock)
-        return reindexBlocks(nextBlocks)
+        return nextBlocks
       })
 
       if (blockType === 'text') {
-        if (nextBlock.id) {
-          focusTextBlock(nextBlock.id, 0)
-        }
+        focusTextBlock(nextBlock.id, 0)
       }
     },
     [focusTextBlock, setBlocks]
@@ -132,15 +261,15 @@ const useJournalBlocks = () => {
         const nextBlocks =
           currentBlocks.length === 1 &&
           currentBlocks[0]?.type === 'text' &&
-          currentBlocks[0].text_content.trim().length === 0
+          currentBlocks[0].content.trim().length === 0
             ? []
             : [...currentBlocks]
 
         nextBlocks.splice(blockIndex + 1, 0, nextBlock)
-        return reindexBlocks(nextBlocks)
+        return nextBlocks
       })
 
-      return nextBlock.id ?? null
+      return nextBlock.id
     },
     [blocks, setBlocks]
   )
@@ -158,10 +287,9 @@ const useJournalBlocks = () => {
           ...block,
           images: [
             ...block.images,
-            ...images.map((image, imageIndex) => ({
+            ...images.map((image) => ({
               ...image,
-              position: block.images.length + imageIndex,
-              alt_text: image.alt_text ?? null,
+              altText: image.altText ?? null,
             })),
           ],
         }
@@ -181,20 +309,18 @@ const useJournalBlocks = () => {
 
         if (block?.type !== 'text') return currentBlocks
 
-        const before = block.text_content.slice(0, start)
-        const after = block.text_content.slice(end)
+        const before = block.content.slice(0, start)
+        const after = block.content.slice(end)
 
-        return reindexBlocks([
+        return [
           ...currentBlocks.slice(0, blockIndex),
-          { ...block, text_content: before },
-          { ...nextBlock, text_content: after },
+          { ...block, content: before },
+          { ...nextBlock, content: after },
           ...currentBlocks.slice(blockIndex + 1),
-        ])
+        ]
       })
 
-      if (nextBlock.id) {
-        focusTextBlock(nextBlock.id, 0)
-      }
+      focusTextBlock(nextBlock.id, 0)
     },
     [focusTextBlock, setBlocks]
   )
@@ -208,7 +334,7 @@ const useJournalBlocks = () => {
         if (!block || block.type !== 'text') return currentBlocks
 
         const nextBlocks = [...currentBlocks]
-        nextBlocks[blockIndex] = { ...block, text_content: value }
+        nextBlocks[blockIndex] = { ...block, content: value }
         return nextBlocks
       })
     },
@@ -234,9 +360,7 @@ const useJournalBlocks = () => {
   const removeBlock = useCallback(
     (blockId: string) => {
       setBlocks((currentBlocks) =>
-        ensureEditorHasBlock(
-          reindexBlocks(currentBlocks.filter((block) => block.id !== blockId))
-        )
+        ensureEditorHasBlock(currentBlocks.filter((block) => block.id !== blockId))
       )
     },
     [setBlocks]
@@ -255,31 +379,21 @@ const useJournalBlocks = () => {
           return currentBlocks
         }
 
-        return reindexBlocks([
+        return [
           ...currentBlocks.slice(0, sourceIndex),
           {
             ...sourceBlock,
-            text_content: sourceBlock.text_content + targetBlock.text_content,
+            content: sourceBlock.content + targetBlock.content,
           },
           ...currentBlocks.slice(targetIndex + 1),
-        ])
+        ]
       })
     },
     [setBlocks]
   )
 
   const removeImage = useCallback(
-    async (blockId: string, imageIndex: number) => {
-      const block = blocks.find((candidate) => candidate.id === blockId)
-      if (!block || block.type !== 'image') return
-
-      const imageToRemove = block.images[imageIndex]
-      if (!imageToRemove) return
-
-      if (imageToRemove.id) {
-        await deleteImageMutation.mutateAsync(imageToRemove.id)
-      }
-
+    (blockId: string, imageIndex: number) => {
       setBlocks((currentBlocks) => {
         const currentBlockIndex = currentBlocks.findIndex(
           (candidate) => candidate.id === blockId
@@ -288,18 +402,13 @@ const useJournalBlocks = () => {
 
         if (!currentBlock || currentBlock.type !== 'image') return currentBlocks
 
-        const nextImages = currentBlock.images
-          .filter((_, currentImageIndex) => currentImageIndex !== imageIndex)
-          .map((image, currentImageIndex) => ({
-            ...image,
-            position: currentImageIndex,
-          }))
+        const nextImages = currentBlock.images.filter(
+          (_, currentImageIndex) => currentImageIndex !== imageIndex
+        )
 
         if (!nextImages.length) {
           return ensureEditorHasBlock(
-            reindexBlocks(
-              currentBlocks.filter((candidate) => candidate.id !== blockId)
-            )
+            currentBlocks.filter((candidate) => candidate.id !== blockId)
           )
         }
 
@@ -311,7 +420,7 @@ const useJournalBlocks = () => {
         return nextBlocks
       })
     },
-    [blocks, deleteImageMutation, setBlocks]
+    [setBlocks]
   )
 
   const moveBlock = useCallback(
@@ -334,27 +443,64 @@ const useJournalBlocks = () => {
         if (!movedBlock) return currentBlocks
 
         nextBlocks.splice(toIndex, 0, movedBlock)
-        return reindexBlocks(nextBlocks)
+        return nextBlocks
       })
     },
     [setBlocks]
   )
 
+  const saveMutation = useMutation({
+    mutationFn: async () =>
+      saveJournal({
+        journalId,
+        title,
+        blocks: normalizedBlocks,
+      }),
+    onSuccess: (response) =>
+      applySavedState({
+        blocks: response.blocks,
+        nextJournalId: response.journalId,
+        successMessage: editorConfig.successMessage,
+      }),
+    onError: () => {
+      isSavingRef.current = false
+      handleMutationError({
+        message: 'Could not save changes. Try again.',
+        toastMessage: 'Could not save journal',
+      })
+    },
+  })
+
+  const save = () =>
+    runMutation(() => {
+      isSavingRef.current = true
+      saveMutation.mutate()
+    })
+
   return {
     appendImagesToBlock,
     blocks,
+    errorMessage,
+    focusTextBlock,
+    headerActions: editorConfig.headerActions,
     insertBlockBelow,
     insertImagesBelow,
-    focusTextBlock,
+    isDirty,
+    isEditMode: editorConfig.isEditMode ?? false,
+    isSaving: saveMutation.isPending,
     mergeTextBlock,
     moveBlock,
+    save,
     removeBlock,
     removeImage,
     setTextareaRef,
+    setTitle,
     splitTextBlock,
+    title,
     updateImageCaption,
     updateTextBlock,
+    viewHref: editorConfig.viewHref,
   }
 }
 
-export default useJournalBlocks
+export default useJournalEditor

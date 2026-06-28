@@ -1,9 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import useJournalHeader from '@/components/journal-editor/hooks/use-journal-header'
+import useJournalEditor from '@/components/journal-editor/hooks/use-journal-editor'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -17,7 +16,7 @@ const JournalHeader = () => {
     setTitle,
     title,
     viewHref,
-  } = useJournalHeader()
+  } = useJournalEditor()
 
   return (
     <div className="flex flex-col gap-4">
@@ -36,12 +35,11 @@ const JournalHeader = () => {
               </Button>
             )}
             <Button type="button" onClick={save} disabled={isSaving}>
-              {isSaving ? 'Saving...' : isEditMode ? 'Save changes' : 'Save'}
+              {isSaving ? 'Saving...' : 'Save'}
             </Button>
             {headerActions}
           </div>
         </div>
-        {isEditMode && <Badge variant="secondary">Editing</Badge>}
       </div>
 
       {errorMessage && (

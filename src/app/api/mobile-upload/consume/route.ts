@@ -8,6 +8,9 @@ import { createServerSideClient } from '@/lib/supabase/server'
 
 type SessionImageRow = StagedMobileUploadImage & {
   consumed_at: string | null
+  cloudinary_public_id: string
+  alt_text: string | null
+  position: number
 }
 
 export const POST = async (request: Request) => {
@@ -58,11 +61,10 @@ export const POST = async (request: Request) => {
     return NextResponse.json({
       images: images.map((image) => ({
         id: image.id,
-        cloudinary_public_id: image.cloudinary_public_id,
+        publicId: image.cloudinary_public_id,
         width: image.width,
         height: image.height,
-        alt_text: image.alt_text,
-        position: image.position,
+        altText: image.alt_text,
         created_at: image.created_at,
       })),
     })

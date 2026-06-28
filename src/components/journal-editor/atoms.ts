@@ -15,6 +15,8 @@ import {
 export const blocksAtom = atom<JournalBlock[]>([])
 export const errorMessageAtom = atom('')
 export const journalIdAtom = atom<string | undefined>(undefined)
+export const savedBlocksAtom = atom<JournalBlock[]>([])
+export const sessionAssetIdsAtom = atom<string[]>([])
 export const journalEditorConfigAtom = atom<JournalEditorConfig>({
   headerActions: undefined,
   isEditMode: false,
@@ -28,6 +30,7 @@ export const pendingTextSelectionAtom = atom<{
 } | null>(null)
 export const textAreaRefsAtom = atom<Record<string, HTMLTextAreaElement | null>>({})
 export const titleAtom = atom('')
+export const lastSavedTitleAtom = atom('')
 export const editorSessionIdAtom = atom('')
 
 const initialImageDialogState: ImageDialogState = {
@@ -61,11 +64,10 @@ export const createJournalBlocksStore = ({
   viewHref,
 }: CreateJournalBlocksStoreParams): Store => {
   const store = createStore()
-
-  store.set(
-    blocksAtom,
+  const nextBlocks =
     initialBlocks?.length ? normalizeEditorBlocks(initialBlocks) : [makeTextBlock()]
-  )
+
+  store.set(blocksAtom, nextBlocks)
   store.set(errorMessageAtom, '')
   store.set(journalEditorConfigAtom, {
     headerActions,
@@ -74,7 +76,10 @@ export const createJournalBlocksStore = ({
     viewHref,
   })
   store.set(journalIdAtom, initialJournalId)
+  store.set(lastSavedTitleAtom, initialTitle)
   store.set(pendingTextSelectionAtom, null)
+  store.set(savedBlocksAtom, nextBlocks)
+  store.set(sessionAssetIdsAtom, [])
   store.set(textAreaRefsAtom, {})
   store.set(imageDialogStateAtom, initialImageDialogState)
   store.set(editorSessionIdAtom, crypto.randomUUID())

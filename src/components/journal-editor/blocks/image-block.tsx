@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import type { KeyboardEvent } from 'react'
 import { Trash2 } from 'lucide-react'
-import useJournalBlocks from '@/components/journal-editor/hooks/use-journal-blocks'
+import useJournalEditor from '@/components/journal-editor/hooks/use-journal-editor'
 import type { ImageJournalBlock } from '@/components/journal-editor/types'
 import { Button } from '@/components/ui/button'
 import {
@@ -61,7 +61,7 @@ const ImageItem = ({
 }
 
 const ImageBlock = ({ block, blockId }: ImageBlockProps) => {
-  const { insertBlockBelow, removeImage, updateImageCaption } = useJournalBlocks()
+  const { insertBlockBelow, removeImage, updateImageCaption } = useJournalEditor()
 
   const handleCaptionKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -77,10 +77,10 @@ const ImageBlock = ({ block, blockId }: ImageBlockProps) => {
           <Carousel opts={{ loop: false }}>
             <CarouselContent>
               {block.images.map((image, imageIndex) => (
-                <CarouselItem key={image.id ?? image.cloudinary_public_id}>
+                <CarouselItem key={image.assetId}>
                   <ImageItem
-                    alt={image.alt_text || 'Journal image'}
-                    publicId={image.cloudinary_public_id}
+                    alt={image.altText || 'Journal image'}
+                    publicId={image.publicId}
                     width={image.width}
                     height={image.height}
                     onRemove={() => removeImage(blockId, imageIndex)}
@@ -94,8 +94,8 @@ const ImageBlock = ({ block, blockId }: ImageBlockProps) => {
         </div>
       ) : block.images[0] ? (
         <ImageItem
-          alt={block.images[0].alt_text || 'Journal image'}
-          publicId={block.images[0].cloudinary_public_id}
+          alt={block.images[0].altText || 'Journal image'}
+          publicId={block.images[0].publicId}
           width={block.images[0].width}
           height={block.images[0].height}
           onRemove={() => removeImage(blockId, 0)}

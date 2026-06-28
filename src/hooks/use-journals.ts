@@ -1,7 +1,8 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import type { JournalBlock, JournalDetail, JournalListItem } from '@/lib/journals'
+import type { JournalDetail, JournalListItem } from '@/lib/journals'
+import { getJournalExcerpt, parseJournalBlocks } from '@/lib/journals'
 import supabase from '@/lib/supabase/client'
 
 export const journalQueryKeys = {
@@ -23,6 +24,41 @@ const getCurrentUserId = async () => {
   return user?.id ?? null
 }
 
+type JournalSummaryRow = {
+  id: string
+  title: string | null
+  slug: string | null
+  created_at: string
+  updated_at: string
+  blocks: unknown
+}
+
+const mapJournalSummaryRow = (journal: JournalSummaryRow): JournalListItem => {
+  const blocks = parseJournalBlocks(journal.blocks)
+
+  return {
+    id: journal.id,
+    title: journal.title,
+    slug: journal.slug,
+    created_at: journal.created_at,
+    updated_at: journal.updated_at,
+    excerpt: getJournalExcerpt(blocks),
+  }
+}
+
+const mapJournalDetailRow = (journal: JournalSummaryRow): JournalDetail => {
+  const blocks = parseJournalBlocks(journal.blocks)
+
+  return {
+    id: journal.id,
+    title: journal.title,
+    slug: journal.slug,
+    created_at: journal.created_at,
+    updated_at: journal.updated_at,
+    blocks,
+  }
+}
+
 const fetchJournals = async (): Promise<JournalListItem[]> => {
   const userId = await getCurrentUserId()
 
@@ -32,7 +68,7 @@ const fetchJournals = async (): Promise<JournalListItem[]> => {
 
   const { data, error } = await supabase
     .from('journals')
-    .select('id, title, slug, created_at, updated_at')
+    .select('id, title, slug, created_at, updated_at, blocks')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
 
@@ -40,36 +76,7 @@ const fetchJournals = async (): Promise<JournalListItem[]> => {
     throw new Error(error.message)
   }
 
-  const journals = data ?? []
-  const journalIds = journals.map((journal) => journal.id)
-
-  if (!journalIds.length) {
-    return []
-  }
-
-  const { data: blocks, error: blocksError } = await supabase
-    .from('journal_blocks')
-    .select('journal_id, text_content, position')
-    .in('journal_id', journalIds)
-    .eq('type', 'text')
-    .order('position', { ascending: true })
-
-  if (blocksError) {
-    throw new Error(blocksError.message)
-  }
-
-  const firstParagraphByJournalId = new Map<string, string>()
-  for (const block of blocks ?? []) {
-    if (!firstParagraphByJournalId.has(block.journal_id)) {
-      firstParagraphByJournalId.set(block.journal_id, block.text_content ?? '')
-    }
-  }
-
-  return journals.map((journal) => ({
-    ...journal,
-    excerpt:
-      firstParagraphByJournalId.get(journal.id)?.trim() || 'No journal text yet.',
-  }))
+  return (data ?? []).map((journal) => mapJournalSummaryRow(journal as JournalSummaryRow))
 }
 
 const fetchJournalBySlug = async (slug: string): Promise<JournalDetail | null> => {
@@ -79,81 +86,33 @@ const fetchJournalBySlug = async (slug: string): Promise<JournalDetail | null> =
     return null
   }
 
-  const { data: journal, error: journalError } = await supabase
+  const { data: journal, error } = await supabase
     .from('journals')
-    .select('id, title, slug, created_at, updated_at')
+    .select('id, title, slug, created_at, updated_at, blocks')
     .eq('user_id', userId)
     .eq('slug', slug)
     .maybeSingle()
 
-  if (journalError) {
-    throw new Error(journalError.message)
+  if (error) {
+    throw new Error(error.message)
   }
 
   if (!journal) {
     return null
   }
 
-  const { data: blocks, error: blocksError } = await supabase
-    .from('journal_blocks')
-    .select(
-      'id, type, position, text_content, caption, journal_block_images(id, block_id, cloudinary_public_id, position, alt_text, width, height)'
-    )
-    .eq('journal_id', journal.id)
-    .order('position', { ascending: true })
-
-  if (blocksError) {
-    throw new Error(blocksError.message)
-  }
-
-  const normalizedBlocks: JournalBlock[] = (blocks ?? []).map((block) => {
-    if (block.type === 'image') {
-      const images = (block.journal_block_images ?? [])
-        .sort((a, b) => a.position - b.position)
-        .map((image) => ({
-          id: image.id,
-          block_id: image.block_id,
-          cloudinary_public_id: image.cloudinary_public_id,
-          position: image.position,
-          alt_text: image.alt_text,
-          width: image.width,
-          height: image.height,
-        }))
-
-      return {
-        id: block.id,
-        type: 'image',
-        position: block.position,
-        caption: block.caption,
-        images,
-      }
-    }
-
-    return {
-      id: block.id,
-      type: 'text',
-      position: block.position,
-      text_content: block.text_content ?? '',
-    }
-  })
-
-  return {
-    ...journal,
-    blocks: normalizedBlocks,
-  }
+  return mapJournalDetailRow(journal as JournalSummaryRow)
 }
 
-export const useJournals = () => {
-  return useQuery({
+export const useJournals = () =>
+  useQuery({
     queryKey: journalQueryKeys.list(),
     queryFn: fetchJournals,
   })
-}
 
-export const useJournalBySlug = (slug?: string) => {
-  return useQuery({
+export const useJournalBySlug = (slug?: string) =>
+  useQuery({
     queryKey: journalQueryKeys.bySlug(slug ?? ''),
     queryFn: async () => fetchJournalBySlug(slug ?? ''),
     enabled: Boolean(slug),
   })
-}

@@ -3,11 +3,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAtom } from 'jotai'
 import { toast } from 'sonner'
+import { registerJournalAssets } from '@/app/(journal)/write/actions'
 import {
   editorSessionIdAtom,
   imageDialogStateAtom,
+  journalIdAtom,
+  sessionAssetIdsAtom,
+  titleAtom,
 } from '@/components/journal-editor/atoms'
-import useJournalBlocks from '@/components/journal-editor/hooks/use-journal-blocks'
+import useJournalEditor from '@/components/journal-editor/hooks/use-journal-editor'
 import type { ImageDialogState } from '@/components/journal-editor/types'
 import { uploadImagesToCloudinary } from '@/lib/image-upload'
 import type { StagedMobileUploadImage } from '@/lib/mobile-upload'
@@ -27,11 +31,33 @@ const closedImageDialogState: ImageDialogState = {
 const useImageDialog = () => {
   const [dialogState, setDialogState] = useAtom(imageDialogStateAtom)
   const [editorSessionId] = useAtom(editorSessionIdAtom)
-  const { appendImagesToBlock, insertImagesBelow } = useJournalBlocks()
+  const [journalId, setJournalId] = useAtom(journalIdAtom)
+  const [, setSessionAssetIds] = useAtom(sessionAssetIdsAtom)
+  const [title] = useAtom(titleAtom)
+  const { appendImagesToBlock, insertImagesBelow } = useJournalEditor()
   const [isCreatingMobileSession, setIsCreatingMobileSession] = useState(false)
   const [isUploadingImages, setIsUploadingImages] = useState(false)
   const consumeInFlightRef = useRef(false)
   const pollingStoppedRef = useRef(false)
+
+  const releaseStagedImages = useCallback(async (imageIds: string[], token: string) => {
+    if (!imageIds.length) return
+
+    const response = await fetch('/api/mobile-upload/release', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        token,
+        imageIds,
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error('Could not release staged images')
+    }
+  }, [])
 
   const updateImageUploadContext = useCallback(
     (updater: (context: ImageDialogState) => ImageDialogState) => {
@@ -130,8 +156,23 @@ const useImageDialog = () => {
 
     try {
       const uploadedImages = await uploadImagesToCloudinary(pendingFiles, user.id)
+      const registeredAssets = await registerJournalAssets({
+        journalId,
+        title,
+        assets: uploadedImages.map((image) => ({
+          publicId: image.publicId,
+          width: image.width,
+          height: image.height,
+        })),
+      })
 
-      insertImagesBelow(insertBelowBlockId, uploadedImages)
+      setJournalId(registeredAssets.journalId)
+      setSessionAssetIds((currentAssetIds) => [
+        ...currentAssetIds,
+        ...registeredAssets.assets.map((asset) => asset.assetId),
+      ])
+
+      insertImagesBelow(insertBelowBlockId, registeredAssets.assets)
 
       closeDialog()
       toast.success('Image block added')
@@ -187,12 +228,34 @@ const useImageDialog = () => {
 
         if (!payload.images.length) return
 
-        const nextImages = payload.images.map((image) => ({
-          cloudinary_public_id: image.cloudinary_public_id,
-          width: image.width,
-          height: image.height,
-          alt_text: image.alt_text,
-        }))
+        let registeredAssets: Awaited<ReturnType<typeof registerJournalAssets>>
+
+        try {
+          registeredAssets = await registerJournalAssets({
+            journalId,
+            title,
+            assets: payload.images.map((image) => ({
+              publicId: image.publicId,
+              width: image.width,
+              height: image.height,
+              altText: image.altText,
+            })),
+          })
+        } catch {
+          await releaseStagedImages(
+            payload.images.map((image) => image.id),
+            token
+          )
+          throw new Error('Could not register staged images')
+        }
+
+        setJournalId(registeredAssets.journalId)
+        setSessionAssetIds((currentAssetIds) => [
+          ...currentAssetIds,
+          ...registeredAssets.assets.map((asset) => asset.assetId),
+        ])
+
+        const nextImages = registeredAssets.assets
 
         const targetBlockId = dialogState.mobileTargetBlockId
 
@@ -233,7 +296,12 @@ const useImageDialog = () => {
     appendImagesToBlock,
     dialogState,
     insertImagesBelow,
+    journalId,
+    setJournalId,
+    setSessionAssetIds,
+    title,
     updateImageUploadContext,
+    releaseStagedImages,
   ])
 
   return {

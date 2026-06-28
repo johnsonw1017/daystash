@@ -4,7 +4,7 @@ import imageCompression from 'browser-image-compression'
 import { v4 as uuidv4 } from 'uuid'
 
 type UploadResult = {
-  cloudinary_public_id: string
+  publicId: string
   width: number
   height: number
 }
@@ -78,7 +78,7 @@ export const uploadImagesToCloudinary = async (
         : await getImageDimensions(compressed)
 
     return {
-      cloudinary_public_id: data.public_id,
+      publicId: data.public_id,
       width: dimensions.width,
       height: dimensions.height,
     }
