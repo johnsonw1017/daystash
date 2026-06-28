@@ -1,4 +1,4 @@
-import MobileUploadClient from '@/app/mobile-upload/[token]/_components/mobile-upload-client'
+import MobileUploadClient from '@/app/(journal)/mobile-upload/[token]/_components/mobile-upload-client'
 import { getMobileUploadSessionByToken } from '@/lib/mobile-upload-server'
 
 export const dynamic = 'force-dynamic'
