@@ -34,7 +34,6 @@ export type RegisterJournalAssetsInput = {
     publicId: string
     width: number
     height: number
-    altText?: string | null
   }>
 }
 

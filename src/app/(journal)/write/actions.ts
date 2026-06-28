@@ -215,9 +215,7 @@ export const registerJournalAssets = async ({
       publicId: asset.cloudinary_public_id,
       width: asset.width,
       height: asset.height,
-      altText:
-        assets.find((uploadedAsset) => uploadedAsset.publicId === asset.cloudinary_public_id)
-          ?.altText?.trim() || null,
+      altText: null,
     })),
   }
 }

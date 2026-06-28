@@ -13,7 +13,6 @@ export const mobileUploadCompleteRequestSchema = z.object({
     publicId: z.string().min(1),
     width: z.number().int().positive(),
     height: z.number().int().positive(),
-    altText: z.string().trim().min(1).nullable().optional(),
   }),
 })
 
@@ -31,6 +30,5 @@ export type StagedMobileUploadImage = {
   publicId: string
   width: number
   height: number
-  altText: string | null
   created_at: string
 }

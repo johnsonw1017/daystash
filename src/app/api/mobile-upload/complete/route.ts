@@ -39,7 +39,6 @@ export const POST = async (request: Request) => {
         cloudinary_public_id: payload.data.image.publicId,
         width: payload.data.image.width,
         height: payload.data.image.height,
-        alt_text: payload.data.image.altText ?? null,
         position: ((lastImage as { position: number } | null)?.position ?? -1) + 1,
       })
 
