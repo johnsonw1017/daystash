@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { useJournalBySlug } from '@/hooks/use-journals'
 import { cloudinaryLoader } from '@/lib/cloudinary'
+import { getCarouselViewportAspectRatio } from '@/lib/journal-image-block'
 
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
   month: 'short',
@@ -65,6 +66,7 @@ const EntryView = ({ slug }: EntryViewProps) => {
           }
 
           const key = block.id
+          const carouselAspectRatio = getCarouselViewportAspectRatio(block.images)
 
           return (
             <figure key={key} className="space-y-2">
@@ -75,14 +77,19 @@ const EntryView = ({ slug }: EntryViewProps) => {
                       {block.images.map((image) => {
                         return (
                           <CarouselItem key={image.assetId}>
-                            <Image
-                              loader={cloudinaryLoader}
-                              src={image.publicId}
-                              alt={image.altText || 'Journal image'}
-                              width={image.width}
-                              height={image.height}
-                              className="h-auto w-full rounded-md object-contain"
-                            />
+                            <div
+                              className="bg-muted/20 flex items-center justify-center overflow-hidden rounded-md"
+                              style={{ aspectRatio: `${carouselAspectRatio}` }}
+                            >
+                              <Image
+                                loader={cloudinaryLoader}
+                                src={image.publicId}
+                                alt={image.altText || 'Journal image'}
+                                width={image.width}
+                                height={image.height}
+                                className="max-h-full w-auto max-w-full object-contain"
+                              />
+                            </div>
                           </CarouselItem>
                         )
                       })}

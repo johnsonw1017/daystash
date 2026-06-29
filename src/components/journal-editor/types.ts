@@ -29,7 +29,7 @@ export type ResolveBlockProps = {
 export type ImageDialogState = {
   isOpen: boolean
   insertBelowBlockId: string
-  mobileTargetBlockId: string | null
+  targetBlockId: string | null
   mobileSession: {
     expiresAt: string
     token: string

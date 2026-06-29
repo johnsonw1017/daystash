@@ -36,7 +36,7 @@ export const editorSessionIdAtom = atom('')
 const initialImageDialogState: ImageDialogState = {
   isOpen: false,
   insertBelowBlockId: '',
-  mobileTargetBlockId: null,
+  targetBlockId: null,
   mobileSession: null,
   mode: 'device',
   pendingFiles: [],
