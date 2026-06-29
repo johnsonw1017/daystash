@@ -423,6 +423,44 @@ const useJournalEditor = () => {
     [setBlocks]
   )
 
+  const moveImage = useCallback(
+    (blockId: string, fromIndex: number, toIndex: number) => {
+      if (fromIndex === toIndex) return
+
+      setBlocks((currentBlocks) => {
+        const currentBlockIndex = currentBlocks.findIndex(
+          (candidate) => candidate.id === blockId
+        )
+        const currentBlock = currentBlocks[currentBlockIndex]
+
+        if (!currentBlock || currentBlock.type !== 'image') return currentBlocks
+        if (
+          fromIndex < 0 ||
+          toIndex < 0 ||
+          fromIndex >= currentBlock.images.length ||
+          toIndex >= currentBlock.images.length
+        ) {
+          return currentBlocks
+        }
+
+        const nextImages = [...currentBlock.images]
+        const [movedImage] = nextImages.splice(fromIndex, 1)
+
+        if (!movedImage) return currentBlocks
+
+        nextImages.splice(toIndex, 0, movedImage)
+
+        const nextBlocks = [...currentBlocks]
+        nextBlocks[currentBlockIndex] = {
+          ...currentBlock,
+          images: nextImages,
+        }
+        return nextBlocks
+      })
+    },
+    [setBlocks]
+  )
+
   const moveBlock = useCallback(
     (fromIndex: number, toIndex: number) => {
       if (fromIndex === toIndex) return
@@ -489,6 +527,7 @@ const useJournalEditor = () => {
     isEditMode: editorConfig.isEditMode ?? false,
     isSaving: saveMutation.isPending,
     mergeTextBlock,
+    moveImage,
     moveBlock,
     save,
     removeBlock,

@@ -14,6 +14,7 @@ import {
 import useJournalEditor from '@/components/journal-editor/hooks/use-journal-editor'
 import type { ImageDialogState } from '@/components/journal-editor/types'
 import { uploadImagesToCloudinary } from '@/lib/image-upload'
+import { MAX_IMAGE_BLOCK_IMAGES } from '@/lib/journal-image-block'
 import type { StagedMobileUploadImage } from '@/lib/mobile-upload'
 import supabase from '@/lib/supabase/client'
 
@@ -22,7 +23,7 @@ const uploadInputId = 'journal-image-upload'
 const closedImageDialogState: ImageDialogState = {
   isOpen: false,
   insertBelowBlockId: '',
-  mobileTargetBlockId: null,
+  targetBlockId: null,
   mobileSession: null,
   mode: 'device',
   pendingFiles: [],
@@ -34,7 +35,7 @@ const useImageDialog = () => {
   const [journalId, setJournalId] = useAtom(journalIdAtom)
   const [, setSessionAssetIds] = useAtom(sessionAssetIdsAtom)
   const [title] = useAtom(titleAtom)
-  const { appendImagesToBlock, insertImagesBelow } = useJournalEditor()
+  const { appendImagesToBlock, blocks, insertImagesBelow } = useJournalEditor()
   const [isCreatingMobileSession, setIsCreatingMobileSession] = useState(false)
   const [isUploadingImages, setIsUploadingImages] = useState(false)
   const consumeInFlightRef = useRef(false)
@@ -76,11 +77,41 @@ const useImageDialog = () => {
     setDialogState(closedImageDialogState)
   }
 
+  const getRemainingImageSlots = useCallback(
+    (context: ImageDialogState) => {
+      if (!context.targetBlockId) {
+        return MAX_IMAGE_BLOCK_IMAGES
+      }
+
+      const targetBlock = blocks.find((block) => block.id === context.targetBlockId)
+
+      if (!targetBlock || targetBlock.type !== 'image') {
+        return MAX_IMAGE_BLOCK_IMAGES
+      }
+
+      return Math.max(0, MAX_IMAGE_BLOCK_IMAGES - targetBlock.images.length)
+    },
+    [blocks]
+  )
+
   const setPendingFiles = (files: File[]) => {
+    const imageFiles = files.filter((file) => file.type.startsWith('image/'))
+
     updateImageUploadContext((context) => ({
       ...context,
-      pendingFiles: files,
+      pendingFiles: imageFiles.slice(0, getRemainingImageSlots(context)),
     }))
+
+    const remainingSlots = getRemainingImageSlots(dialogState)
+
+    if (remainingSlots === 0) {
+      toast.error(`You can only keep ${MAX_IMAGE_BLOCK_IMAGES} images in one carousel`)
+      return
+    }
+
+    if (imageFiles.length > remainingSlots) {
+      toast.error(`Only ${remainingSlots} more image${remainingSlots === 1 ? '' : 's'} can be added`)
+    }
   }
 
   const setUploadMode = async (mode: ImageDialogState['mode']) => {
@@ -139,8 +170,13 @@ const useImageDialog = () => {
     if (!dialogState.isOpen) return
 
     const { insertBelowBlockId, pendingFiles } = dialogState
+    const remainingSlots = getRemainingImageSlots(dialogState)
 
     if (pendingFiles.length === 0) return
+    if (remainingSlots === 0) {
+      toast.error(`You can only keep ${MAX_IMAGE_BLOCK_IMAGES} images in one carousel`)
+      return
+    }
 
     const {
       data: { user },
@@ -155,7 +191,10 @@ const useImageDialog = () => {
     setIsUploadingImages(true)
 
     try {
-      const uploadedImages = await uploadImagesToCloudinary(pendingFiles, user.id)
+      const uploadedImages = await uploadImagesToCloudinary(
+        pendingFiles.slice(0, remainingSlots),
+        user.id
+      )
       const registeredAssets = await registerJournalAssets({
         journalId,
         title,
@@ -172,10 +211,14 @@ const useImageDialog = () => {
         ...registeredAssets.assets.map((asset) => asset.assetId),
       ])
 
-      insertImagesBelow(insertBelowBlockId, registeredAssets.assets)
+      if (dialogState.targetBlockId) {
+        appendImagesToBlock(dialogState.targetBlockId, registeredAssets.assets)
+      } else {
+        insertImagesBelow(insertBelowBlockId, registeredAssets.assets)
+      }
 
       closeDialog()
-      toast.success('Image block added')
+      toast.success(dialogState.targetBlockId ? 'Images added' : 'Image block added')
     } catch {
       toast.error('Image upload failed')
     } finally {
@@ -228,13 +271,28 @@ const useImageDialog = () => {
 
         if (!payload.images.length) return
 
+        const remainingSlots = getRemainingImageSlots(dialogState)
+
+        if (remainingSlots === 0) {
+          await releaseStagedImages(
+            payload.images.map((image) => image.id),
+            token
+          )
+          pollingStoppedRef.current = true
+          toast.error(`You can only keep ${MAX_IMAGE_BLOCK_IMAGES} images in one carousel`)
+          return
+        }
+
+        const imagesToRegister = payload.images.slice(0, remainingSlots)
+        const imagesToRelease = payload.images.slice(remainingSlots)
+
         let registeredAssets: Awaited<ReturnType<typeof registerJournalAssets>>
 
         try {
           registeredAssets = await registerJournalAssets({
             journalId,
             title,
-            assets: payload.images.map((image) => ({
+            assets: imagesToRegister.map((image) => ({
               publicId: image.publicId,
               width: image.width,
               height: image.height,
@@ -242,10 +300,19 @@ const useImageDialog = () => {
           })
         } catch {
           await releaseStagedImages(
-            payload.images.map((image) => image.id),
+            imagesToRegister.map((image) => image.id),
             token
           )
           throw new Error('Could not register staged images')
+        }
+
+        if (imagesToRelease.length > 0) {
+          await releaseStagedImages(
+            imagesToRelease.map((image) => image.id),
+            token
+          )
+          pollingStoppedRef.current = true
+          toast.error(`Only ${remainingSlots} more image${remainingSlots === 1 ? '' : 's'} could be added`)
         }
 
         setJournalId(registeredAssets.journalId)
@@ -256,7 +323,7 @@ const useImageDialog = () => {
 
         const nextImages = registeredAssets.assets
 
-        const targetBlockId = dialogState.mobileTargetBlockId
+        const targetBlockId = dialogState.targetBlockId
 
         if (targetBlockId) {
           appendImagesToBlock(targetBlockId, nextImages)
@@ -272,7 +339,7 @@ const useImageDialog = () => {
 
         updateImageUploadContext((context) => ({
           ...context,
-          mobileTargetBlockId: insertedBlockId,
+          targetBlockId: insertedBlockId,
         }))
       } catch {
         pollingStoppedRef.current = true
@@ -296,6 +363,7 @@ const useImageDialog = () => {
     dialogState,
     insertImagesBelow,
     journalId,
+    getRemainingImageSlots,
     setJournalId,
     setSessionAssetIds,
     title,
@@ -308,6 +376,7 @@ const useImageDialog = () => {
     dialogState,
     isCreatingMobileSession,
     isUploadingImages,
+    remainingImageSlots: getRemainingImageSlots(dialogState),
     setPendingFiles,
     setUploadMode,
     uploadImages,

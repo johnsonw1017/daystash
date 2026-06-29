@@ -59,7 +59,7 @@ const BlockMenu = ({ blockId, dragHandleRef }: BlockMenuProps) => {
               setImageDialogState({
                 isOpen: true,
                 insertBelowBlockId: blockId,
-                mobileTargetBlockId: null,
+                targetBlockId: null,
                 mobileSession: null,
                 mode: 'device',
                 pendingFiles: [],

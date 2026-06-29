@@ -24,6 +24,7 @@ const ImageDialog = () => {
     dialogState,
     isCreatingMobileSession,
     isUploadingImages,
+    remainingImageSlots,
     setPendingFiles,
     setUploadMode,
     uploadImages,
@@ -42,9 +43,13 @@ const ImageDialog = () => {
     <Dialog open onOpenChange={(open) => !open && closeDialog()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add images</DialogTitle>
+          <DialogTitle>
+            {dialogState.targetBlockId ? 'Add images to carousel' : 'Add images'}
+          </DialogTitle>
           <DialogDescription>
-            Add a new image block from this device or stage images from your phone.
+            {dialogState.targetBlockId
+              ? `Add up to ${remainingImageSlots} more image${remainingImageSlots === 1 ? '' : 's'} to this carousel.`
+              : 'Add a new image block from this device or stage images from your phone.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -140,7 +145,11 @@ const ImageDialog = () => {
               <Button
                 type="button"
                 onClick={() => void uploadImages()}
-                disabled={isUploadingImages || dialogState.pendingFiles.length === 0}
+                disabled={
+                  isUploadingImages ||
+                  dialogState.pendingFiles.length === 0 ||
+                  remainingImageSlots === 0
+                }
               >
                 <ImageIcon />
                 {isUploadingImages ? 'Uploading...' : 'Upload images'}
