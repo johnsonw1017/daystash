@@ -77,21 +77,34 @@ const useImageDialog = () => {
     setDialogState(closedImageDialogState)
   }
 
+  const getTargetImageBlock = useCallback(
+    (context: ImageDialogState) => {
+      if (!context.targetBlockId) {
+        return null
+      }
+
+      const targetBlock = blocks.find((block) => block.id === context.targetBlockId)
+
+      return targetBlock?.type === 'image' ? targetBlock : null
+    },
+    [blocks]
+  )
+
   const getRemainingImageSlots = useCallback(
     (context: ImageDialogState) => {
       if (!context.targetBlockId) {
         return MAX_IMAGE_BLOCK_IMAGES
       }
 
-      const targetBlock = blocks.find((block) => block.id === context.targetBlockId)
+      const targetBlock = getTargetImageBlock(context)
 
-      if (!targetBlock || targetBlock.type !== 'image') {
-        return MAX_IMAGE_BLOCK_IMAGES
+      if (!targetBlock) {
+        return 0
       }
 
       return Math.max(0, MAX_IMAGE_BLOCK_IMAGES - targetBlock.images.length)
     },
-    [blocks]
+    [getTargetImageBlock]
   )
 
   const setPendingFiles = (files: File[]) => {
@@ -171,8 +184,15 @@ const useImageDialog = () => {
 
     const { insertBelowBlockId, pendingFiles } = dialogState
     const remainingSlots = getRemainingImageSlots(dialogState)
+    const targetBlock =
+      dialogState.targetBlockId ? getTargetImageBlock(dialogState) : null
 
     if (pendingFiles.length === 0) return
+    if (dialogState.targetBlockId && !targetBlock) {
+      toast.error('This image carousel is no longer available. Please reopen it and try again.')
+      closeDialog()
+      return
+    }
     if (remainingSlots === 0) {
       toast.error(`You can only keep ${MAX_IMAGE_BLOCK_IMAGES} images in one carousel`)
       return
@@ -272,6 +292,18 @@ const useImageDialog = () => {
         if (!payload.images.length) return
 
         const remainingSlots = getRemainingImageSlots(dialogState)
+        const targetBlock =
+          dialogState.targetBlockId ? getTargetImageBlock(dialogState) : null
+
+        if (dialogState.targetBlockId && !targetBlock) {
+          await releaseStagedImages(
+            payload.images.map((image) => image.id),
+            token
+          )
+          pollingStoppedRef.current = true
+          toast.error('This image carousel is no longer available. Please reopen it and try again.')
+          return
+        }
 
         if (remainingSlots === 0) {
           await releaseStagedImages(
@@ -361,6 +393,7 @@ const useImageDialog = () => {
   }, [
     appendImagesToBlock,
     dialogState,
+    getTargetImageBlock,
     insertImagesBelow,
     journalId,
     getRemainingImageSlots,
