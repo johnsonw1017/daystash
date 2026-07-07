@@ -126,11 +126,12 @@ const ImageDialog = () => {
             </Label>
 
             {dialogState.pendingFiles.length > 0 && (
-              <div className="mt-1 space-y-2">
+              <div className="mt-1 max-h-32 space-y-2 overflow-y-auto pr-1">
                 {dialogState.pendingFiles.map((file) => (
                   <div
                     key={`${file.name}-${file.size}`}
-                    className="text-muted-foreground text-sm"
+                    className="bg-muted/40 text-muted-foreground truncate rounded-md px-3 py-2 text-sm"
+                    title={file.name}
                   >
                     {file.name}
                   </div>
