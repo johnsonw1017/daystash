@@ -3,8 +3,10 @@
 import { atom, createStore } from 'jotai'
 import type { Store } from 'jotai/vanilla/store'
 import type {
+  BlockFocusTarget,
   JournalEditorConfig,
   ImageDialogState,
+  PendingBlockFocus,
 } from '@/components/journal-editor/types'
 import type { JournalBlock } from '@/lib/journals'
 import {
@@ -23,12 +25,8 @@ export const journalEditorConfigAtom = atom<JournalEditorConfig>({
   successMessage: 'Journal saved',
   viewHref: undefined,
 })
-export const pendingTextSelectionAtom = atom<{
-  blockId: string
-  start: number
-  end: number
-} | null>(null)
-export const textAreaRefsAtom = atom<Record<string, HTMLTextAreaElement | null>>({})
+export const pendingBlockFocusAtom = atom<PendingBlockFocus | null>(null)
+export const blockFocusTargetsAtom = atom<Record<string, BlockFocusTarget | null>>({})
 export const titleAtom = atom('')
 export const lastSavedTitleAtom = atom('')
 export const editorSessionIdAtom = atom('')
@@ -77,10 +75,10 @@ export const createJournalBlocksStore = ({
   })
   store.set(journalIdAtom, initialJournalId)
   store.set(lastSavedTitleAtom, initialTitle)
-  store.set(pendingTextSelectionAtom, null)
+  store.set(pendingBlockFocusAtom, null)
   store.set(savedBlocksAtom, nextBlocks)
   store.set(sessionAssetIdsAtom, [])
-  store.set(textAreaRefsAtom, {})
+  store.set(blockFocusTargetsAtom, {})
   store.set(imageDialogStateAtom, initialImageDialogState)
   store.set(editorSessionIdAtom, crypto.randomUUID())
   store.set(titleAtom, initialTitle)

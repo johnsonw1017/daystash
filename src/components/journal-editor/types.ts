@@ -21,6 +21,24 @@ export type JournalEditorConfig = Pick<
 export type TextJournalBlock = Extract<JournalBlock, { type: 'text' }>
 export type ImageJournalBlock = Extract<JournalBlock, { type: 'image' }>
 
+export type BlockFocusPlacement = 'start' | 'end'
+
+export type BlockFocusTarget = {
+  element: HTMLInputElement | HTMLTextAreaElement
+  kind: 'input' | 'textarea'
+}
+
+export type PendingBlockFocus =
+  | {
+      blockId: string
+      placement: BlockFocusPlacement
+    }
+  | {
+      blockId: string
+      start: number
+      end: number
+    }
+
 export type ResolveBlockProps = {
   block: JournalBlock
   blockId: string

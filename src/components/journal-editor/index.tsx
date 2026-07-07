@@ -4,7 +4,7 @@ import type { DragEndEvent } from '@dnd-kit/react'
 import { DragDropProvider } from '@dnd-kit/react'
 import { isSortableOperation, useSortable } from '@dnd-kit/react/sortable'
 import { Provider as JotaiProvider } from 'jotai'
-import { useState, type ReactNode } from 'react'
+import { useState, type KeyboardEvent, type ReactNode } from 'react'
 import { createJournalBlocksStore } from '@/components/journal-editor/atoms'
 import BlockMenu from '@/components/journal-editor/blocks/block-menu'
 import ImageDialog from '@/components/journal-editor/image-dialog'
@@ -12,6 +12,7 @@ import ResolveBlock from '@/components/journal-editor/blocks/resolve-block'
 import useJournalEditor from '@/components/journal-editor/hooks/use-journal-editor'
 import JournalHeader from '@/components/journal-editor/journal-header'
 import type { JournalEditorProps } from '@/components/journal-editor/types'
+import { getTextareaLineBoundaryState } from '@/components/journal-editor/utils'
 import { cn } from '@/lib/utils'
 
 const sortableGroupId = 'journal-editor-blocks'
@@ -47,7 +48,8 @@ const SortableBlockRow = ({ blockId, index, children }: SortableBlockRowProps) =
 }
 
 const JournalEditorContent = () => {
-  const { blocks, moveBlock } = useJournalEditor()
+  const { blocks, focusBlock, getNextBlock, getPreviousBlock, moveBlock } =
+    useJournalEditor()
 
   const handleDragEnd = ({ canceled, operation }: DragEndEvent) => {
     if (canceled) return
@@ -71,8 +73,54 @@ const JournalEditorContent = () => {
     moveBlock(fromIndex, toIndex)
   }
 
+  const handleKeyDownCapture = (event: KeyboardEvent<HTMLElement>) => {
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return
+    if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return
+
+    const target = event.target
+    if (!(target instanceof HTMLTextAreaElement || target instanceof HTMLInputElement)) {
+      return
+    }
+
+    const blockId = target.dataset.blockId
+    if (!blockId) return
+
+    const selectionStart = target.selectionStart
+    const selectionEnd = target.selectionEnd
+
+    if (selectionStart === null || selectionEnd === null) return
+    if (selectionStart !== selectionEnd) return
+
+    const isMovingUp = event.key === 'ArrowUp'
+    const adjacentBlock = isMovingUp ? getPreviousBlock(blockId) : getNextBlock(blockId)
+
+    if (!adjacentBlock) return
+
+    if (target instanceof HTMLTextAreaElement) {
+      const { isOnFirstLine, isOnLastLine } = getTextareaLineBoundaryState(
+        target,
+        selectionStart
+      )
+
+      if (isMovingUp && !isOnFirstLine) return
+      if (!isMovingUp && !isOnLastLine) return
+    } else {
+      const isAtStart = selectionStart === 0
+      const isAtEnd = selectionStart === target.value.length
+
+      if (isMovingUp && !isAtStart) return
+      if (!isMovingUp && !isAtEnd) return
+    }
+
+    event.preventDefault()
+    focusBlock(adjacentBlock.id, isMovingUp ? 'end' : 'start')
+  }
+
   return (
-    <section className="mx-auto flex w-full max-w-[800px] flex-col gap-4">
+    <section
+      className="mx-auto flex w-full max-w-[800px] flex-col gap-4"
+      onKeyDownCapture={handleKeyDownCapture}
+    >
       <JournalHeader />
 
       <DragDropProvider onDragEnd={handleDragEnd}>
