@@ -22,7 +22,7 @@ const RootLayout = ({
       <body className="font-sans" suppressHydrationWarning>
         <Providers>
           <header className="sticky top-0 z-50 h-16">
-            <div className="flex h-full items-center justify-between px-3">
+            <div className="bg-background flex h-full items-center justify-between px-3">
               <Logo />
               <HeaderControls />
             </div>
