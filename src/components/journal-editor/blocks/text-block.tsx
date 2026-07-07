@@ -15,9 +15,11 @@ const TextBlock = ({ block, blockId }: TextBlockProps) => {
   const {
     blocks,
     focusTextBlock,
+    getNextBlock,
+    getPreviousBlock,
     mergeTextBlock,
     removeBlock,
-    setTextareaRef: registerTextareaRef,
+    setBlockFocusTarget,
     splitTextBlock,
     updateTextBlock,
   } = useJournalEditor()
@@ -25,16 +27,23 @@ const TextBlock = ({ block, blockId }: TextBlockProps) => {
 
   const setTextareaRef = useCallback(
     (node: HTMLTextAreaElement | null) => {
-      registerTextareaRef(blockId, node)
+      setBlockFocusTarget(
+        blockId,
+        node
+          ? {
+              element: node,
+              kind: 'textarea',
+            }
+          : null
+      )
     },
-    [blockId, registerTextareaRef]
+    [blockId, setBlockFocusTarget]
   )
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     const { selectionStart, selectionEnd, value } = event.currentTarget
-    const blockIndex = blocks.findIndex((candidate) => candidate.id === blockId)
-    const previousBlock = blockIndex > 0 ? blocks[blockIndex - 1] : undefined
-    const nextBlock = blockIndex >= 0 ? blocks[blockIndex + 1] : undefined
+    const previousBlock = getPreviousBlock(blockId) ?? undefined
+    const nextBlock = getNextBlock(blockId) ?? undefined
     const previousTextBlock = previousBlock?.type === 'text' ? previousBlock : null
     const nextTextBlock = nextBlock?.type === 'text' ? nextBlock : null
     const hasCollapsedSelection = selectionStart === selectionEnd
@@ -78,6 +87,8 @@ const TextBlock = ({ block, blockId }: TextBlockProps) => {
       value={block.content}
       onChange={(event) => updateTextBlock(blockId, event.target.value)}
       onKeyDown={handleKeyDown}
+      data-block-id={blockId}
+      data-block-kind="text"
       placeholder={
         blockCount === 1 && block.content.trim().length === 0
           ? 'Start writing...'

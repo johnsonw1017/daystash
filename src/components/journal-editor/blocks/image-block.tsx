@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { useState, type KeyboardEvent } from 'react'
+import { useCallback, useState, type KeyboardEvent } from 'react'
 import { Pencil, Trash2 } from 'lucide-react'
 import ImageEditDialog from '@/components/journal-editor/image-edit-dialog'
 import useJournalEditor from '@/components/journal-editor/hooks/use-journal-editor'
@@ -75,9 +75,25 @@ const ImageItem = ({
 }
 
 const ImageBlock = ({ block, blockId }: ImageBlockProps) => {
-  const { insertBlockBelow, removeImage, updateImageCaption } = useJournalEditor()
+  const { insertBlockBelow, removeImage, setBlockFocusTarget, updateImageCaption } =
+    useJournalEditor()
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const carouselAspectRatio = getCarouselViewportAspectRatio(block.images)
+
+  const setCaptionRef = useCallback(
+    (node: HTMLInputElement | null) => {
+      setBlockFocusTarget(
+        blockId,
+        node
+          ? {
+              element: node,
+              kind: 'input',
+            }
+          : null
+      )
+    },
+    [blockId, setBlockFocusTarget]
+  )
 
   const handleCaptionKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -148,9 +164,12 @@ const ImageBlock = ({ block, blockId }: ImageBlockProps) => {
       ) : null}
 
       <Input
+        ref={setCaptionRef}
         value={block.caption ?? ''}
         onChange={(event) => updateImageCaption(blockId, event.target.value)}
         onKeyDown={handleCaptionKeyDown}
+        data-block-id={blockId}
+        data-block-kind="image-caption"
         placeholder="Add a caption (optional)"
         className="text-sm"
       />

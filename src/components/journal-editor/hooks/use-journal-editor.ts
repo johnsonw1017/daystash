@@ -5,20 +5,29 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAtom, useSetAtom } from 'jotai'
 import { saveJournal } from '@/app/(journal)/write/actions'
 import {
+  blockFocusTargetsAtom,
   blocksAtom,
   errorMessageAtom,
   journalEditorConfigAtom,
   journalIdAtom,
   lastSavedTitleAtom,
-  pendingTextSelectionAtom,
+  pendingBlockFocusAtom,
   savedBlocksAtom,
   sessionAssetIdsAtom,
-  textAreaRefsAtom,
   titleAtom,
 } from '@/components/journal-editor/atoms'
-import { makeImageBlock, makeTextBlock, normalizeEditorBlocks } from '@/components/journal-editor/utils'
+import {
+  focusBlockTarget,
+  makeImageBlock,
+  makeTextBlock,
+  normalizeEditorBlocks,
+} from '@/components/journal-editor/utils'
 import { journalQueryKeys } from '@/hooks/use-journals'
 import type { JournalBlock } from '@/lib/journals'
+import type {
+  BlockFocusPlacement,
+  BlockFocusTarget,
+} from '@/components/journal-editor/types'
 import { toast } from 'sonner'
 
 const ensureEditorHasBlock = (blocks: JournalBlock[]) =>
@@ -37,13 +46,11 @@ const useJournalEditor = () => {
   const [editorConfig] = useAtom(journalEditorConfigAtom)
   const [journalId, setJournalId] = useAtom(journalIdAtom)
   const [lastSavedTitle, setLastSavedTitle] = useAtom(lastSavedTitleAtom)
-  const [pendingTextSelection, setPendingTextSelection] = useAtom(
-    pendingTextSelectionAtom
-  )
+  const [pendingBlockFocus, setPendingBlockFocus] = useAtom(pendingBlockFocusAtom)
   const [savedBlocks, setSavedBlocks] = useAtom(savedBlocksAtom)
   const [sessionAssetIds, setSessionAssetIds] = useAtom(sessionAssetIdsAtom)
-  const [textAreaRefs] = useAtom(textAreaRefsAtom)
-  const setTextAreaRefs = useSetAtom(textAreaRefsAtom)
+  const [blockFocusTargets] = useAtom(blockFocusTargetsAtom)
+  const setBlockFocusTargets = useSetAtom(blockFocusTargetsAtom)
   const [title, setTitle] = useAtom(titleAtom)
   const latestJournalIdRef = useRef(journalId)
   const latestIsDirtyRef = useRef(false)
@@ -175,42 +182,81 @@ const useJournalEditor = () => {
   )
 
   useEffect(() => {
-    if (pendingTextSelection === null) return
+    if (pendingBlockFocus === null) return
 
-    const target = textAreaRefs[pendingTextSelection.blockId]
+    const target = blockFocusTargets[pendingBlockFocus.blockId]
     if (!target) return
 
-    target.focus()
-    target.setSelectionRange(pendingTextSelection.start, pendingTextSelection.end)
-    setPendingTextSelection(null)
-  }, [blocks, pendingTextSelection, setPendingTextSelection, textAreaRefs])
+    if ('placement' in pendingBlockFocus) {
+      focusBlockTarget(target, pendingBlockFocus.placement)
+      setPendingBlockFocus(null)
+      return
+    }
+
+    if (target.kind !== 'textarea') {
+      setPendingBlockFocus(null)
+      return
+    }
+
+    target.element.focus()
+    target.element.setSelectionRange(pendingBlockFocus.start, pendingBlockFocus.end)
+    setPendingBlockFocus(null)
+  }, [blockFocusTargets, blocks, pendingBlockFocus, setPendingBlockFocus])
+
+  const focusBlock = useCallback(
+    (blockId: string, placement: BlockFocusPlacement) => {
+      setPendingBlockFocus({ blockId, placement })
+    },
+    [setPendingBlockFocus]
+  )
 
   const focusTextBlock = useCallback(
     (blockId: string, start: number, end = start) => {
-      setPendingTextSelection({ blockId, start, end })
+      setPendingBlockFocus({ blockId, start, end })
     },
-    [setPendingTextSelection]
+    [setPendingBlockFocus]
   )
 
-  const setTextareaRef = useCallback(
-    (blockId: string, node: HTMLTextAreaElement | null) => {
-      setTextAreaRefs((currentRefs) => {
-        if (currentRefs[blockId] === node) return currentRefs
+  const setBlockFocusTarget = useCallback(
+    (blockId: string, target: BlockFocusTarget | null) => {
+      setBlockFocusTargets((currentTargets) => {
+        if (currentTargets[blockId] === target) return currentTargets
 
-        if (!node && !(blockId in currentRefs)) return currentRefs
+        if (!target && !(blockId in currentTargets)) return currentTargets
 
-        const nextRefs = { ...currentRefs }
+        const nextTargets = { ...currentTargets }
 
-        if (node) {
-          nextRefs[blockId] = node
+        if (target) {
+          nextTargets[blockId] = target
         } else {
-          delete nextRefs[blockId]
+          delete nextTargets[blockId]
         }
 
-        return nextRefs
+        return nextTargets
       })
     },
-    [setTextAreaRefs]
+    [setBlockFocusTargets]
+  )
+
+  const getBlockIndex = useCallback(
+    (blockId: string) => blocks.findIndex((block) => block.id === blockId),
+    [blocks]
+  )
+
+  const getPreviousBlock = useCallback(
+    (blockId: string) => {
+      const blockIndex = getBlockIndex(blockId)
+      return blockIndex > 0 ? blocks[blockIndex - 1] : null
+    },
+    [blocks, getBlockIndex]
+  )
+
+  const getNextBlock = useCallback(
+    (blockId: string) => {
+      const blockIndex = getBlockIndex(blockId)
+      return blockIndex >= 0 ? blocks[blockIndex + 1] ?? null : null
+    },
+    [blocks, getBlockIndex]
   )
 
   const insertBlockBelow = useCallback(
@@ -519,7 +565,10 @@ const useJournalEditor = () => {
     appendImagesToBlock,
     blocks,
     errorMessage,
+    focusBlock,
     focusTextBlock,
+    getNextBlock,
+    getPreviousBlock,
     headerActions: editorConfig.headerActions,
     insertBlockBelow,
     insertImagesBelow,
@@ -532,7 +581,7 @@ const useJournalEditor = () => {
     save,
     removeBlock,
     removeImage,
-    setTextareaRef,
+    setBlockFocusTarget,
     setTitle,
     splitTextBlock,
     title,
