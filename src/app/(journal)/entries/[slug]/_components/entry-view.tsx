@@ -12,7 +12,12 @@ import {
 import { Button } from '@/components/ui/button'
 import { useJournalBySlug } from '@/hooks/use-journals'
 import { cloudinaryLoader } from '@/lib/cloudinary'
-import type { JournalListBlockItem, ListStyle } from '@/lib/journals'
+import type { ListStyle } from '@/lib/journals'
+import {
+  buildJournalListTree,
+  getJournalListClassName,
+  type JournalListTreeNode,
+} from '@/lib/journal-list-tree'
 import { getCarouselViewportAspectRatio } from '@/lib/journal-image-block'
 
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
@@ -25,47 +30,11 @@ type EntryViewProps = {
   slug: string
 }
 
-type ListTreeNode = JournalListBlockItem & {
-  children: ListTreeNode[]
-}
-
-const buildListTree = (items: JournalListBlockItem[]) => {
-  const roots: ListTreeNode[] = []
-  const stack: ListTreeNode[] = []
-
-  items.forEach((item) => {
-    const node: ListTreeNode = {
-      ...item,
-      children: [],
-    }
-
-    while (stack.length > item.indent) {
-      stack.pop()
-    }
-
-    const parent = stack[stack.length - 1]
-
-    if (parent) {
-      parent.children.push(node)
-    } else {
-      roots.push(node)
-    }
-
-    stack[item.indent] = node
-  })
-
-  return roots
-}
-
-const renderListNodes = (nodes: ListTreeNode[], style: ListStyle) => {
+const renderListNodes = (nodes: JournalListTreeNode[], style: ListStyle) => {
   const ListTag = style === 'numbered' ? 'ol' : 'ul'
-  const listClassName =
-    style === 'numbered'
-      ? 'list-outside list-decimal pl-6 marker:text-base'
-      : 'list-outside list-disc pl-6 marker:text-base'
 
   return (
-    <ListTag className={listClassName}>
+    <ListTag className={getJournalListClassName(style)}>
       {nodes.map((node) => (
         <li key={node.id}>
           <span className="whitespace-pre-wrap">{node.content}</span>
@@ -122,7 +91,7 @@ const EntryView = ({ slug }: EntryViewProps) => {
           if (block.type === 'list') {
             return (
               <div key={block.id}>
-                {renderListNodes(buildListTree(block.items), block.style)}
+                {renderListNodes(buildJournalListTree(block.items), block.style)}
               </div>
             )
           }

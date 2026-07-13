@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import type { KeyboardEvent } from 'react'
 import { List, ListOrdered } from 'lucide-react'
 import useJournalEditor from '@/components/journal-editor/hooks/use-journal-editor'
@@ -11,35 +11,33 @@ import type {
 import { getTextareaLineBoundaryState } from '@/components/journal-editor/utils'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  buildJournalListTree,
+  getJournalListClassName,
+  type JournalListTreeNode,
+} from '@/lib/journal-list-tree'
 
 type ListBlockProps = {
   block: ListJournalBlock
   blockId: string
 }
 
-const indentWidth = 28
-const basePaddingLeft = 24
-
 type ListItemRowProps = {
   blockId: string
-  item: ListJournalBlock['items'][number]
-  itemIndex: number
-  itemCount: number
+  flatItems: ListJournalBlock['items']
+  item: JournalListTreeNode
   listStyle: ListJournalBlock['style']
-  previousItem: ListJournalBlock['items'][number] | null
-  nextItem: ListJournalBlock['items'][number] | null
   onSetItemRef: (itemId: string, node: HTMLTextAreaElement | null) => void
+  indexById: Map<string, number>
 }
 
 const ListItemRow = ({
   blockId,
+  flatItems,
   item,
-  itemIndex,
-  itemCount,
   listStyle,
-  previousItem,
-  nextItem,
   onSetItemRef,
+  indexById,
 }: ListItemRowProps) => {
   const {
     convertListBlockToTextBlock,
@@ -55,14 +53,16 @@ const ListItemRow = ({
     updateListItem,
   } = useJournalEditor()
 
+  const itemIndex = indexById.get(item.id) ?? 0
+  const previousItem = itemIndex > 0 ? flatItems[itemIndex - 1] ?? null : null
+  const nextItem = flatItems[itemIndex + 1] ?? null
+
   const setTextareaRef = useCallback(
     (node: HTMLTextAreaElement | null) => {
       onSetItemRef(item.id, node)
     },
     [item.id, onSetItemRef]
   )
-
-  const marker = listStyle === 'numbered' ? `${itemIndex + 1}.` : '\u2022'
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     const { selectionStart, selectionEnd, value } = event.currentTarget
@@ -166,14 +166,10 @@ const ListItemRow = ({
     }
   }
 
+  const ListTag = listStyle === 'numbered' ? 'ol' : 'ul'
+
   return (
-    <div
-      className="flex items-start gap-2"
-      style={{ paddingLeft: `${basePaddingLeft + item.indent * indentWidth}px` }}
-    >
-      <span className="text-muted-foreground text-xl leading-relaxed select-none">
-        {marker}
-      </span>
+    <li>
       <Textarea
         ref={setTextareaRef}
         value={item.content}
@@ -181,29 +177,51 @@ const ListItemRow = ({
         onKeyDown={handleKeyDown}
         data-block-id={blockId}
         data-block-kind="list-item"
-        placeholder={itemIndex === 0 && itemCount === 1 ? 'List item' : undefined}
-        className="placeholder:text-muted-foreground min-h-0 resize-none border-0 bg-transparent px-0 py-0 font-serif text-xl! leading-relaxed shadow-none focus-visible:ring-0 dark:bg-transparent"
+        placeholder={flatItems.length === 1 && itemIndex === 0 ? 'List item' : undefined}
+        className="placeholder:text-muted-foreground block min-h-0 w-full resize-none border-0 bg-transparent px-0 py-0 font-serif text-xl! leading-relaxed shadow-none focus-visible:ring-0 dark:bg-transparent"
       />
-    </div>
+
+      {item.children.length > 0 ? (
+        <ListTag className={getJournalListClassName(listStyle)}>
+          {item.children.map((child) => (
+            <ListItemRow
+              key={child.id}
+              blockId={blockId}
+              flatItems={flatItems}
+              item={child}
+              listStyle={listStyle}
+              onSetItemRef={onSetItemRef}
+              indexById={indexById}
+            />
+          ))}
+        </ListTag>
+      ) : null}
+    </li>
   )
 }
 
 const ListBlock = ({ block, blockId }: ListBlockProps) => {
-  const {
-    setBlockFocusTarget,
-    updateListStyle,
-  } = useJournalEditor()
+  const { setBlockFocusTarget, updateListStyle } = useJournalEditor()
   const itemRefs = useRef<Record<string, HTMLTextAreaElement | null>>({})
   const itemTargetRefs = useRef<Record<string, BlockFocusTarget | null>>({})
+  const listTree = useMemo(() => buildJournalListTree(block.items), [block.items])
+  const indexById = useMemo(
+    () => new Map(block.items.map((item, index) => [item.id, index])),
+    [block.items]
+  )
 
   const getBoundaryElement = useCallback(
     (placement: 'start' | 'end') => {
       const orderedIds =
-        placement === 'start' ? block.items.map((item) => item.id) : [...block.items].reverse().map((item) => item.id)
+        placement === 'start'
+          ? block.items.map((item) => item.id)
+          : [...block.items].reverse().map((item) => item.id)
 
-      return orderedIds
-        .map((itemId) => itemRefs.current[itemId] ?? null)
-        .find((element): element is HTMLTextAreaElement => element !== null) ?? null
+      return (
+        orderedIds
+          .map((itemId) => itemRefs.current[itemId] ?? null)
+          .find((element): element is HTMLTextAreaElement => element !== null) ?? null
+      )
     },
     [block.items]
   )
@@ -255,6 +273,8 @@ const ListBlock = ({ block, blockId }: ListBlockProps) => {
     [blockId, setBlockFocusTarget]
   )
 
+  const ListTag = block.style === 'numbered' ? 'ol' : 'ul'
+
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-1">
@@ -282,23 +302,19 @@ const ListBlock = ({ block, blockId }: ListBlockProps) => {
         </Button>
       </div>
 
-      <div>
-        {block.items.map((item, itemIndex) => {
-        return (
+      <ListTag className={getJournalListClassName(block.style)}>
+        {listTree.map((item) => (
           <ListItemRow
             key={item.id}
             blockId={blockId}
+            flatItems={block.items}
             item={item}
-            itemIndex={itemIndex}
-            itemCount={block.items.length}
             listStyle={block.style}
-            previousItem={block.items[itemIndex - 1] ?? null}
-            nextItem={block.items[itemIndex + 1] ?? null}
             onSetItemRef={setItemRef}
+            indexById={indexById}
           />
-        )
-        })}
-      </div>
+        ))}
+      </ListTag>
     </div>
   )
 }

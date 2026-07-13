@@ -23,7 +23,11 @@ type SortableBlockRowProps = {
   children: ReactNode
 }
 
-const SortableBlockRow = ({ blockId, index, children }: SortableBlockRowProps) => {
+const SortableBlockRow = ({
+  blockId,
+  index,
+  children,
+}: SortableBlockRowProps) => {
   const { handleRef, isDragging, ref } = useSortable({
     id: blockId,
     index,
@@ -38,7 +42,7 @@ const SortableBlockRow = ({ blockId, index, children }: SortableBlockRowProps) =
         isDragging && 'z-10 opacity-70'
       )}
     >
-      <div className="absolute top-2 -left-20">
+      <div className="absolute -left-20">
         <BlockMenu blockId={blockId} dragHandleRef={handleRef} />
       </div>
 
@@ -78,7 +82,12 @@ const JournalEditorContent = () => {
     if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return
 
     const target = event.target
-    if (!(target instanceof HTMLTextAreaElement || target instanceof HTMLInputElement)) {
+    if (
+      !(
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLInputElement
+      )
+    ) {
       return
     }
 
@@ -93,7 +102,9 @@ const JournalEditorContent = () => {
     if (selectionStart !== selectionEnd) return
 
     const isMovingUp = event.key === 'ArrowUp'
-    const adjacentBlock = isMovingUp ? getPreviousBlock(blockId) : getNextBlock(blockId)
+    const adjacentBlock = isMovingUp
+      ? getPreviousBlock(blockId)
+      : getNextBlock(blockId)
 
     if (!adjacentBlock) return
 
