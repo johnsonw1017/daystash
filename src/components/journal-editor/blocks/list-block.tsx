@@ -18,6 +18,7 @@ type ListBlockProps = {
 }
 
 const indentWidth = 28
+const basePaddingLeft = 24
 
 type ListItemRowProps = {
   blockId: string
@@ -167,10 +168,10 @@ const ListItemRow = ({
 
   return (
     <div
-      className="flex items-start gap-3"
-      style={{ paddingLeft: `${item.indent * indentWidth}px` }}
+      className="flex items-start gap-2"
+      style={{ paddingLeft: `${basePaddingLeft + item.indent * indentWidth}px` }}
     >
-      <span className="text-muted-foreground pt-2 text-base leading-relaxed select-none">
+      <span className="text-muted-foreground text-xl leading-relaxed select-none">
         {marker}
       </span>
       <Textarea
@@ -255,14 +256,15 @@ const ListBlock = ({ block, blockId }: ListBlockProps) => {
   )
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
+    <div className="space-y-2">
+      <div className="flex items-center gap-1">
         <Button
           type="button"
           variant={block.style === 'bullet' ? 'secondary' : 'ghost'}
           size="xs"
           onClick={() => updateListStyle(blockId, 'bullet')}
           aria-pressed={block.style === 'bullet'}
+          className="h-7 px-2.5"
         >
           <List />
           <span>Bullets</span>
@@ -273,13 +275,15 @@ const ListBlock = ({ block, blockId }: ListBlockProps) => {
           size="xs"
           onClick={() => updateListStyle(blockId, 'numbered')}
           aria-pressed={block.style === 'numbered'}
+          className="h-7 px-2.5"
         >
           <ListOrdered />
           <span>Numbers</span>
         </Button>
       </div>
 
-      {block.items.map((item, itemIndex) => {
+      <div>
+        {block.items.map((item, itemIndex) => {
         return (
           <ListItemRow
             key={item.id}
@@ -293,7 +297,8 @@ const ListBlock = ({ block, blockId }: ListBlockProps) => {
             onSetItemRef={setItemRef}
           />
         )
-      })}
+        })}
+      </div>
     </div>
   )
 }
