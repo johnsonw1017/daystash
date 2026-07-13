@@ -2,9 +2,11 @@ import { v4 as uuidv4 } from 'uuid'
 import type { BlockFocusTarget } from '@/components/journal-editor/types'
 import {
   normalizeJournalBlocks,
+  type JournalListBlockItem,
   type ImageJournalBlock,
   type JournalBlock,
   type JournalImageAsset,
+  type ListJournalBlock,
   type TextJournalBlock,
 } from '@/lib/journals'
 
@@ -19,6 +21,25 @@ export const makeTextBlock = (content = ''): TextJournalBlock => ({
   id: uuidv4(),
   type: 'text',
   content,
+})
+
+export const makeListItem = (
+  content = '',
+  indent = 0
+): JournalListBlockItem => ({
+  id: uuidv4(),
+  content,
+  indent,
+})
+
+export const makeListBlock = (
+  style: ListJournalBlock['style'] = 'bullet',
+  items: JournalListBlockItem[] = [makeListItem()]
+): ListJournalBlock => ({
+  id: uuidv4(),
+  type: 'list',
+  style,
+  items,
 })
 
 export const makeImageBlock = (
@@ -121,6 +142,20 @@ export const focusBlockTarget = (
   target: BlockFocusTarget,
   placement: 'start' | 'end'
 ) => {
+  if (target.kind === 'list') {
+    const element = target.getElement(placement)
+
+    if (!element) {
+      return
+    }
+
+    const caretPosition = placement === 'start' ? 0 : element.value.length
+
+    element.focus()
+    element.setSelectionRange(caretPosition, caretPosition)
+    return
+  }
+
   const { element } = target
   const caretPosition =
     placement === 'start' ? 0 : element.value.length

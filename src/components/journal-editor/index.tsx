@@ -84,6 +84,7 @@ const JournalEditorContent = () => {
 
     const blockId = target.dataset.blockId
     if (!blockId) return
+    if (target.dataset.blockKind === 'list-item') return
 
     const selectionStart = target.selectionStart
     const selectionEnd = target.selectionEnd

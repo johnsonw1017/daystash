@@ -12,6 +12,21 @@ export type TextJournalBlock = {
   content: string
 }
 
+export type ListStyle = 'bullet' | 'numbered'
+
+export type JournalListBlockItem = {
+  id: string
+  content: string
+  indent: number
+}
+
+export type ListJournalBlock = {
+  id: string
+  type: 'list'
+  style: ListStyle
+  items: JournalListBlockItem[]
+}
+
 export type ImageJournalBlock = {
   id: string
   type: 'image'
@@ -19,7 +34,7 @@ export type ImageJournalBlock = {
   images: JournalImageAsset[]
 }
 
-export type JournalBlock = TextJournalBlock | ImageJournalBlock
+export type JournalBlock = TextJournalBlock | ListJournalBlock | ImageJournalBlock
 
 export type SaveJournalInput = {
   journalId?: string
@@ -67,6 +82,48 @@ const normalizeTextBlock = (value: Record<string, unknown>): TextJournalBlock | 
     id,
     type: 'text',
     content: typeof value.content === 'string' ? value.content : '',
+  }
+}
+
+const normalizeListItem = (value: Record<string, unknown>): JournalListBlockItem | null => {
+  const id = typeof value.id === 'string' && value.id.length > 0 ? value.id : null
+
+  if (!id) {
+    return null
+  }
+
+  return {
+    id,
+    content: typeof value.content === 'string' ? value.content : '',
+    indent:
+      typeof value.indent === 'number' && Number.isInteger(value.indent) && value.indent > 0
+        ? value.indent
+        : 0,
+  }
+}
+
+const normalizeListBlock = (value: Record<string, unknown>): ListJournalBlock | null => {
+  const id = typeof value.id === 'string' && value.id.length > 0 ? value.id : null
+  const itemsValue = Array.isArray(value.items) ? value.items : []
+
+  if (!id) {
+    return null
+  }
+
+  const items = itemsValue
+    .filter(isRecord)
+    .map(normalizeListItem)
+    .filter((item): item is JournalListBlockItem => item !== null)
+
+  if (!items.length) {
+    return null
+  }
+
+  return {
+    id,
+    type: 'list',
+    style: value.style === 'numbered' ? 'numbered' : 'bullet',
+    items,
   }
 }
 
@@ -128,6 +185,10 @@ export const parseJournalBlocks = (value: unknown): JournalBlock[] => {
         return normalizeTextBlock(block)
       }
 
+      if (block.type === 'list') {
+        return normalizeListBlock(block)
+      }
+
       if (block.type === 'image') {
         return normalizeImageBlock(block)
       }
@@ -148,6 +209,28 @@ export const normalizeJournalBlocks = (blocks: JournalBlock[]): JournalBlock[] =
         }
       }
 
+      if (block.type === 'list') {
+        const items = block.items
+          .map((item, itemIndex, items) => {
+            const previousItem = items[itemIndex - 1]
+            const maxIndent = previousItem ? previousItem.indent + 1 : 0
+
+            return {
+              id: item.id,
+              content: item.content,
+              indent: Math.min(Math.max(0, Math.trunc(item.indent)), maxIndent),
+            }
+          })
+          .filter((item) => item.content.trim().length > 0)
+
+        return {
+          id: block.id,
+          type: 'list' as const,
+          style: block.style,
+          items,
+        }
+      }
+
       return {
         id: block.id,
         type: 'image' as const,
@@ -163,7 +246,17 @@ export const normalizeJournalBlocks = (blocks: JournalBlock[]): JournalBlock[] =
           .filter((image) => image.publicId.length > 0),
       }
     })
-    .filter((block) => (block.type === 'text' ? block.content.trim().length > 0 : block.images.length > 0))
+    .filter((block) => {
+      if (block.type === 'text') {
+        return block.content.trim().length > 0
+      }
+
+      if (block.type === 'list') {
+        return block.items.length > 0
+      }
+
+      return block.images.length > 0
+    })
 
   if (!normalized.length) {
     return [
@@ -184,7 +277,23 @@ export const getJournalExcerpt = (blocks: JournalBlock[]) => {
       block.type === 'text' && block.content.trim().length > 0
   )
 
-  return firstTextBlock?.content.trim() || 'No journal text yet.'
+  if (firstTextBlock) {
+    return firstTextBlock.content.trim()
+  }
+
+  const firstListBlock = blocks.find(
+    (block): block is ListJournalBlock =>
+      block.type === 'list' && block.items.some((item) => item.content.trim().length > 0)
+  )
+
+  if (firstListBlock) {
+    return (
+      firstListBlock.items.find((item) => item.content.trim().length > 0)?.content.trim() ||
+      'No journal text yet.'
+    )
+  }
+
+  return 'No journal text yet.'
 }
 
 export const getReferencedAssetIds = (blocks: JournalBlock[]) =>

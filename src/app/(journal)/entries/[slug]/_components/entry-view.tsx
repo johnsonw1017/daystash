@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { useJournalBySlug } from '@/hooks/use-journals'
 import { cloudinaryLoader } from '@/lib/cloudinary'
+import type { JournalListBlockItem, ListStyle } from '@/lib/journals'
 import { getCarouselViewportAspectRatio } from '@/lib/journal-image-block'
 
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
@@ -22,6 +23,53 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
 
 type EntryViewProps = {
   slug: string
+}
+
+type ListTreeNode = JournalListBlockItem & {
+  children: ListTreeNode[]
+}
+
+const buildListTree = (items: JournalListBlockItem[]) => {
+  const roots: ListTreeNode[] = []
+  const stack: ListTreeNode[] = []
+
+  items.forEach((item) => {
+    const node: ListTreeNode = {
+      ...item,
+      children: [],
+    }
+
+    while (stack.length > item.indent) {
+      stack.pop()
+    }
+
+    const parent = stack[stack.length - 1]
+
+    if (parent) {
+      parent.children.push(node)
+    } else {
+      roots.push(node)
+    }
+
+    stack[item.indent] = node
+  })
+
+  return roots
+}
+
+const renderListNodes = (nodes: ListTreeNode[], style: ListStyle) => {
+  const ListTag = style === 'numbered' ? 'ol' : 'ul'
+
+  return (
+    <ListTag className="space-y-2 pl-6 marker:text-base">
+      {nodes.map((node) => (
+        <li key={node.id}>
+          <span className="whitespace-pre-wrap">{node.content}</span>
+          {node.children.length > 0 ? renderListNodes(node.children, style) : null}
+        </li>
+      ))}
+    </ListTag>
+  )
 }
 
 const EntryView = ({ slug }: EntryViewProps) => {
@@ -63,6 +111,10 @@ const EntryView = ({ slug }: EntryViewProps) => {
                 {block.content}
               </p>
             )
+          }
+
+          if (block.type === 'list') {
+            return <div key={block.id}>{renderListNodes(buildListTree(block.items), block.style)}</div>
           }
 
           const key = block.id
