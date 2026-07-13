@@ -13,12 +13,8 @@ import { Button } from '@/components/ui/button'
 import { useJournalBySlug } from '@/hooks/use-journals'
 import { cloudinaryLoader } from '@/lib/cloudinary'
 import type { ListStyle } from '@/lib/journals'
-import {
-  buildJournalListTree,
-  getJournalListClassName,
-  type JournalListTreeNode,
-} from '@/lib/journal-list-tree'
 import { getCarouselViewportAspectRatio } from '@/lib/journal-image-block'
+import { cn } from '@/lib/utils'
 
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
   month: 'short',
@@ -30,17 +26,19 @@ type EntryViewProps = {
   slug: string
 }
 
-const renderListNodes = (nodes: JournalListTreeNode[], style: ListStyle) => {
+const renderList = (items: string[], style: ListStyle) => {
   const ListTag = style === 'numbered' ? 'ol' : 'ul'
 
   return (
-    <ListTag className={getJournalListClassName(style)}>
-      {nodes.map((node) => (
-        <li key={node.id}>
-          <span className="whitespace-pre-wrap">{node.content}</span>
-          {node.children.length > 0
-            ? renderListNodes(node.children, style)
-            : null}
+    <ListTag
+      className={cn(
+        'list-outside pl-6 marker:text-base',
+        style === 'numbered' ? 'list-decimal' : 'list-disc'
+      )}
+    >
+      {items.map((item, itemIndex) => (
+        <li key={itemIndex}>
+          <span className="whitespace-pre-wrap">{item}</span>
         </li>
       ))}
     </ListTag>
@@ -91,7 +89,7 @@ const EntryView = ({ slug }: EntryViewProps) => {
           if (block.type === 'list') {
             return (
               <div key={block.id}>
-                {renderListNodes(buildJournalListTree(block.items), block.style)}
+                {renderList(block.items, block.style)}
               </div>
             )
           }

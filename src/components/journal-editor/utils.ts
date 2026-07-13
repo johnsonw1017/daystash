@@ -2,7 +2,6 @@ import { v4 as uuidv4 } from 'uuid'
 import type { BlockFocusTarget } from '@/components/journal-editor/types'
 import {
   normalizeJournalBlocks,
-  type JournalListBlockItem,
   type ImageJournalBlock,
   type JournalBlock,
   type JournalImageAsset,
@@ -23,18 +22,9 @@ export const makeTextBlock = (content = ''): TextJournalBlock => ({
   content,
 })
 
-export const makeListItem = (
-  content = '',
-  indent = 0
-): JournalListBlockItem => ({
-  id: uuidv4(),
-  content,
-  indent,
-})
-
 export const makeListBlock = (
   style: ListJournalBlock['style'] = 'bullet',
-  items: JournalListBlockItem[] = [makeListItem()]
+  items: string[] = ['']
 ): ListJournalBlock => ({
   id: uuidv4(),
   type: 'list',

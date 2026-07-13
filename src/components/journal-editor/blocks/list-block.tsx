@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import type { KeyboardEvent } from 'react'
 import { List, ListOrdered } from 'lucide-react'
 import useJournalEditor from '@/components/journal-editor/hooks/use-journal-editor'
@@ -11,11 +11,7 @@ import type {
 import { getTextareaLineBoundaryState } from '@/components/journal-editor/utils'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import {
-  buildJournalListTree,
-  getJournalListClassName,
-  type JournalListTreeNode,
-} from '@/lib/journal-list-tree'
+import { cn } from '@/lib/utils'
 
 type ListBlockProps = {
   block: ListJournalBlock
@@ -24,20 +20,20 @@ type ListBlockProps = {
 
 type ListItemRowProps = {
   blockId: string
-  flatItems: ListJournalBlock['items']
-  item: JournalListTreeNode
-  listStyle: ListJournalBlock['style']
-  onSetItemRef: (itemId: string, node: HTMLTextAreaElement | null) => void
-  indexById: Map<string, number>
+  item: string
+  itemCount: number
+  itemIndex: number
+  onSetItemRef: (itemIndex: number, node: HTMLTextAreaElement | null) => void
+  previousItem: string | null
 }
 
 const ListItemRow = ({
   blockId,
-  flatItems,
   item,
-  listStyle,
+  itemCount,
+  itemIndex,
   onSetItemRef,
-  indexById,
+  previousItem,
 }: ListItemRowProps) => {
   const {
     convertListBlockToTextBlock,
@@ -46,22 +42,16 @@ const ListItemRow = ({
     focusTextBlock,
     getNextBlock,
     getPreviousBlock,
-    indentListItem,
     mergeListItem,
-    outdentListItem,
     splitListItem,
     updateListItem,
   } = useJournalEditor()
 
-  const itemIndex = indexById.get(item.id) ?? 0
-  const previousItem = itemIndex > 0 ? flatItems[itemIndex - 1] ?? null : null
-  const nextItem = flatItems[itemIndex + 1] ?? null
-
   const setTextareaRef = useCallback(
     (node: HTMLTextAreaElement | null) => {
-      onSetItemRef(item.id, node)
+      onSetItemRef(itemIndex, node)
     },
-    [item.id, onSetItemRef]
+    [itemIndex, onSetItemRef]
   )
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -69,61 +59,59 @@ const ListItemRow = ({
     const hasCollapsedSelection = selectionStart === selectionEnd
     const isAtStart = selectionStart === 0
     const isAtEnd = selectionStart === value.length
-    const isEmptyItem = item.content.trim().length === 0
-
-    if (event.key === 'Tab') {
-      event.preventDefault()
-
-      if (event.shiftKey) {
-        outdentListItem(blockId, item.id)
-      } else {
-        indentListItem(blockId, item.id)
-      }
-
-      return
-    }
+    const isEmptyItem = item.trim().length === 0
+    const hasPreviousItem = itemIndex > 0
+    const hasNextItem = itemIndex < itemCount - 1
 
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
 
       if (isEmptyItem) {
-        const nextTextBlockId = convertListBlockToTextBlock(blockId, item.id)
+        const nextTextBlockId = convertListBlockToTextBlock(blockId, itemIndex)
         focusTextBlock(nextTextBlockId, 0)
         return
       }
 
-      const nextItemId = splitListItem(blockId, item.id, selectionStart, selectionEnd)
-      focusListItem(blockId, nextItemId, 0)
+      const nextItemIndex = splitListItem(
+        blockId,
+        itemIndex,
+        selectionStart,
+        selectionEnd
+      )
+      focusListItem(blockId, nextItemIndex, 0)
       return
     }
 
-    if (event.key === 'Backspace' && hasCollapsedSelection && isAtStart) {
-      if (item.indent > 0) {
-        event.preventDefault()
-        outdentListItem(blockId, item.id)
-        return
-      }
-
-      if (previousItem) {
-        event.preventDefault()
-        focusListItem(blockId, previousItem.id, previousItem.content.length)
-        mergeListItem(blockId, item.id, 'previous')
-        return
-      }
-
-      if (isEmptyItem) {
-        event.preventDefault()
-        const nextTextBlockId = convertListBlockToTextBlock(blockId, item.id)
-        focusTextBlock(nextTextBlockId, 0)
-      }
-
-      return
-    }
-
-    if (event.key === 'Delete' && hasCollapsedSelection && isAtEnd && nextItem) {
+    if (
+      event.key === 'Backspace' &&
+      hasCollapsedSelection &&
+      isAtStart &&
+      hasPreviousItem
+    ) {
       event.preventDefault()
-      focusListItem(blockId, item.id, selectionStart)
-      mergeListItem(blockId, item.id, 'next')
+      const previousItemIndex = itemIndex - 1
+      const previousItemLength = previousItem?.length ?? 0
+      focusListItem(blockId, previousItemIndex, previousItemLength)
+      mergeListItem(blockId, itemIndex, 'previous')
+      return
+    }
+
+    if (
+      event.key === 'Backspace' &&
+      hasCollapsedSelection &&
+      isAtStart &&
+      isEmptyItem
+    ) {
+      event.preventDefault()
+      const nextTextBlockId = convertListBlockToTextBlock(blockId, itemIndex)
+      focusTextBlock(nextTextBlockId, 0)
+      return
+    }
+
+    if (event.key === 'Delete' && hasCollapsedSelection && isAtEnd && hasNextItem) {
+      event.preventDefault()
+      focusListItem(blockId, itemIndex, selectionStart)
+      mergeListItem(blockId, itemIndex, 'next')
       return
     }
 
@@ -133,9 +121,9 @@ const ListItemRow = ({
         selectionStart
       )
 
-      if (event.key === 'ArrowUp' && isOnFirstLine && previousItem) {
+      if (event.key === 'ArrowUp' && isOnFirstLine && hasPreviousItem) {
         event.preventDefault()
-        focusListItem(blockId, previousItem.id, previousItem.content.length)
+        focusListItem(blockId, itemIndex - 1, previousItem?.length ?? 0)
         return
       }
 
@@ -149,9 +137,9 @@ const ListItemRow = ({
         return
       }
 
-      if (event.key === 'ArrowDown' && isOnLastLine && nextItem) {
+      if (event.key === 'ArrowDown' && isOnLastLine && hasNextItem) {
         event.preventDefault()
-        focusListItem(blockId, nextItem.id, 0)
+        focusListItem(blockId, itemIndex + 1, 0)
         return
       }
 
@@ -166,61 +154,41 @@ const ListItemRow = ({
     }
   }
 
-  const ListTag = listStyle === 'numbered' ? 'ol' : 'ul'
-
   return (
     <li>
       <Textarea
         ref={setTextareaRef}
-        value={item.content}
-        onChange={(event) => updateListItem(blockId, item.id, event.target.value)}
+        value={item}
+        onChange={(event) =>
+          updateListItem(blockId, itemIndex, event.target.value)
+        }
         onKeyDown={handleKeyDown}
         data-block-id={blockId}
         data-block-kind="list-item"
-        placeholder={flatItems.length === 1 && itemIndex === 0 ? 'List item' : undefined}
+        placeholder={itemCount === 1 && itemIndex === 0 ? 'List item' : undefined}
         className="placeholder:text-muted-foreground block min-h-0 w-full resize-none border-0 bg-transparent px-0 py-0 font-serif text-xl! leading-relaxed shadow-none focus-visible:ring-0 dark:bg-transparent"
       />
-
-      {item.children.length > 0 ? (
-        <ListTag className={getJournalListClassName(listStyle)}>
-          {item.children.map((child) => (
-            <ListItemRow
-              key={child.id}
-              blockId={blockId}
-              flatItems={flatItems}
-              item={child}
-              listStyle={listStyle}
-              onSetItemRef={onSetItemRef}
-              indexById={indexById}
-            />
-          ))}
-        </ListTag>
-      ) : null}
     </li>
   )
 }
 
 const ListBlock = ({ block, blockId }: ListBlockProps) => {
   const { setBlockFocusTarget, updateListStyle } = useJournalEditor()
-  const itemRefs = useRef<Record<string, HTMLTextAreaElement | null>>({})
-  const itemTargetRefs = useRef<Record<string, BlockFocusTarget | null>>({})
-  const listTree = useMemo(() => buildJournalListTree(block.items), [block.items])
-  const indexById = useMemo(
-    () => new Map(block.items.map((item, index) => [item.id, index])),
-    [block.items]
-  )
+  const itemRefs = useRef<Record<number, HTMLTextAreaElement | null>>({})
+  const itemTargetRefs = useRef<Record<number, BlockFocusTarget | null>>({})
 
   const getBoundaryElement = useCallback(
     (placement: 'start' | 'end') => {
-      const orderedIds =
+      const indexes =
         placement === 'start'
-          ? block.items.map((item) => item.id)
-          : [...block.items].reverse().map((item) => item.id)
+          ? block.items.map((_, index) => index)
+          : block.items.map((_, index) => index).reverse()
 
       return (
-        orderedIds
-          .map((itemId) => itemRefs.current[itemId] ?? null)
-          .find((element): element is HTMLTextAreaElement => element !== null) ?? null
+        indexes
+          .map((itemIndex) => itemRefs.current[itemIndex] ?? null)
+          .find((element): element is HTMLTextAreaElement => element !== null) ??
+        null
       )
     },
     [block.items]
@@ -238,22 +206,22 @@ const ListBlock = ({ block, blockId }: ListBlockProps) => {
   }, [blockId, getBoundaryElement, setBlockFocusTarget])
 
   const setItemRef = useCallback(
-    (itemId: string, node: HTMLTextAreaElement | null) => {
-      if (itemRefs.current[itemId] === node) {
+    (itemIndex: number, node: HTMLTextAreaElement | null) => {
+      if (itemRefs.current[itemIndex] === node) {
         return
       }
 
-      itemRefs.current[itemId] = node
+      itemRefs.current[itemIndex] = node
 
       if (node) {
-        const existingTarget = itemTargetRefs.current[itemId]
+        const existingTarget = itemTargetRefs.current[itemIndex]
 
         if (
           existingTarget &&
           existingTarget.kind === 'textarea' &&
           existingTarget.element === node
         ) {
-          setBlockFocusTarget(`${blockId}:${itemId}`, existingTarget)
+          setBlockFocusTarget(`${blockId}:${itemIndex}`, existingTarget)
           return
         }
 
@@ -262,13 +230,13 @@ const ListBlock = ({ block, blockId }: ListBlockProps) => {
           kind: 'textarea',
         }
 
-        itemTargetRefs.current[itemId] = nextTarget
-        setBlockFocusTarget(`${blockId}:${itemId}`, nextTarget)
+        itemTargetRefs.current[itemIndex] = nextTarget
+        setBlockFocusTarget(`${blockId}:${itemIndex}`, nextTarget)
         return
       }
 
-      itemTargetRefs.current[itemId] = null
-      setBlockFocusTarget(`${blockId}:${itemId}`, null)
+      itemTargetRefs.current[itemIndex] = null
+      setBlockFocusTarget(`${blockId}:${itemIndex}`, null)
     },
     [blockId, setBlockFocusTarget]
   )
@@ -302,16 +270,21 @@ const ListBlock = ({ block, blockId }: ListBlockProps) => {
         </Button>
       </div>
 
-      <ListTag className={getJournalListClassName(block.style)}>
-        {listTree.map((item) => (
+      <ListTag
+        className={cn(
+          'list-outside pl-6 marker:text-base',
+          block.style === 'numbered' ? 'list-decimal' : 'list-disc'
+        )}
+      >
+        {block.items.map((item, itemIndex) => (
           <ListItemRow
-            key={item.id}
+            key={itemIndex}
             blockId={blockId}
-            flatItems={block.items}
             item={item}
-            listStyle={block.style}
+            itemCount={block.items.length}
+            itemIndex={itemIndex}
             onSetItemRef={setItemRef}
-            indexById={indexById}
+            previousItem={block.items[itemIndex - 1] ?? null}
           />
         ))}
       </ListTag>

@@ -20,7 +20,6 @@ import {
   focusBlockTarget,
   makeImageBlock,
   makeListBlock,
-  makeListItem,
   makeTextBlock,
   normalizeEditorBlocks,
 } from '@/components/journal-editor/utils'
@@ -221,8 +220,8 @@ const useJournalEditor = () => {
   )
 
   const focusListItem = useCallback(
-    (blockId: string, itemId: string, start: number, end = start) => {
-      setPendingBlockFocus({ blockId: `${blockId}:${itemId}`, start, end })
+    (blockId: string, itemIndex: number, start: number, end = start) => {
+      setPendingBlockFocus({ blockId: `${blockId}:${itemIndex}`, start, end })
     },
     [setPendingBlockFocus]
   )
@@ -418,20 +417,19 @@ const useJournalEditor = () => {
   )
 
   const updateListItem = useCallback(
-    (blockId: string, itemId: string, value: string) => {
+    (blockId: string, itemIndex: number, value: string) => {
       setBlocks((currentBlocks) => {
-        const blockIndex = currentBlocks.findIndex((block) => block.id === blockId)
+        const blockIndex = currentBlocks.findIndex(
+          (block) => block.id === blockId
+        )
         const block = currentBlocks[blockIndex]
 
         if (!block || block.type !== 'list') return currentBlocks
 
-        const itemIndex = block.items.findIndex((item) => item.id === itemId)
-        const item = block.items[itemIndex]
-
-        if (!item) return currentBlocks
+        if (itemIndex < 0 || itemIndex >= block.items.length) return currentBlocks
 
         const nextItems = [...block.items]
-        nextItems[itemIndex] = { ...item, content: value }
+        nextItems[itemIndex] = value
 
         const nextBlocks = [...currentBlocks]
         nextBlocks[blockIndex] = { ...block, items: nextItems }
@@ -460,65 +458,62 @@ const useJournalEditor = () => {
   )
 
   const splitListItem = useCallback(
-    (blockId: string, itemId: string, start: number, end: number) => {
-      const nextItem = makeListItem()
-
+    (blockId: string, itemIndex: number, start: number, end: number) => {
       setBlocks((currentBlocks) => {
-        const blockIndex = currentBlocks.findIndex((block) => block.id === blockId)
+        const blockIndex = currentBlocks.findIndex(
+          (block) => block.id === blockId
+        )
         const block = currentBlocks[blockIndex]
 
         if (!block || block.type !== 'list') return currentBlocks
 
-        const itemIndex = block.items.findIndex((item) => item.id === itemId)
         const item = block.items[itemIndex]
 
-        if (!item) return currentBlocks
+        if (typeof item !== 'string') return currentBlocks
 
-        const before = item.content.slice(0, start)
-        const after = item.content.slice(end)
+        const before = item.slice(0, start)
+        const after = item.slice(end)
 
         const nextBlocks = [...currentBlocks]
         nextBlocks[blockIndex] = {
           ...block,
           items: [
             ...block.items.slice(0, itemIndex),
-            { ...item, content: before },
-            { ...nextItem, content: after, indent: item.indent },
+            before,
+            after,
             ...block.items.slice(itemIndex + 1),
           ],
         }
         return nextBlocks
       })
 
-      return nextItem.id
+      return itemIndex + 1
     },
     [setBlocks]
   )
 
   const mergeListItem = useCallback(
-    (blockId: string, itemId: string, direction: MergeTextBlockDirection) => {
+    (blockId: string, itemIndex: number, direction: MergeTextBlockDirection) => {
       setBlocks((currentBlocks) => {
-        const blockIndex = currentBlocks.findIndex((block) => block.id === blockId)
+        const blockIndex = currentBlocks.findIndex(
+          (block) => block.id === blockId
+        )
         const block = currentBlocks[blockIndex]
 
         if (!block || block.type !== 'list') return currentBlocks
-
-        const itemIndex = block.items.findIndex((item) => item.id === itemId)
-        if (itemIndex === -1) return currentBlocks
 
         const sourceIndex = direction === 'previous' ? itemIndex - 1 : itemIndex
         const targetIndex = direction === 'previous' ? itemIndex : itemIndex + 1
         const sourceItem = block.items[sourceIndex]
         const targetItem = block.items[targetIndex]
 
-        if (!sourceItem || !targetItem) return currentBlocks
+        if (typeof sourceItem !== 'string' || typeof targetItem !== 'string') {
+          return currentBlocks
+        }
 
         const nextItems = [
           ...block.items.slice(0, sourceIndex),
-          {
-            ...sourceItem,
-            content: sourceItem.content + targetItem.content,
-          },
+          sourceItem + targetItem,
           ...block.items.slice(targetIndex + 1),
         ]
 
@@ -530,72 +525,21 @@ const useJournalEditor = () => {
     [setBlocks]
   )
 
-  const indentListItem = useCallback(
-    (blockId: string, itemId: string) => {
-      setBlocks((currentBlocks) => {
-        const blockIndex = currentBlocks.findIndex((block) => block.id === blockId)
-        const block = currentBlocks[blockIndex]
-
-        if (!block || block.type !== 'list') return currentBlocks
-
-        const itemIndex = block.items.findIndex((item) => item.id === itemId)
-        const item = block.items[itemIndex]
-        const previousItem = block.items[itemIndex - 1]
-
-        if (!item || !previousItem) return currentBlocks
-
-        const nextIndent = Math.min(item.indent + 1, previousItem.indent + 1)
-        if (nextIndent === item.indent) return currentBlocks
-
-        const nextItems = [...block.items]
-        nextItems[itemIndex] = { ...item, indent: nextIndent }
-
-        const nextBlocks = [...currentBlocks]
-        nextBlocks[blockIndex] = { ...block, items: nextItems }
-        return nextBlocks
-      })
-    },
-    [setBlocks]
-  )
-
-  const outdentListItem = useCallback(
-    (blockId: string, itemId: string) => {
-      setBlocks((currentBlocks) => {
-        const blockIndex = currentBlocks.findIndex((block) => block.id === blockId)
-        const block = currentBlocks[blockIndex]
-
-        if (!block || block.type !== 'list') return currentBlocks
-
-        const itemIndex = block.items.findIndex((item) => item.id === itemId)
-        const item = block.items[itemIndex]
-
-        if (!item || item.indent === 0) return currentBlocks
-
-        const nextItems = [...block.items]
-        nextItems[itemIndex] = { ...item, indent: item.indent - 1 }
-
-        const nextBlocks = [...currentBlocks]
-        nextBlocks[blockIndex] = { ...block, items: nextItems }
-        return nextBlocks
-      })
-    },
-    [setBlocks]
-  )
-
   const convertListBlockToTextBlock = useCallback(
-    (blockId: string, itemId: string) => {
+    (blockId: string, itemIndex: number) => {
       const nextTextBlock = makeTextBlock()
 
       setBlocks((currentBlocks) => {
-        const blockIndex = currentBlocks.findIndex((block) => block.id === blockId)
+        const blockIndex = currentBlocks.findIndex(
+          (block) => block.id === blockId
+        )
         const block = currentBlocks[blockIndex]
 
         if (!block || block.type !== 'list') return currentBlocks
 
-        const itemIndex = block.items.findIndex((item) => item.id === itemId)
         const item = block.items[itemIndex]
 
-        if (!item) return currentBlocks
+        if (typeof item !== 'string') return currentBlocks
 
         const previousItems = block.items.slice(0, itemIndex)
         const nextItems = block.items.slice(itemIndex + 1)
@@ -607,7 +551,7 @@ const useJournalEditor = () => {
 
         replacementBlocks.push({
           ...nextTextBlock,
-          content: item.content,
+          content: item,
         })
 
         if (nextItems.length > 0) {
@@ -795,7 +739,6 @@ const useJournalEditor = () => {
     getNextBlock,
     getPreviousBlock,
     headerActions: editorConfig.headerActions,
-    indentListItem,
     insertBlockBelow,
     insertImagesBelow,
     isDirty,
@@ -805,7 +748,6 @@ const useJournalEditor = () => {
     mergeTextBlock,
     moveImage,
     moveBlock,
-    outdentListItem,
     save,
     removeBlock,
     removeImage,

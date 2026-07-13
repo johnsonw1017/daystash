@@ -14,17 +14,11 @@ export type TextJournalBlock = {
 
 export type ListStyle = 'bullet' | 'numbered'
 
-export type JournalListBlockItem = {
-  id: string
-  content: string
-  indent: number
-}
-
 export type ListJournalBlock = {
   id: string
   type: 'list'
   style: ListStyle
-  items: JournalListBlockItem[]
+  items: string[]
 }
 
 export type ImageJournalBlock = {
@@ -85,23 +79,6 @@ const normalizeTextBlock = (value: Record<string, unknown>): TextJournalBlock | 
   }
 }
 
-const normalizeListItem = (value: Record<string, unknown>): JournalListBlockItem | null => {
-  const id = typeof value.id === 'string' && value.id.length > 0 ? value.id : null
-
-  if (!id) {
-    return null
-  }
-
-  return {
-    id,
-    content: typeof value.content === 'string' ? value.content : '',
-    indent:
-      typeof value.indent === 'number' && Number.isInteger(value.indent) && value.indent > 0
-        ? value.indent
-        : 0,
-  }
-}
-
 const normalizeListBlock = (value: Record<string, unknown>): ListJournalBlock | null => {
   const id = typeof value.id === 'string' && value.id.length > 0 ? value.id : null
   const itemsValue = Array.isArray(value.items) ? value.items : []
@@ -111,9 +88,18 @@ const normalizeListBlock = (value: Record<string, unknown>): ListJournalBlock | 
   }
 
   const items = itemsValue
-    .filter(isRecord)
-    .map(normalizeListItem)
-    .filter((item): item is JournalListBlockItem => item !== null)
+    .map((item) => {
+      if (typeof item === 'string') {
+        return item
+      }
+
+      if (isRecord(item) && typeof item.content === 'string') {
+        return item.content
+      }
+
+      return null
+    })
+    .filter((item): item is string => item !== null)
 
   if (!items.length) {
     return null
@@ -211,17 +197,8 @@ export const normalizeJournalBlocks = (blocks: JournalBlock[]): JournalBlock[] =
 
       if (block.type === 'list') {
         const items = block.items
-          .map((item, itemIndex, items) => {
-            const previousItem = items[itemIndex - 1]
-            const maxIndent = previousItem ? previousItem.indent + 1 : 0
-
-            return {
-              id: item.id,
-              content: item.content,
-              indent: Math.min(Math.max(0, Math.trunc(item.indent)), maxIndent),
-            }
-          })
-          .filter((item) => item.content.trim().length > 0)
+          .map((item) => item)
+          .filter((item) => item.trim().length > 0)
 
         return {
           id: block.id,
@@ -283,12 +260,12 @@ export const getJournalExcerpt = (blocks: JournalBlock[]) => {
 
   const firstListBlock = blocks.find(
     (block): block is ListJournalBlock =>
-      block.type === 'list' && block.items.some((item) => item.content.trim().length > 0)
+      block.type === 'list' && block.items.some((item) => item.trim().length > 0)
   )
 
   if (firstListBlock) {
     return (
-      firstListBlock.items.find((item) => item.content.trim().length > 0)?.content.trim() ||
+      firstListBlock.items.find((item) => item.trim().length > 0)?.trim() ||
       'No journal text yet.'
     )
   }
