@@ -12,7 +12,9 @@ import {
 import { Button } from '@/components/ui/button'
 import { useJournalBySlug } from '@/hooks/use-journals'
 import { cloudinaryLoader } from '@/lib/cloudinary'
+import type { ListStyle } from '@/lib/journals'
 import { getCarouselViewportAspectRatio } from '@/lib/journal-image-block'
+import { cn } from '@/lib/utils'
 
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
   month: 'short',
@@ -22,6 +24,25 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
 
 type EntryViewProps = {
   slug: string
+}
+
+const renderList = (items: string[], style: ListStyle) => {
+  const ListTag = style === 'numbered' ? 'ol' : 'ul'
+
+  return (
+    <ListTag
+      className={cn(
+        'list-outside pl-6 marker:text-base',
+        style === 'numbered' ? 'list-decimal' : 'list-disc'
+      )}
+    >
+      {items.map((item, itemIndex) => (
+        <li key={itemIndex}>
+          <span className="whitespace-pre-wrap">{item}</span>
+        </li>
+      ))}
+    </ListTag>
+  )
 }
 
 const EntryView = ({ slug }: EntryViewProps) => {
@@ -51,7 +72,7 @@ const EntryView = ({ slug }: EntryViewProps) => {
         </Button>
       </div>
 
-      <article className="space-y-5 font-serif text-xl leading-relaxed">
+      <article className="space-y-3 font-serif text-xl leading-relaxed">
         {journal.blocks.length === 0 && (
           <p className="whitespace-pre-wrap">No journal content yet.</p>
         )}
@@ -65,8 +86,18 @@ const EntryView = ({ slug }: EntryViewProps) => {
             )
           }
 
+          if (block.type === 'list') {
+            return (
+              <div key={block.id}>
+                {renderList(block.items, block.style)}
+              </div>
+            )
+          }
+
           const key = block.id
-          const carouselAspectRatio = getCarouselViewportAspectRatio(block.images)
+          const carouselAspectRatio = getCarouselViewportAspectRatio(
+            block.images
+          )
 
           return (
             <figure key={key} className="space-y-2">

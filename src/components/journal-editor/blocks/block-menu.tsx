@@ -2,7 +2,7 @@
 
 import type { RefCallback } from 'react'
 import { useSetAtom } from 'jotai'
-import { GripVertical, ImageIcon, Plus, Type } from 'lucide-react'
+import { GripVertical, ImageIcon, List, Plus, Type } from 'lucide-react'
 import { imageDialogStateAtom } from '@/components/journal-editor/atoms'
 import useJournalEditor from '@/components/journal-editor/hooks/use-journal-editor'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -53,6 +53,12 @@ const BlockMenu = ({ blockId, dragHandleRef }: BlockMenuProps) => {
           <DropdownMenuItem onSelect={() => insertBlockBelow(blockId, 'text')}>
             <Type />
             <span>Text</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={() => insertBlockBelow(blockId, 'list')}
+          >
+            <List />
+            <span>List</span>
           </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={() => {

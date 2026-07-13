@@ -19,11 +19,12 @@ import {
 import {
   focusBlockTarget,
   makeImageBlock,
+  makeListBlock,
   makeTextBlock,
   normalizeEditorBlocks,
 } from '@/components/journal-editor/utils'
 import { journalQueryKeys } from '@/hooks/use-journals'
-import type { JournalBlock } from '@/lib/journals'
+import type { JournalBlock, ListStyle } from '@/lib/journals'
 import type {
   BlockFocusPlacement,
   BlockFocusTarget,
@@ -36,6 +37,7 @@ const ensureEditorHasBlock = (blocks: JournalBlock[]) =>
 type InsertBlockType = JournalBlock['type']
 type InsertBlockOptions = {
   images?: Parameters<typeof makeImageBlock>[0]
+  listStyle?: ListStyle
 }
 type MergeTextBlockDirection = 'previous' | 'next'
 
@@ -217,6 +219,13 @@ const useJournalEditor = () => {
     [setPendingBlockFocus]
   )
 
+  const focusListItem = useCallback(
+    (blockId: string, itemIndex: number, start: number, end = start) => {
+      setPendingBlockFocus({ blockId: `${blockId}:${itemIndex}`, start, end })
+    },
+    [setPendingBlockFocus]
+  )
+
   const setBlockFocusTarget = useCallback(
     (blockId: string, target: BlockFocusTarget | null) => {
       setBlockFocusTargets((currentTargets) => {
@@ -268,7 +277,9 @@ const useJournalEditor = () => {
       const nextBlock =
         blockType === 'image'
           ? makeImageBlock(options?.images ?? [])
-          : makeTextBlock()
+          : blockType === 'list'
+            ? makeListBlock(options?.listStyle ?? 'bullet')
+            : makeTextBlock()
 
       setBlocks((currentBlocks) => {
         const blockIndex = currentBlocks.findIndex((block) => block.id === blockId)
@@ -288,9 +299,11 @@ const useJournalEditor = () => {
 
       if (blockType === 'text') {
         focusTextBlock(nextBlock.id, 0)
+      } else if (blockType === 'list') {
+        focusBlock(nextBlock.id, 'start')
       }
     },
-    [focusTextBlock, setBlocks]
+    [focusBlock, focusTextBlock, setBlocks]
   )
 
   const insertImagesBelow = useCallback(
@@ -399,6 +412,155 @@ const useJournalEditor = () => {
         nextBlocks[blockIndex] = { ...block, caption: value }
         return nextBlocks
       })
+    },
+    [setBlocks]
+  )
+
+  const updateListItem = useCallback(
+    (blockId: string, itemIndex: number, value: string) => {
+      setBlocks((currentBlocks) => {
+        const blockIndex = currentBlocks.findIndex(
+          (block) => block.id === blockId
+        )
+        const block = currentBlocks[blockIndex]
+
+        if (!block || block.type !== 'list') return currentBlocks
+
+        if (itemIndex < 0 || itemIndex >= block.items.length) return currentBlocks
+
+        const nextItems = [...block.items]
+        nextItems[itemIndex] = value
+
+        const nextBlocks = [...currentBlocks]
+        nextBlocks[blockIndex] = { ...block, items: nextItems }
+        return nextBlocks
+      })
+    },
+    [setBlocks]
+  )
+
+  const updateListStyle = useCallback(
+    (blockId: string, style: ListStyle) => {
+      setBlocks((currentBlocks) => {
+        const blockIndex = currentBlocks.findIndex((block) => block.id === blockId)
+        const block = currentBlocks[blockIndex]
+
+        if (!block || block.type !== 'list' || block.style === style) {
+          return currentBlocks
+        }
+
+        const nextBlocks = [...currentBlocks]
+        nextBlocks[blockIndex] = { ...block, style }
+        return nextBlocks
+      })
+    },
+    [setBlocks]
+  )
+
+  const splitListItem = useCallback(
+    (blockId: string, itemIndex: number, start: number, end: number) => {
+      setBlocks((currentBlocks) => {
+        const blockIndex = currentBlocks.findIndex(
+          (block) => block.id === blockId
+        )
+        const block = currentBlocks[blockIndex]
+
+        if (!block || block.type !== 'list') return currentBlocks
+
+        const item = block.items[itemIndex]
+
+        if (typeof item !== 'string') return currentBlocks
+
+        const before = item.slice(0, start)
+        const after = item.slice(end)
+
+        const nextBlocks = [...currentBlocks]
+        nextBlocks[blockIndex] = {
+          ...block,
+          items: [
+            ...block.items.slice(0, itemIndex),
+            before,
+            after,
+            ...block.items.slice(itemIndex + 1),
+          ],
+        }
+        return nextBlocks
+      })
+
+      return itemIndex + 1
+    },
+    [setBlocks]
+  )
+
+  const mergeListItem = useCallback(
+    (blockId: string, itemIndex: number, direction: MergeTextBlockDirection) => {
+      setBlocks((currentBlocks) => {
+        const blockIndex = currentBlocks.findIndex(
+          (block) => block.id === blockId
+        )
+        const block = currentBlocks[blockIndex]
+
+        if (!block || block.type !== 'list') return currentBlocks
+
+        const sourceIndex = direction === 'previous' ? itemIndex - 1 : itemIndex
+        const targetIndex = direction === 'previous' ? itemIndex : itemIndex + 1
+        const sourceItem = block.items[sourceIndex]
+        const targetItem = block.items[targetIndex]
+
+        if (typeof sourceItem !== 'string' || typeof targetItem !== 'string') {
+          return currentBlocks
+        }
+
+        const nextItems = [
+          ...block.items.slice(0, sourceIndex),
+          sourceItem + targetItem,
+          ...block.items.slice(targetIndex + 1),
+        ]
+
+        const nextBlocks = [...currentBlocks]
+        nextBlocks[blockIndex] = { ...block, items: nextItems }
+        return nextBlocks
+      })
+    },
+    [setBlocks]
+  )
+
+  const convertListBlockToTextBlock = useCallback(
+    (blockId: string, itemIndex: number) => {
+      const nextTextBlock = makeTextBlock()
+
+      setBlocks((currentBlocks) => {
+        const blockIndex = currentBlocks.findIndex(
+          (block) => block.id === blockId
+        )
+        const block = currentBlocks[blockIndex]
+
+        if (!block || block.type !== 'list') return currentBlocks
+
+        const item = block.items[itemIndex]
+
+        if (typeof item !== 'string') return currentBlocks
+
+        const nextItems = block.items.filter((_, index) => index !== itemIndex)
+        const nextText = { ...nextTextBlock, content: item }
+
+        if (!nextItems.length) {
+          return [
+            ...currentBlocks.slice(0, blockIndex),
+            nextText,
+            ...currentBlocks.slice(blockIndex + 1),
+          ]
+        }
+
+        return [
+          ...currentBlocks.slice(0, blockIndex),
+          { ...block, items: nextItems },
+          nextText,
+          ...currentBlocks.slice(blockIndex + 1),
+        ]
+      })
+
+      return nextTextBlock.id
     },
     [setBlocks]
   )
@@ -564,8 +726,10 @@ const useJournalEditor = () => {
   return {
     appendImagesToBlock,
     blocks,
+    convertListBlockToTextBlock,
     errorMessage,
     focusBlock,
+    focusListItem,
     focusTextBlock,
     getNextBlock,
     getPreviousBlock,
@@ -575,6 +739,7 @@ const useJournalEditor = () => {
     isDirty,
     isEditMode: editorConfig.isEditMode ?? false,
     isSaving: saveMutation.isPending,
+    mergeListItem,
     mergeTextBlock,
     moveImage,
     moveBlock,
@@ -583,9 +748,12 @@ const useJournalEditor = () => {
     removeImage,
     setBlockFocusTarget,
     setTitle,
+    splitListItem,
     splitTextBlock,
     title,
     updateImageCaption,
+    updateListItem,
+    updateListStyle,
     updateTextBlock,
     viewHref: editorConfig.viewHref,
   }

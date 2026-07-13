@@ -5,6 +5,7 @@ import {
   type ImageJournalBlock,
   type JournalBlock,
   type JournalImageAsset,
+  type ListJournalBlock,
   type TextJournalBlock,
 } from '@/lib/journals'
 
@@ -19,6 +20,16 @@ export const makeTextBlock = (content = ''): TextJournalBlock => ({
   id: uuidv4(),
   type: 'text',
   content,
+})
+
+export const makeListBlock = (
+  style: ListJournalBlock['style'] = 'bullet',
+  items: string[] = ['']
+): ListJournalBlock => ({
+  id: uuidv4(),
+  type: 'list',
+  style,
+  items,
 })
 
 export const makeImageBlock = (
@@ -121,6 +132,20 @@ export const focusBlockTarget = (
   target: BlockFocusTarget,
   placement: 'start' | 'end'
 ) => {
+  if (target.kind === 'list') {
+    const element = target.getElement(placement)
+
+    if (!element) {
+      return
+    }
+
+    const caretPosition = placement === 'start' ? 0 : element.value.length
+
+    element.focus()
+    element.setSelectionRange(caretPosition, caretPosition)
+    return
+  }
+
   const { element } = target
   const caretPosition =
     placement === 'start' ? 0 : element.value.length

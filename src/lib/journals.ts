@@ -12,6 +12,15 @@ export type TextJournalBlock = {
   content: string
 }
 
+export type ListStyle = 'bullet' | 'numbered'
+
+export type ListJournalBlock = {
+  id: string
+  type: 'list'
+  style: ListStyle
+  items: string[]
+}
+
 export type ImageJournalBlock = {
   id: string
   type: 'image'
@@ -19,7 +28,7 @@ export type ImageJournalBlock = {
   images: JournalImageAsset[]
 }
 
-export type JournalBlock = TextJournalBlock | ImageJournalBlock
+export type JournalBlock = TextJournalBlock | ListJournalBlock | ImageJournalBlock
 
 export type SaveJournalInput = {
   journalId?: string
@@ -67,6 +76,40 @@ const normalizeTextBlock = (value: Record<string, unknown>): TextJournalBlock | 
     id,
     type: 'text',
     content: typeof value.content === 'string' ? value.content : '',
+  }
+}
+
+const normalizeListBlock = (value: Record<string, unknown>): ListJournalBlock | null => {
+  const id = typeof value.id === 'string' && value.id.length > 0 ? value.id : null
+  const itemsValue = Array.isArray(value.items) ? value.items : []
+
+  if (!id) {
+    return null
+  }
+
+  const items = itemsValue
+    .map((item) => {
+      if (typeof item === 'string') {
+        return item
+      }
+
+      if (isRecord(item) && typeof item.content === 'string') {
+        return item.content
+      }
+
+      return null
+    })
+    .filter((item): item is string => item !== null)
+
+  if (!items.length) {
+    return null
+  }
+
+  return {
+    id,
+    type: 'list',
+    style: value.style === 'numbered' ? 'numbered' : 'bullet',
+    items,
   }
 }
 
@@ -128,6 +171,10 @@ export const parseJournalBlocks = (value: unknown): JournalBlock[] => {
         return normalizeTextBlock(block)
       }
 
+      if (block.type === 'list') {
+        return normalizeListBlock(block)
+      }
+
       if (block.type === 'image') {
         return normalizeImageBlock(block)
       }
@@ -148,6 +195,19 @@ export const normalizeJournalBlocks = (blocks: JournalBlock[]): JournalBlock[] =
         }
       }
 
+      if (block.type === 'list') {
+        const items = block.items
+          .map((item) => item)
+          .filter((item) => item.trim().length > 0)
+
+        return {
+          id: block.id,
+          type: 'list' as const,
+          style: block.style,
+          items,
+        }
+      }
+
       return {
         id: block.id,
         type: 'image' as const,
@@ -163,7 +223,17 @@ export const normalizeJournalBlocks = (blocks: JournalBlock[]): JournalBlock[] =
           .filter((image) => image.publicId.length > 0),
       }
     })
-    .filter((block) => (block.type === 'text' ? block.content.trim().length > 0 : block.images.length > 0))
+    .filter((block) => {
+      if (block.type === 'text') {
+        return block.content.trim().length > 0
+      }
+
+      if (block.type === 'list') {
+        return block.items.length > 0
+      }
+
+      return block.images.length > 0
+    })
 
   if (!normalized.length) {
     return [
@@ -184,7 +254,23 @@ export const getJournalExcerpt = (blocks: JournalBlock[]) => {
       block.type === 'text' && block.content.trim().length > 0
   )
 
-  return firstTextBlock?.content.trim() || 'No journal text yet.'
+  if (firstTextBlock) {
+    return firstTextBlock.content.trim()
+  }
+
+  const firstListBlock = blocks.find(
+    (block): block is ListJournalBlock =>
+      block.type === 'list' && block.items.some((item) => item.trim().length > 0)
+  )
+
+  if (firstListBlock) {
+    return (
+      firstListBlock.items.find((item) => item.trim().length > 0)?.trim() ||
+      'No journal text yet.'
+    )
+  }
+
+  return 'No journal text yet.'
 }
 
 export const getReferencedAssetIds = (blocks: JournalBlock[]) =>
