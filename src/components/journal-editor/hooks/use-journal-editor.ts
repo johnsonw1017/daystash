@@ -541,26 +541,21 @@ const useJournalEditor = () => {
 
         if (typeof item !== 'string') return currentBlocks
 
-        const previousItems = block.items.slice(0, itemIndex)
-        const nextItems = block.items.slice(itemIndex + 1)
-        const replacementBlocks: JournalBlock[] = []
+        const nextItems = block.items.filter((_, index) => index !== itemIndex)
+        const nextText = { ...nextTextBlock, content: item }
 
-        if (previousItems.length > 0) {
-          replacementBlocks.push(makeListBlock(block.style, previousItems))
-        }
-
-        replacementBlocks.push({
-          ...nextTextBlock,
-          content: item,
-        })
-
-        if (nextItems.length > 0) {
-          replacementBlocks.push(makeListBlock(block.style, nextItems))
+        if (!nextItems.length) {
+          return [
+            ...currentBlocks.slice(0, blockIndex),
+            nextText,
+            ...currentBlocks.slice(blockIndex + 1),
+          ]
         }
 
         return [
           ...currentBlocks.slice(0, blockIndex),
-          ...replacementBlocks,
+          { ...block, items: nextItems },
+          nextText,
           ...currentBlocks.slice(blockIndex + 1),
         ]
       })
