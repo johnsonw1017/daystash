@@ -441,6 +441,24 @@ const useJournalEditor = () => {
     [setBlocks]
   )
 
+  const updateListStyle = useCallback(
+    (blockId: string, style: ListStyle) => {
+      setBlocks((currentBlocks) => {
+        const blockIndex = currentBlocks.findIndex((block) => block.id === blockId)
+        const block = currentBlocks[blockIndex]
+
+        if (!block || block.type !== 'list' || block.style === style) {
+          return currentBlocks
+        }
+
+        const nextBlocks = [...currentBlocks]
+        nextBlocks[blockIndex] = { ...block, style }
+        return nextBlocks
+      })
+    },
+    [setBlocks]
+  )
+
   const splitListItem = useCallback(
     (blockId: string, itemId: string, start: number, end: number) => {
       const nextItem = makeListItem()
@@ -798,6 +816,7 @@ const useJournalEditor = () => {
     title,
     updateImageCaption,
     updateListItem,
+    updateListStyle,
     updateTextBlock,
     viewHref: editorConfig.viewHref,
   }
