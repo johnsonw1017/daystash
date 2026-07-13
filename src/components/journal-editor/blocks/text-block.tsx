@@ -14,6 +14,7 @@ type TextBlockProps = {
 const TextBlock = ({ block, blockId }: TextBlockProps) => {
   const {
     blocks,
+    focusListItem,
     focusTextBlock,
     getNextBlock,
     getPreviousBlock,
@@ -45,6 +46,7 @@ const TextBlock = ({ block, blockId }: TextBlockProps) => {
     const previousBlock = getPreviousBlock(blockId) ?? undefined
     const nextBlock = getNextBlock(blockId) ?? undefined
     const previousTextBlock = previousBlock?.type === 'text' ? previousBlock : null
+    const previousListBlock = previousBlock?.type === 'list' ? previousBlock : null
     const nextTextBlock = nextBlock?.type === 'text' ? nextBlock : null
     const hasCollapsedSelection = selectionStart === selectionEnd
     const isAtStart = selectionStart === 0
@@ -55,6 +57,26 @@ const TextBlock = ({ block, blockId }: TextBlockProps) => {
       event.preventDefault()
       focusTextBlock(previousTextBlock.id, previousTextBlock.content.length)
       mergeTextBlock(blockId, 'previous')
+      return
+    }
+
+    if (
+      event.key === 'Backspace' &&
+      hasCollapsedSelection &&
+      isAtStart &&
+      previousListBlock &&
+      previousListBlock.items.length > 0
+    ) {
+      event.preventDefault()
+      const lastItemIndex = previousListBlock.items.length - 1
+      const lastItem = previousListBlock.items[lastItemIndex] ?? ''
+
+      focusListItem(previousListBlock.id, lastItemIndex, lastItem.length)
+
+      if (isEmptyBlock && blockCount > 1) {
+        removeBlock(blockId)
+      }
+
       return
     }
 
