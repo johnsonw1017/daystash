@@ -59,13 +59,19 @@ const buildListTree = (items: JournalListBlockItem[]) => {
 
 const renderListNodes = (nodes: ListTreeNode[], style: ListStyle) => {
   const ListTag = style === 'numbered' ? 'ol' : 'ul'
+  const listClassName =
+    style === 'numbered'
+      ? 'list-outside list-decimal pl-6 marker:text-base'
+      : 'list-outside list-disc pl-6 marker:text-base'
 
   return (
-    <ListTag className="space-y-2 pl-6 marker:text-base">
+    <ListTag className={listClassName}>
       {nodes.map((node) => (
         <li key={node.id}>
           <span className="whitespace-pre-wrap">{node.content}</span>
-          {node.children.length > 0 ? renderListNodes(node.children, style) : null}
+          {node.children.length > 0
+            ? renderListNodes(node.children, style)
+            : null}
         </li>
       ))}
     </ListTag>
@@ -99,7 +105,7 @@ const EntryView = ({ slug }: EntryViewProps) => {
         </Button>
       </div>
 
-      <article className="space-y-5 font-serif text-xl leading-relaxed">
+      <article className="space-y-3 font-serif text-xl leading-relaxed">
         {journal.blocks.length === 0 && (
           <p className="whitespace-pre-wrap">No journal content yet.</p>
         )}
@@ -114,11 +120,17 @@ const EntryView = ({ slug }: EntryViewProps) => {
           }
 
           if (block.type === 'list') {
-            return <div key={block.id}>{renderListNodes(buildListTree(block.items), block.style)}</div>
+            return (
+              <div key={block.id}>
+                {renderListNodes(buildListTree(block.items), block.style)}
+              </div>
+            )
           }
 
           const key = block.id
-          const carouselAspectRatio = getCarouselViewportAspectRatio(block.images)
+          const carouselAspectRatio = getCarouselViewportAspectRatio(
+            block.images
+          )
 
           return (
             <figure key={key} className="space-y-2">
