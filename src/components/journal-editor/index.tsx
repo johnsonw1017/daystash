@@ -10,6 +10,7 @@ import BlockMenu from '@/components/journal-editor/blocks/block-menu'
 import ImageDialog from '@/components/journal-editor/image-dialog'
 import ResolveBlock from '@/components/journal-editor/blocks/resolve-block'
 import useJournalEditor from '@/components/journal-editor/hooks/use-journal-editor'
+import useJournalSessionCleanup from '@/components/journal-editor/hooks/use-journal-session-cleanup'
 import JournalHeader from '@/components/journal-editor/journal-header'
 import type { JournalEditorProps } from '@/components/journal-editor/types'
 import { getTextareaLineBoundaryState } from '@/components/journal-editor/utils'
@@ -52,6 +53,8 @@ const SortableBlockRow = ({
 }
 
 const JournalEditorContent = () => {
+  useJournalSessionCleanup()
+
   const { blocks, focusBlock, getNextBlock, getPreviousBlock, moveBlock } =
     useJournalEditor()
 
