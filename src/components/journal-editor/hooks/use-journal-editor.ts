@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAtom, useSetAtom } from 'jotai'
 import { saveJournal } from '@/app/(journal)/write/actions'
@@ -8,6 +8,7 @@ import {
   blockFocusTargetsAtom,
   blocksAtom,
   errorMessageAtom,
+  isJournalSavingAtom,
   journalEditorConfigAtom,
   journalIdAtom,
   lastSavedTitleAtom,
@@ -50,16 +51,11 @@ const useJournalEditor = () => {
   const [lastSavedTitle, setLastSavedTitle] = useAtom(lastSavedTitleAtom)
   const [pendingBlockFocus, setPendingBlockFocus] = useAtom(pendingBlockFocusAtom)
   const [savedBlocks, setSavedBlocks] = useAtom(savedBlocksAtom)
-  const [sessionAssetIds, setSessionAssetIds] = useAtom(sessionAssetIdsAtom)
+  const setSessionAssetIds = useSetAtom(sessionAssetIdsAtom)
+  const setIsJournalSaving = useSetAtom(isJournalSavingAtom)
   const [blockFocusTargets] = useAtom(blockFocusTargetsAtom)
   const setBlockFocusTargets = useSetAtom(blockFocusTargetsAtom)
   const [title, setTitle] = useAtom(titleAtom)
-  const latestJournalIdRef = useRef(journalId)
-  const latestIsDirtyRef = useRef(false)
-  const latestSessionAssetIdsRef = useRef<string[]>([])
-  const cleanupSentRef = useRef(false)
-  const isSavingRef = useRef(false)
-
   const normalizedBlocks = normalizeEditorBlocks(blocks)
   const isDirty =
     JSON.stringify(normalizedBlocks) !== JSON.stringify(savedBlocks) ||
@@ -77,17 +73,13 @@ const useJournalEditor = () => {
     }) => {
       if (nextJournalId) {
         setJournalId(nextJournalId)
-        latestJournalIdRef.current = nextJournalId
       }
 
       setBlocks(nextBlocks)
       setSavedBlocks(nextBlocks)
       setLastSavedTitle(title)
       setSessionAssetIds([])
-      latestIsDirtyRef.current = false
-      latestSessionAssetIdsRef.current = []
-      cleanupSentRef.current = false
-      isSavingRef.current = false
+      setIsJournalSaving(false)
 
       void queryClient.invalidateQueries({ queryKey: journalQueryKeys.all })
       toast.success(successMessage)
@@ -96,6 +88,7 @@ const useJournalEditor = () => {
       queryClient,
       setBlocks,
       setJournalId,
+      setIsJournalSaving,
       setLastSavedTitle,
       setSavedBlocks,
       setSessionAssetIds,
@@ -121,67 +114,6 @@ const useJournalEditor = () => {
     setErrorMessage('')
     callback()
   }, [setErrorMessage])
-
-  useEffect(() => {
-    latestJournalIdRef.current = journalId
-    latestIsDirtyRef.current = isDirty
-    latestSessionAssetIdsRef.current = sessionAssetIds
-    cleanupSentRef.current = false
-  }, [isDirty, journalId, sessionAssetIds])
-
-  const discardSessionChanges = useCallback(() => {
-    if (cleanupSentRef.current) return
-    if (isSavingRef.current) return
-
-    const nextJournalId = latestJournalIdRef.current
-    const nextSessionAssetIds = latestSessionAssetIdsRef.current
-
-    if (!nextJournalId) return
-    if (!latestIsDirtyRef.current && nextSessionAssetIds.length === 0) return
-
-    cleanupSentRef.current = true
-
-    const payload = JSON.stringify({
-      journalId: nextJournalId,
-      sessionAssetIds: nextSessionAssetIds,
-    })
-
-    if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
-      navigator.sendBeacon(
-        '/api/journals/discard-session',
-        new Blob([payload], { type: 'application/json' })
-      )
-      return
-    }
-
-    void fetch('/api/journals/discard-session', {
-      method: 'POST',
-      body: payload,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      keepalive: true,
-    })
-  }, [])
-
-  useEffect(() => {
-    const handlePageHide = () => {
-      discardSessionChanges()
-    }
-
-    window.addEventListener('pagehide', handlePageHide)
-
-    return () => {
-      window.removeEventListener('pagehide', handlePageHide)
-    }
-  }, [discardSessionChanges])
-
-  useEffect(
-    () => () => {
-      discardSessionChanges()
-    },
-    [discardSessionChanges]
-  )
 
   useEffect(() => {
     if (pendingBlockFocus === null) return
@@ -709,7 +641,7 @@ const useJournalEditor = () => {
         successMessage: editorConfig.successMessage,
       }),
     onError: () => {
-      isSavingRef.current = false
+      setIsJournalSaving(false)
       handleMutationError({
         message: 'Could not save changes. Try again.',
         toastMessage: 'Could not save journal',
@@ -719,7 +651,7 @@ const useJournalEditor = () => {
 
   const save = () =>
     runMutation(() => {
-      isSavingRef.current = true
+      setIsJournalSaving(true)
       saveMutation.mutate()
     })
 
