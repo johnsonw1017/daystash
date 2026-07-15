@@ -19,6 +19,7 @@ export const errorMessageAtom = atom('')
 export const journalIdAtom = atom<string | undefined>(undefined)
 export const savedBlocksAtom = atom<JournalBlock[]>([])
 export const sessionAssetIdsAtom = atom<string[]>([])
+export const isJournalSavingAtom = atom(false)
 export const journalEditorConfigAtom = atom<JournalEditorConfig>({
   headerActions: undefined,
   isEditMode: false,
@@ -78,6 +79,7 @@ export const createJournalBlocksStore = ({
   store.set(pendingBlockFocusAtom, null)
   store.set(savedBlocksAtom, nextBlocks)
   store.set(sessionAssetIdsAtom, [])
+  store.set(isJournalSavingAtom, false)
   store.set(blockFocusTargetsAtom, {})
   store.set(imageDialogStateAtom, initialImageDialogState)
   store.set(editorSessionIdAtom, crypto.randomUUID())
