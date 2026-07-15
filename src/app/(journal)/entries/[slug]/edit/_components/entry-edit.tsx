@@ -17,7 +17,6 @@ import {
 } from '@/components/ui/dialog'
 import JournalEditor from '@/components/journal-editor'
 import { journalQueryKeys, useJournalBySlug } from '@/hooks/use-journals'
-import type { JournalListItem } from '@/lib/journals'
 import { toast } from 'sonner'
 
 type EntryEditProps = {
@@ -31,11 +30,6 @@ const EntryEdit = ({ slug }: EntryEditProps) => {
   const deleteMutation = useMutation({
     mutationFn: async () => deleteJournal({ journalId: journal!.id }),
     onSuccess: async () => {
-      queryClient.setQueryData(
-        journalQueryKeys.list(),
-        (current: JournalListItem[] | undefined) =>
-          current?.filter((entry) => entry.id !== journal!.id) ?? []
-      )
       queryClient.removeQueries({ queryKey: journalQueryKeys.bySlug(slug) })
       await queryClient.invalidateQueries({ queryKey: journalQueryKeys.all })
       toast.success('Journal deleted')

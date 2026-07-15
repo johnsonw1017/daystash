@@ -54,8 +54,14 @@ export type JournalSummary = {
   updated_at: string
 }
 
+export type JournalThumbnail = {
+  publicId: string
+  width: number
+  height: number
+}
+
 export type JournalListItem = JournalSummary & {
-  excerpt: string
+  thumbnail: JournalThumbnail | null
 }
 
 export type JournalDetail = JournalSummary & {
@@ -279,3 +285,12 @@ export const getReferencedAssetIds = (blocks: JournalBlock[]) =>
       block.type === 'image' ? block.images.map((image) => image.assetId) : []
     )
   )
+
+export const getJournalThumbnailAssetId = (blocks: JournalBlock[]) => {
+  const firstImageBlock = blocks.find(
+    (block): block is ImageJournalBlock =>
+      block.type === 'image' && block.images.length > 0
+  )
+
+  return firstImageBlock?.images[0]?.assetId ?? null
+}
