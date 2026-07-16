@@ -5,6 +5,7 @@ import { Provider as JotaiProvider } from 'jotai'
 import { useHydrateAtoms } from 'jotai/utils'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { queryClientAtom } from 'jotai-tanstack-query'
+import { ThemeProvider } from 'next-themes'
 import AuthStateSync from '@/components/auth/auth-state-sync'
 
 type ProvidersProps = {
@@ -42,12 +43,19 @@ const Providers = ({ children }: ProvidersProps) => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <JotaiProvider>
-        <HydrateQueryClient queryClient={queryClient}>
-          <AuthStateSync />
-          {children}
-        </HydrateQueryClient>
-      </JotaiProvider>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="light"
+        enableSystem={false}
+        disableTransitionOnChange
+      >
+        <JotaiProvider>
+          <HydrateQueryClient queryClient={queryClient}>
+            <AuthStateSync />
+            {children}
+          </HydrateQueryClient>
+        </JotaiProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   )
 }

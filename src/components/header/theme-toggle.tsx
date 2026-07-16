@@ -1,22 +1,17 @@
 'use client'
 
-import { useAtom } from 'jotai'
-import { useEffect, useSyncExternalStore } from 'react'
+import { useSyncExternalStore } from 'react'
+import { useTheme } from 'next-themes'
 import { MoonStar, Sun } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
-import { themeAtom } from '@/lib/atoms/theme'
 import { cn } from '@/lib/utils'
 
 const emptySubscribe = () => () => {}
 
 const ThemeToggle = () => {
-  const [theme, setTheme] = useAtom(themeAtom)
+  const { resolvedTheme, setTheme } = useTheme()
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false)
-  const isDark = theme === 'dark'
-
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', isDark)
-  }, [isDark])
+  const isDark = resolvedTheme === 'dark'
 
   if (!mounted) {
     return (

@@ -12,13 +12,36 @@ export const metadata: Metadata = {
   description: 'Stash your important moments in one place.',
 }
 
+const legacyThemeStorageScript = `
+  (() => {
+    const themeName = 'theme';
+    try {
+      const storedTheme = window.localStorage.getItem(themeName);
+      if (storedTheme !== '"dark"' && storedTheme !== '"light"') {
+        return;
+      }
+
+      window.localStorage.setItem(themeName, JSON.parse(storedTheme));
+    } catch {}
+  })();
+`
+
 const RootLayout = ({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) => {
   return (
-    <html lang="en" className={cn(inter.variable, cormorant.variable)}>
+    <html
+      lang="en"
+      className={cn(inter.variable, cormorant.variable)}
+      suppressHydrationWarning
+    >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{ __html: legacyThemeStorageScript }}
+        />
+      </head>
       <body className="font-sans" suppressHydrationWarning>
         <Providers>
           <header className="sticky top-0 z-50 h-16">

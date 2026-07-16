@@ -18,6 +18,7 @@ import {
 import JournalEditor from '@/components/journal-editor'
 import { journalQueryKeys, useJournalBySlug } from '@/hooks/use-journals'
 import { toast } from 'sonner'
+import { EntryEditSkeleton } from '../../_components/entry-skeletons'
 
 type EntryEditProps = {
   slug: string
@@ -41,7 +42,7 @@ const EntryEdit = ({ slug }: EntryEditProps) => {
   })
 
   if (isLoading) {
-    return <p className="text-muted-foreground">Loading entry...</p>
+    return <EntryEditSkeleton />
   }
 
   if (!journal) {

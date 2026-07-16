@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import Link from 'next/link'
+import { SquarePen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -165,11 +167,21 @@ const DashboardJournals = () => {
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight">Your Journals</h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Browse your latest entries.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight">
+            Your Journals
+          </h1>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Browse your latest entries.
+          </p>
+        </div>
+        <Button variant="accent" asChild>
+          <Link href="/write">
+            <SquarePen />
+            Write
+          </Link>
+        </Button>
       </div>
 
       {isInitialLoading ? (

@@ -15,6 +15,7 @@ import { cloudinaryLoader } from '@/lib/cloudinary'
 import type { ListStyle } from '@/lib/journals'
 import { getCarouselViewportAspectRatio } from '@/lib/journal-image-block'
 import { cn } from '@/lib/utils'
+import { EntryViewSkeleton } from './entry-skeletons'
 
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
   month: 'short',
@@ -49,7 +50,7 @@ const EntryView = ({ slug }: EntryViewProps) => {
   const { data: journal, isLoading } = useJournalBySlug(slug)
 
   if (isLoading) {
-    return <p className="text-muted-foreground">Loading entry...</p>
+    return <EntryViewSkeleton />
   }
 
   if (!journal) {
