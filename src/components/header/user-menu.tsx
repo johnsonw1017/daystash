@@ -75,6 +75,11 @@ const UserMenu = () => {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
+          <Link href="/write" className="w-full">
+            Write
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
           <Link href="/dashboard" className="w-full">
             Dashboard
           </Link>
