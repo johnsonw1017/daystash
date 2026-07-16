@@ -1,5 +1,4 @@
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 
 type YearTimelineProps = {
@@ -15,21 +14,22 @@ const YearTimeline = ({
   onSelectYear,
   years,
 }: YearTimelineProps) => (
-  <Card className="sticky top-4 z-10 gap-1 overflow-hidden p-2 lg:top-24">
+  <div className="bg-background/95 sticky top-4 z-10 order-first py-1 backdrop-blur lg:top-24 lg:order-last lg:bg-transparent lg:py-0 lg:backdrop-blur-none">
     <nav
       aria-label="Journal years"
       className="flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible"
     >
       {isLoading
         ? Array.from({ length: 4 }, (_, index) => (
-            <Skeleton key={index} className="h-10 w-20 shrink-0 lg:w-full" />
+            <Skeleton key={index} className="h-8 w-16 shrink-0 lg:w-full" />
           ))
         : years.map((year) => (
             <Button
               key={year}
               type="button"
               variant={year === activeYear ? 'default' : 'ghost'}
-              className="min-w-20 shrink-0 justify-center text-base lg:w-full lg:justify-start"
+              size="sm"
+              className="h-8 min-w-16 shrink-0 px-2 text-sm lg:w-full"
               aria-current={year === activeYear ? 'true' : undefined}
               onClick={() => onSelectYear(year)}
             >
@@ -37,7 +37,7 @@ const YearTimeline = ({
             </Button>
           ))}
     </nav>
-  </Card>
+  </div>
 )
 
 export default YearTimeline

@@ -23,13 +23,13 @@ const JournalThumbnail = ({ journal }: { journal: JournalListItem }) => {
         alt=""
         fill
         sizes="(min-width: 1280px) 352px, (min-width: 768px) 50vw, 100vw"
-        className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+        className="object-cover"
       />
     )
   }
 
   return (
-    <div className="from-primary/15 via-secondary/10 to-accent/15 relative h-full w-full overflow-hidden bg-gradient-to-br">
+    <div className="from-primary/15 via-secondary/10 to-accent/15 relative h-full w-full overflow-hidden bg-linear-to-br">
       <Image
         src="/daystash-leaf.svg"
         alt=""
@@ -44,19 +44,25 @@ const JournalThumbnail = ({ journal }: { journal: JournalListItem }) => {
 const JournalCard = ({ journal }: { journal: JournalListItem }) => {
   const title = journal.title?.trim() || 'Untitled Journal'
   const content = (
-    <Card className="group h-full gap-0 overflow-hidden py-0 transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:shadow-md">
-      <div className="bg-muted relative aspect-[4/3] overflow-hidden">
-        <JournalThumbnail journal={journal} />
-      </div>
-      <CardHeader className="gap-2 p-4 sm:p-5">
-        <CardDescription>
-          {dateFormatter.format(new Date(journal.created_at))}
-        </CardDescription>
-        <CardTitle className="line-clamp-2 text-base leading-snug font-medium">
-          {title}
-        </CardTitle>
-      </CardHeader>
-    </Card>
+    <div className="group relative h-full">
+      <div
+        aria-hidden="true"
+        className="bg-foreground/20 absolute inset-x-[5%] top-4 -bottom-2 rounded-xl opacity-0 blur-xl transition-opacity duration-500 ease-[cubic-bezier(0.25,0.45,0.45,0.95)] group-hover:opacity-30 motion-reduce:transition-none"
+      />
+      <Card className="relative z-10 h-full transform-gpu gap-0 overflow-hidden py-0 transition-transform duration-500 ease-[cubic-bezier(0.25,0.45,0.45,0.95)] motion-safe:group-hover:scale-[1.02] motion-reduce:transition-none">
+        <div className="bg-muted relative aspect-4/3 overflow-hidden">
+          <JournalThumbnail journal={journal} />
+        </div>
+        <CardHeader className="gap-2 p-4 sm:p-5">
+          <CardDescription>
+            {dateFormatter.format(new Date(journal.created_at))}
+          </CardDescription>
+          <CardTitle className="line-clamp-2 text-base leading-snug font-medium">
+            {title}
+          </CardTitle>
+        </CardHeader>
+      </Card>
+    </div>
   )
 
   if (!journal.slug) {

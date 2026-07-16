@@ -173,7 +173,7 @@ const DashboardJournals = () => {
       </div>
 
       {isInitialLoading ? (
-        <div className="grid gap-6 lg:grid-cols-[7rem_minmax(0,1fr)]">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_4rem]">
           <YearTimeline
             activeYear={null}
             isLoading
@@ -196,7 +196,7 @@ const DashboardJournals = () => {
           </CardContent>
         </Card>
       ) : journalMonths.length ? (
-        <div className="grid items-start gap-6 lg:grid-cols-[7rem_minmax(0,1fr)] lg:gap-8">
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_4rem] lg:gap-6">
           <YearTimeline
             activeYear={displayedActiveYear}
             isLoading={areYearsLoading}
