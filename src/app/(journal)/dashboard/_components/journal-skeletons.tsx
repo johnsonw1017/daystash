@@ -3,7 +3,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 export const JournalCardSkeleton = () => (
   <Card className="gap-0 overflow-hidden py-0">
-    <Skeleton className="aspect-[4/3] w-full rounded-none" />
+    <Skeleton className="aspect-4/3 w-full rounded-none" />
     <CardHeader className="gap-3 p-4 sm:p-5">
       <Skeleton className="h-3 w-24" />
       <Skeleton className="h-5 w-4/5" />
