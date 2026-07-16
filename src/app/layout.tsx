@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { cookies } from 'next/headers'
 import HeaderControls from '@/components/header/header-controls'
 import Logo from '@/components/header/logo'
 import Providers from '@/components/providers'
@@ -7,48 +6,41 @@ import { Toaster } from '@/components/ui/sonner'
 import './globals.css'
 import { cn } from '@/lib/utils'
 import { cormorant, inter } from '@/lib/fonts'
-import { isTheme, THEME_COOKIE_NAME } from '@/lib/theme'
 
 export const metadata: Metadata = {
   title: 'Daystash',
   description: 'Stash your important moments in one place.',
 }
 
-const RootLayout = async ({
+const legacyThemeStorageScript = `
+  (() => {
+    const themeName = 'theme';
+    try {
+      const storedTheme = window.localStorage.getItem(themeName);
+      if (storedTheme !== '"dark"' && storedTheme !== '"light"') {
+        return;
+      }
+
+      window.localStorage.setItem(themeName, JSON.parse(storedTheme));
+    } catch {}
+  })();
+`
+
+const RootLayout = ({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) => {
-  const cookieStore = await cookies()
-  const themeCookie = cookieStore.get(THEME_COOKIE_NAME)?.value
-  const initialTheme = isTheme(themeCookie) ? themeCookie : 'light'
-  const themeScript = `
-    (() => {
-      const themeName = '${THEME_COOKIE_NAME}';
-      const storedTheme = window.localStorage.getItem(themeName);
-      const cookieTheme = document.cookie
-        .split('; ')
-        .find((cookie) => cookie.startsWith(themeName + '='))
-        ?.split('=')[1];
-      const theme = storedTheme === 'dark' || storedTheme === 'light'
-        ? storedTheme
-        : cookieTheme;
-      document.documentElement.classList.toggle('dark', theme === 'dark');
-    })();
-  `
-
   return (
     <html
       lang="en"
-      className={cn(
-        inter.variable,
-        cormorant.variable,
-        initialTheme === 'dark' && 'dark'
-      )}
+      className={cn(inter.variable, cormorant.variable)}
       suppressHydrationWarning
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script
+          dangerouslySetInnerHTML={{ __html: legacyThemeStorageScript }}
+        />
       </head>
       <body className="font-sans" suppressHydrationWarning>
         <Providers>
