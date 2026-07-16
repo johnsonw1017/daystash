@@ -2,6 +2,7 @@
 
 import { requireAuth } from '@/lib/auth/require-auth'
 import {
+  getJournalThumbnailAssetId,
   getReferencedAssetIds,
   normalizeJournalBlocks,
   parseJournalBlocks,
@@ -235,6 +236,12 @@ export const saveJournal = async ({
   const normalizedBlocks = normalizeJournalBlocks(blocks)
   const referencedAssetIds = getReferencedAssetIds(normalizedBlocks)
   const existingAssets = await getJournalAssets(nextJournal.journalId)
+  const requestedThumbnailAssetId = getJournalThumbnailAssetId(normalizedBlocks)
+  const thumbnailAssetId = existingAssets.some(
+    (asset) => asset.id === requestedThumbnailAssetId
+  )
+    ? requestedThumbnailAssetId
+    : null
   const orphanedAssetIds = existingAssets
     .filter((asset) => !referencedAssetIds.has(asset.id))
     .map((asset) => asset.id)
@@ -250,6 +257,7 @@ export const saveJournal = async ({
     .update({
       title: nextJournal.title,
       blocks: normalizedBlocks,
+      thumbnail_asset_id: thumbnailAssetId,
       draft_blocks: null,
       has_unsaved_draft: false,
       updated_at: new Date().toISOString(),
