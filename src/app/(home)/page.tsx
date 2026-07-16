@@ -1,6 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import Tree from './_components/Tree'
 import Link from 'next/link'
 import { useAuthUser } from '@/hooks/use-auth-user'
@@ -22,6 +23,12 @@ const Home = () => {
           <Button variant="accent" size="lg" className="mb-3" asChild>
             <Link href="/write">Start Writing</Link>
           </Button>
+          {authUser.isLoading && (
+            <Skeleton
+              aria-label="Loading dashboard"
+              className="mb-3 h-11 w-40 rounded-md"
+            />
+          )}
           {isLoggedIn && (
             <Button variant="secondary" size="lg" className="mb-3" asChild>
               <Link href="/dashboard">View Dashboard</Link>
