@@ -1,8 +1,6 @@
 'use client'
 
-import Image from 'next/image'
-import Link from 'next/link'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -11,28 +9,19 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
 import { useAuthUser } from '@/hooks/use-auth-user'
-import { useJournals } from '@/hooks/use-journals'
-import { cloudinaryLoader } from '@/lib/cloudinary'
+import { useJournals, useJournalYears } from '@/hooks/use-journals'
 import type { JournalListItem } from '@/lib/journals'
-
-const dateFormatter = new Intl.DateTimeFormat('en-AU', {
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-})
+import JournalMonthSection, { type JournalMonth } from './journal-month-section'
+import {
+  InitialJournalSkeletons,
+  JournalCardSkeleton,
+} from './journal-skeletons'
+import YearTimeline from './year-timeline'
 
 const monthFormatter = new Intl.DateTimeFormat('en-AU', {
   month: 'long',
-  year: 'numeric',
 })
-
-type JournalMonth = {
-  key: string
-  label: string
-  journals: JournalListItem[]
-}
 
 const groupJournalsByMonth = (journals: JournalListItem[]) => {
   const months = new Map<string, JournalMonth>()
@@ -50,6 +39,7 @@ const groupJournalsByMonth = (journals: JournalListItem[]) => {
     months.set(key, {
       key,
       label: monthFormatter.format(date),
+      year: date.getFullYear(),
       journals: [journal],
     })
   })
@@ -57,90 +47,12 @@ const groupJournalsByMonth = (journals: JournalListItem[]) => {
   return [...months.values()]
 }
 
-const JournalThumbnail = ({ journal }: { journal: JournalListItem }) => {
-  if (journal.thumbnail) {
-    return (
-      <Image
-        loader={cloudinaryLoader}
-        src={journal.thumbnail.publicId}
-        alt=""
-        fill
-        sizes="(min-width: 1280px) 352px, (min-width: 768px) 50vw, 100vw"
-        className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-      />
-    )
-  }
-
-  return (
-    <div className="from-primary/15 via-secondary/10 to-accent/15 relative h-full w-full overflow-hidden bg-gradient-to-br">
-      <Image
-        src="/daystash-leaf.svg"
-        alt=""
-        fill
-        sizes="(min-width: 1280px) 352px, (min-width: 768px) 50vw, 100vw"
-        className="translate-x-6 translate-y-14 rotate-12 scale-125 object-contain object-right opacity-25 dark:opacity-20"
-      />
-    </div>
-  )
-}
-
-const JournalCard = ({ journal }: { journal: JournalListItem }) => {
-  const title = journal.title?.trim() || 'Untitled Journal'
-  const content = (
-    <Card className="group h-full gap-0 overflow-hidden py-0 transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:shadow-md">
-      <div className="bg-muted relative aspect-[4/3] overflow-hidden">
-        <JournalThumbnail journal={journal} />
-      </div>
-      <CardHeader className="gap-2 p-4 sm:p-5">
-        <CardDescription>{dateFormatter.format(new Date(journal.created_at))}</CardDescription>
-        <CardTitle className="line-clamp-2 text-base leading-snug font-medium">
-          {title}
-        </CardTitle>
-      </CardHeader>
-    </Card>
-  )
-
-  if (!journal.slug) {
-    return <div>{content}</div>
-  }
-
-  return (
-    <Link
-      href={`/entries/${journal.slug}`}
-      className="focus-visible:ring-ring rounded-xl focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-    >
-      {content}
-    </Link>
-  )
-}
-
-const JournalCardSkeleton = () => (
-  <Card className="gap-0 overflow-hidden py-0">
-    <Skeleton className="aspect-[4/3] w-full rounded-none" />
-    <CardHeader className="gap-3 p-4 sm:p-5">
-      <Skeleton className="h-3 w-24" />
-      <Skeleton className="h-5 w-4/5" />
-      <Skeleton className="h-5 w-2/5" />
-    </CardHeader>
-  </Card>
-)
-
-const InitialJournalSkeletons = () => (
-  <div className="space-y-4" aria-label="Loading journals" aria-live="polite">
-    <Skeleton className="h-7 w-36" />
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {Array.from({ length: 6 }, (_, index) => (
-        <div key={index} style={{ animationDelay: `${index * 75}ms` }}>
-          <JournalCardSkeleton />
-        </div>
-      ))}
-    </div>
-  </div>
-)
-
 const DashboardJournals = () => {
   const authUser = useAuthUser()
   const loadMoreRef = useRef<HTMLDivElement>(null)
+  const pendingYearRef = useRef<number | null>(null)
+  const [activeYear, setActiveYear] = useState<number | null>(null)
+  const [yearNavigationRequest, setYearNavigationRequest] = useState(0)
   const {
     data,
     error,
@@ -150,13 +62,24 @@ const DashboardJournals = () => {
     isLoading,
     refetch,
   } = useJournals(authUser.user?.id)
+  const { data: journalYears = [], isLoading: areYearsLoading } =
+    useJournalYears(authUser.user?.id)
 
   const journals = useMemo(
     () => data?.pages.flatMap((page) => page.journals) ?? [],
     [data]
   )
-  const journalMonths = useMemo(() => groupJournalsByMonth(journals), [journals])
+  const journalMonths = useMemo(
+    () => groupJournalsByMonth(journals),
+    [journals]
+  )
+  const loadedYears = useMemo(
+    () => [...new Set(journalMonths.map((month) => month.year))],
+    [journalMonths]
+  )
+  const years = journalYears.length ? journalYears : loadedYears
   const isInitialLoading = authUser.isLoading || isLoading
+  const displayedActiveYear = activeYear ?? years[0] ?? null
 
   useEffect(() => {
     const target = loadMoreRef.current
@@ -179,6 +102,67 @@ const DashboardJournals = () => {
     return () => observer.disconnect()
   }, [fetchNextPage, hasNextPage, isFetchingNextPage])
 
+  useEffect(() => {
+    const pendingYear = pendingYearRef.current
+
+    if (pendingYear === null) return
+
+    const yearSection = document.getElementById(`journal-year-${pendingYear}`)
+
+    if (yearSection) {
+      yearSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      pendingYearRef.current = null
+      return
+    }
+
+    if (hasNextPage && !isFetchingNextPage) {
+      void fetchNextPage()
+      return
+    }
+
+    if (!hasNextPage) {
+      pendingYearRef.current = null
+    }
+  }, [
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    journalMonths,
+    yearNavigationRequest,
+  ])
+
+  useEffect(() => {
+    const monthSections = document.querySelectorAll<HTMLElement>(
+      '[data-journal-year]'
+    )
+
+    if (!monthSections.length) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visibleEntry = entries.find((entry) => entry.isIntersecting)
+        const year = Number(
+          (visibleEntry?.target as HTMLElement | undefined)?.dataset.journalYear
+        )
+
+        if (Number.isFinite(year)) {
+          setActiveYear(year)
+        }
+      },
+      { rootMargin: '-15% 0px -70% 0px' }
+    )
+
+    monthSections.forEach((section) => observer.observe(section))
+
+    return () => observer.disconnect()
+  }, [journalMonths])
+
+  const selectYear = (year: number) => {
+    pendingYearRef.current = year
+    setActiveYear(year)
+    setYearNavigationRequest((request) => request + 1)
+  }
+
   return (
     <div className="mx-auto w-full max-w-6xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
       <div>
@@ -189,7 +173,15 @@ const DashboardJournals = () => {
       </div>
 
       {isInitialLoading ? (
-        <InitialJournalSkeletons />
+        <div className="grid gap-6 lg:grid-cols-[7rem_minmax(0,1fr)]">
+          <YearTimeline
+            activeYear={null}
+            isLoading
+            onSelectYear={() => undefined}
+            years={[]}
+          />
+          <InitialJournalSkeletons />
+        </div>
       ) : error ? (
         <Card>
           <CardHeader>
@@ -204,45 +196,54 @@ const DashboardJournals = () => {
           </CardContent>
         </Card>
       ) : journalMonths.length ? (
-        <div className="space-y-10">
-          {journalMonths.map((month) => (
-            <section key={month.key} aria-labelledby={`month-${month.key}`}>
-              <h2
-                id={`month-${month.key}`}
-                className="mb-4 font-serif text-2xl font-semibold tracking-tight"
+        <div className="grid items-start gap-6 lg:grid-cols-[7rem_minmax(0,1fr)] lg:gap-8">
+          <YearTimeline
+            activeYear={displayedActiveYear}
+            isLoading={areYearsLoading}
+            onSelectYear={selectYear}
+            years={years}
+          />
+
+          <div className="space-y-10">
+            {journalMonths.map((month, index) => {
+              const isFirstMonthOfYear =
+                journalMonths[index - 1]?.year !== month.year
+
+              return (
+                <JournalMonthSection
+                  key={month.key}
+                  isFirstMonthOfYear={isFirstMonthOfYear}
+                  month={month}
+                />
+              )
+            })}
+
+            <div ref={loadMoreRef} className="min-h-1" aria-hidden="true" />
+
+            {isFetchingNextPage ? (
+              <div
+                className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3"
+                aria-label="Loading more journals"
+                aria-live="polite"
               >
-                {month.label}
-              </h2>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {month.journals.map((journal) => (
-                  <JournalCard key={journal.id} journal={journal} />
+                {Array.from({ length: 3 }, (_, index) => (
+                  <JournalCardSkeleton key={index} />
                 ))}
               </div>
-            </section>
-          ))}
-
-          <div ref={loadMoreRef} className="min-h-1" aria-hidden="true" />
-
-          {isFetchingNextPage ? (
-            <div
-              className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3"
-              aria-label="Loading more journals"
-              aria-live="polite"
-            >
-              {Array.from({ length: 3 }, (_, index) => (
-                <JournalCardSkeleton key={index} />
-              ))}
-            </div>
-          ) : null}
+            ) : null}
+          </div>
         </div>
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base font-medium">No journals yet</CardTitle>
+            <CardTitle className="text-base font-medium">
+              No journals yet
+            </CardTitle>
           </CardHeader>
           <CardContent className="pb-6">
             <CardDescription>
-              Start writing from the Write page and your entries will appear here.
+              Start writing from the Write page and your entries will appear
+              here.
             </CardDescription>
           </CardContent>
         </Card>

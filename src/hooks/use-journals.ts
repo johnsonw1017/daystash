@@ -1,6 +1,10 @@
 'use client'
 
-import { useInfiniteQuery, useQuery, type InfiniteData } from '@tanstack/react-query'
+import {
+  useInfiniteQuery,
+  useQuery,
+  type InfiniteData,
+} from '@tanstack/react-query'
 import type { JournalDetail, JournalListItem } from '@/lib/journals'
 import { parseJournalBlocks } from '@/lib/journals'
 import supabase from '@/lib/supabase/client'
@@ -10,7 +14,10 @@ const JOURNALS_PAGE_SIZE = 12
 export const journalQueryKeys = {
   all: ['journals'] as const,
   lists: () => [...journalQueryKeys.all, 'list'] as const,
-  list: (userId?: string) => [...journalQueryKeys.lists(), userId ?? ''] as const,
+  list: (userId?: string) =>
+    [...journalQueryKeys.lists(), userId ?? ''] as const,
+  years: (userId?: string) =>
+    [...journalQueryKeys.all, 'years', userId ?? ''] as const,
   bySlug: (slug: string) => [...journalQueryKeys.all, 'slug', slug] as const,
 }
 
@@ -145,7 +152,27 @@ const fetchJournalsPage = async (
   }
 }
 
-const fetchJournalBySlug = async (slug: string): Promise<JournalDetail | null> => {
+const fetchJournalYears = async (userId: string) => {
+  const { data, error } = await supabase
+    .from('journals')
+    .select('created_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return [
+    ...new Set(
+      (data ?? []).map((journal) => new Date(journal.created_at).getFullYear())
+    ),
+  ]
+}
+
+const fetchJournalBySlug = async (
+  slug: string
+): Promise<JournalDetail | null> => {
   const userId = await getCurrentUserId()
 
   if (!userId) {
@@ -182,6 +209,13 @@ export const useJournals = (userId?: string) =>
     queryFn: ({ pageParam }) => fetchJournalsPage(userId!, pageParam),
     initialPageParam: null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
+    enabled: Boolean(userId),
+  })
+
+export const useJournalYears = (userId?: string) =>
+  useQuery({
+    queryKey: journalQueryKeys.years(userId),
+    queryFn: () => fetchJournalYears(userId!),
     enabled: Boolean(userId),
   })
 
