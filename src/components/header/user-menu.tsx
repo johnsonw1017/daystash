@@ -11,10 +11,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Skeleton } from '@/components/ui/skeleton'
 import { logout } from '@/actions/auth'
 import { useAuthUser, useRefreshAuthUser } from '@/hooks/use-auth-user'
 import { useProfile } from '@/hooks/use-profile'
 import { Suspense } from 'react'
+
+const UserMenuSkeleton = () => (
+  <div className="flex h-8 items-center gap-2 rounded-md border border-transparent px-3">
+    <Skeleton className="size-4 rounded-full" />
+    <Skeleton className="h-4 w-14" />
+  </div>
+)
 
 const UserMenu = () => {
   const authUser = useAuthUser()
@@ -41,7 +49,7 @@ const UserMenu = () => {
   }
 
   if (authUser.isLoading) {
-    return null
+    return <UserMenuSkeleton />
   }
 
   if (!authUser.isLoggedIn) {
@@ -81,7 +89,7 @@ const UserMenu = () => {
 
 const UserMenuWrapper = () => {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<UserMenuSkeleton />}>
       <UserMenu />
     </Suspense>
   )
