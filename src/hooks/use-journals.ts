@@ -45,7 +45,6 @@ type JournalListRow = {
   title: string | null
   slug: string | null
   created_at: string
-  updated_at: string
   thumbnail: JournalThumbnailRow | JournalThumbnailRow[] | null
 }
 
@@ -78,7 +77,6 @@ const mapJournalListRow = (journal: JournalListRow): JournalListItem => {
     title: journal.title,
     slug: journal.slug,
     created_at: journal.created_at,
-    updated_at: journal.updated_at,
     thumbnail: thumbnail
       ? {
           publicId: thumbnail.cloudinary_public_id,
@@ -114,7 +112,6 @@ const fetchJournalsPage = async (
         title,
         slug,
         created_at,
-        updated_at,
         thumbnail:journal_assets!journals_thumbnail_asset_id_fkey(
           cloudinary_public_id,
           width,

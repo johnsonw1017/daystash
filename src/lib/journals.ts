@@ -60,7 +60,10 @@ export type JournalThumbnail = {
   height: number
 }
 
-export type JournalListItem = JournalSummary & {
+export type JournalListItem = Pick<
+  JournalSummary,
+  'id' | 'title' | 'slug' | 'created_at'
+> & {
   thumbnail: JournalThumbnail | null
 }
 
@@ -252,31 +255,6 @@ export const normalizeJournalBlocks = (blocks: JournalBlock[]): JournalBlock[] =
   }
 
   return normalized
-}
-
-export const getJournalExcerpt = (blocks: JournalBlock[]) => {
-  const firstTextBlock = blocks.find(
-    (block): block is TextJournalBlock =>
-      block.type === 'text' && block.content.trim().length > 0
-  )
-
-  if (firstTextBlock) {
-    return firstTextBlock.content.trim()
-  }
-
-  const firstListBlock = blocks.find(
-    (block): block is ListJournalBlock =>
-      block.type === 'list' && block.items.some((item) => item.trim().length > 0)
-  )
-
-  if (firstListBlock) {
-    return (
-      firstListBlock.items.find((item) => item.trim().length > 0)?.trim() ||
-      'No journal text yet.'
-    )
-  }
-
-  return 'No journal text yet.'
 }
 
 export const getReferencedAssetIds = (blocks: JournalBlock[]) =>
