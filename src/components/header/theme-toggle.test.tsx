@@ -24,9 +24,10 @@ describe('ThemeToggle', () => {
 
     render(<ThemeToggle />)
 
-    expect(
-      screen.getByRole('switch', { name: /toggle dark mode/i })
-    ).not.toBeChecked()
+    const toggle = screen.getByRole('switch', { name: /toggle dark mode/i })
+
+    expect(toggle).not.toBeChecked()
+    expect(toggle).toHaveAttribute('data-size', 'sm')
     expect(screen.queryByText(/theme|dark mode/i)).not.toBeInTheDocument()
   })
 

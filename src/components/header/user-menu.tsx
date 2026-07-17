@@ -71,7 +71,7 @@ const UserMenu = () => {
           <Menu className="size-5" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-56">
+      <DropdownMenuContent align="end" className="min-w-44">
         <DropdownMenuItem asChild>
           <Link href="/" className="w-full">
             Home

@@ -18,19 +18,26 @@ const ThemeToggle = () => {
   const isDark = resolvedTheme === 'dark'
 
   return (
-    <div className="flex items-center justify-center gap-2 px-2 py-1.5">
+    <div className="flex items-center justify-center gap-1 px-2 py-1">
       <Sun
-        className={cn(isDark ? 'text-muted-foreground/50' : 'text-foreground')}
+        className={cn(
+          'size-3.5',
+          isDark ? 'text-muted-foreground/50' : 'text-foreground'
+        )}
         aria-hidden="true"
       />
       <Switch
+        size="sm"
         checked={mounted && isDark}
         disabled={!mounted}
         onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
         aria-label="Toggle dark mode"
       />
       <MoonStar
-        className={cn(isDark ? 'text-foreground' : 'text-muted-foreground/50')}
+        className={cn(
+          'size-3.5',
+          isDark ? 'text-foreground' : 'text-muted-foreground/50'
+        )}
         aria-hidden="true"
       />
     </div>
