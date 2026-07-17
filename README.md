@@ -9,17 +9,17 @@ Development in progress...
 Run the Vitest test suite:
 
 ```bash
-npx vitest
+npm run test
 ```
 
 Run tests once, without watch mode:
 
 ```bash
-npx vitest run
+npm run test:run
 ```
 
 Open the Vitest browser UI:
 
 ```bash
-npx vitest --ui
+npm run test:ui
 ```
