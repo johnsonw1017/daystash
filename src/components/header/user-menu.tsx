@@ -65,7 +65,12 @@ const UserMenu = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button size="icon-sm" aria-label="Open user menu">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          className="shadow-none"
+          aria-label="Open user menu"
+        >
           <Menu className="size-5" />
         </Button>
       </DropdownMenuTrigger>
