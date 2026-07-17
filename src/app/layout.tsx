@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next'
-import HeaderControls from '@/components/header/header-controls'
 import Logo from '@/components/header/logo'
 import Providers from '@/components/providers'
 import { Toaster } from '@/components/ui/sonner'
@@ -7,6 +6,7 @@ import './globals.css'
 import { cn } from '@/lib/utils'
 import { cormorant, inter } from '@/lib/fonts'
 import ServiceWorkerRegistration from '@/components/pwa/service-worker-registration'
+import UserMenu from '@/components/header/user-menu'
 
 export const metadata: Metadata = {
   title: 'Daystash',
@@ -49,7 +49,7 @@ const RootLayout = ({
           <header className="sticky top-0 z-50 h-16">
             <div className="bg-background flex h-full items-center justify-between px-3">
               <Logo />
-              <HeaderControls />
+              <UserMenu />
             </div>
           </header>
           <main>{children}</main>
