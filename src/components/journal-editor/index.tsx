@@ -43,7 +43,7 @@ const SortableBlockRow = ({
         isDragging && 'z-10 opacity-70'
       )}
     >
-      <div className="absolute -left-20">
+      <div className="mb-1 flex justify-start sm:absolute sm:top-0 sm:-left-20 sm:mb-0">
         <BlockMenu blockId={blockId} dragHandleRef={handleRef} />
       </div>
 

@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#134b34" />
+    <title>Daystash is offline</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: system-ui, sans-serif;
+      }
+      body {
+        align-items: center;
+        background: #dad5cd;
+        color: #0d0b09;
+        display: flex;
+        justify-content: center;
+        margin: 0;
+        min-height: 100vh;
+        padding: 1.5rem;
+        text-align: center;
+      }
+      main {
+        max-width: 28rem;
+      }
+      img {
+        height: 5rem;
+        object-fit: contain;
+        width: 5rem;
+      }
+      h1 {
+        font-family: Georgia, serif;
+        margin: 1rem 0 0.5rem;
+      }
+      p {
+        color: #59514a;
+        line-height: 1.5;
+      }
+      button {
+        background: #134b34;
+        border: 0;
+        border-radius: 0.625rem;
+        color: #f8f5ef;
+        cursor: pointer;
+        font: inherit;
+        font-weight: 600;
+        margin-top: 1rem;
+        padding: 0.75rem 1rem;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #061009;
+          color: #e0e7e0;
+        }
+        p {
+          color: #94a38f;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img src="/daystash-leaf.svg" alt="" />
+      <h1>You’re offline</h1>
+      <p>Reconnect to the internet to open your Daystash journals.</p>
+      <button type="button" onclick="window.location.reload()">
+        Try again
+      </button>
+    </main>
+  </body>
+</html>

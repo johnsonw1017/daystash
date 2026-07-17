@@ -15,7 +15,7 @@ describe('ThemeToggle', () => {
     vi.clearAllMocks()
   })
 
-  it('renders an unchecked switch when the resolved theme is light', () => {
+  it('renders an unchecked switch without a visible label', () => {
     mockedUseTheme.mockReturnValue({
       resolvedTheme: 'light',
       setTheme: vi.fn(),
@@ -24,7 +24,11 @@ describe('ThemeToggle', () => {
 
     render(<ThemeToggle />)
 
-    expect(screen.getByRole('switch', { name: /toggle dark mode/i })).not.toBeChecked()
+    const toggle = screen.getByRole('switch', { name: /toggle dark mode/i })
+
+    expect(toggle).not.toBeChecked()
+    expect(toggle).toHaveAttribute('data-size', 'sm')
+    expect(screen.queryByText(/theme|dark mode/i)).not.toBeInTheDocument()
   })
 
   it('switches to dark mode when toggled on', async () => {
@@ -36,7 +40,9 @@ describe('ThemeToggle', () => {
     })
 
     render(<ThemeToggle />)
-    await userEvent.click(screen.getByRole('switch', { name: /toggle dark mode/i }))
+    await userEvent.click(
+      screen.getByRole('switch', { name: /toggle dark mode/i })
+    )
 
     expect(setTheme).toHaveBeenCalledWith('dark')
   })
@@ -50,7 +56,9 @@ describe('ThemeToggle', () => {
     })
 
     render(<ThemeToggle />)
-    await userEvent.click(screen.getByRole('switch', { name: /toggle dark mode/i }))
+    await userEvent.click(
+      screen.getByRole('switch', { name: /toggle dark mode/i })
+    )
 
     expect(setTheme).toHaveBeenCalledWith('light')
   })

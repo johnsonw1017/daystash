@@ -10,39 +10,32 @@ const emptySubscribe = () => () => {}
 
 const ThemeToggle = () => {
   const { resolvedTheme, setTheme } = useTheme()
-  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false)
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  )
   const isDark = resolvedTheme === 'dark'
 
-  if (!mounted) {
-    return (
-      <div className="flex items-center gap-2">
-        <Sun className="size-4 text-foreground" aria-hidden="true" />
-        <Switch checked={false} disabled aria-label="Toggle dark mode" />
-        <MoonStar
-          className="size-4 text-muted-foreground/50"
-          aria-hidden="true"
-        />
-      </div>
-    )
-  }
-
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1 px-2 py-1">
       <Sun
         className={cn(
-          'size-4',
+          'size-3.5',
           isDark ? 'text-muted-foreground/50' : 'text-foreground'
         )}
         aria-hidden="true"
       />
       <Switch
-        checked={isDark}
+        size="sm"
+        checked={mounted && isDark}
+        disabled={!mounted}
         onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
         aria-label="Toggle dark mode"
       />
       <MoonStar
         className={cn(
-          'size-4',
+          'size-3.5',
           isDark ? 'text-foreground' : 'text-muted-foreground/50'
         )}
         aria-hidden="true"
