@@ -44,16 +44,28 @@ const ImageDialog = () => {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {dialogState.targetBlockId ? 'Add images to carousel' : 'Add images'}
+            {dialogState.targetBlockId
+              ? 'Add images to carousel'
+              : 'Add images'}
           </DialogTitle>
           <DialogDescription>
-            {dialogState.targetBlockId
-              ? `Add up to ${remainingImageSlots} more image${remainingImageSlots === 1 ? '' : 's'} to this carousel.`
-              : 'Add a new image block from this device or stage images from your phone.'}
+            {dialogState.targetBlockId ? (
+              `Add up to ${remainingImageSlots} more image${remainingImageSlots === 1 ? '' : 's'} to this carousel.`
+            ) : (
+              <>
+                <span className="sm:hidden">
+                  Add a new image block from this device.
+                </span>
+                <span className="hidden sm:inline">
+                  Add a new image block from this device or stage images from
+                  your phone.
+                </span>
+              </>
+            )}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <Button
             type="button"
             variant={isPhoneMode ? 'outline' : 'default'}
@@ -65,6 +77,7 @@ const ImageDialog = () => {
           <Button
             type="button"
             variant={isPhoneMode ? 'default' : 'outline'}
+            className="hidden sm:inline-flex"
             onClick={() => void setUploadMode('phone')}
           >
             <Smartphone />
@@ -78,7 +91,9 @@ const ImageDialog = () => {
               htmlFor={uploadInputId}
               className={cn(
                 'flex min-h-44 cursor-pointer flex-col items-center justify-center gap-3 rounded-md border border-dashed p-4 text-center transition-colors',
-                isDraggingFiles ? 'border-foreground bg-muted/60' : 'border-border'
+                isDraggingFiles
+                  ? 'border-foreground bg-muted/60'
+                  : 'border-border'
               )}
               onDragEnter={(event) => {
                 event.preventDefault()
@@ -102,9 +117,9 @@ const ImageDialog = () => {
                 event.preventDefault()
                 setIsDraggingFiles(false)
 
-                const droppedFiles = Array.from(event.dataTransfer.files).filter(
-                  (file) => file.type.startsWith('image/')
-                )
+                const droppedFiles = Array.from(
+                  event.dataTransfer.files
+                ).filter((file) => file.type.startsWith('image/'))
 
                 setPendingFiles(droppedFiles)
               }}
@@ -158,7 +173,7 @@ const ImageDialog = () => {
             </DialogFooter>
           </>
         ) : (
-          <>
+          <div className="hidden sm:contents">
             <div className="bg-muted flex min-h-72 flex-col items-center justify-center gap-4 rounded-md border p-6">
               {dialogState.mobileSession ? (
                 <>
@@ -170,7 +185,8 @@ const ImageDialog = () => {
                       Scan to upload from your phone
                     </p>
                     <p className="text-muted-foreground text-xs">
-                      Images will appear here as staged uploads and save with the journal.
+                      Images will appear here as staged uploads and save with
+                      the journal.
                     </p>
                   </div>
                 </>
@@ -182,7 +198,10 @@ const ImageDialog = () => {
                       : 'Start a phone upload session'}
                   </p>
                   {!isCreatingMobileSession && (
-                    <Button type="button" onClick={() => void setUploadMode('phone')}>
+                    <Button
+                      type="button"
+                      onClick={() => void setUploadMode('phone')}
+                    >
                       Retry
                     </Button>
                   )}
@@ -195,7 +214,7 @@ const ImageDialog = () => {
                 Close
               </Button>
             </DialogFooter>
-          </>
+          </div>
         )}
       </DialogContent>
     </Dialog>

@@ -30,7 +30,7 @@ const BlockMenu = ({ blockId, dragHandleRef }: BlockMenuProps) => {
         type="button"
         className={cn(
           buttonVariants({ variant: 'ghost', size: 'icon-sm' }),
-          'cursor-grab opacity-0 transition-opacity active:cursor-grabbing group-hover:opacity-100'
+          'cursor-grab opacity-100 transition-opacity active:cursor-grabbing sm:opacity-0 sm:group-hover:opacity-100'
         )}
         aria-label="Reorder block"
       >
@@ -43,7 +43,7 @@ const BlockMenu = ({ blockId, dragHandleRef }: BlockMenuProps) => {
             type="button"
             variant="outline"
             size="icon-sm"
-            className="opacity-0 transition-opacity group-hover:opacity-100"
+            className="opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
             aria-label="Open block tools"
           >
             <Plus />
@@ -54,9 +54,7 @@ const BlockMenu = ({ blockId, dragHandleRef }: BlockMenuProps) => {
             <Type />
             <span>Text</span>
           </DropdownMenuItem>
-          <DropdownMenuItem
-            onSelect={() => insertBlockBelow(blockId, 'list')}
-          >
+          <DropdownMenuItem onSelect={() => insertBlockBelow(blockId, 'list')}>
             <List />
             <span>List</span>
           </DropdownMenuItem>

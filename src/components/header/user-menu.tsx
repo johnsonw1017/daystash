@@ -3,24 +3,26 @@
 import Link from 'next/link'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 
-import { User } from 'lucide-react'
+import { Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
+import ThemeToggle from '@/components/header/theme-toggle'
 import { logout } from '@/actions/auth'
 import { useAuthUser, useRefreshAuthUser } from '@/hooks/use-auth-user'
 import { useProfile } from '@/hooks/use-profile'
 import { Suspense } from 'react'
 
 const UserMenuSkeleton = () => (
-  <div className="flex h-8 items-center gap-2 rounded-md border border-transparent px-3">
-    <Skeleton className="size-4 rounded-full" />
-    <Skeleton className="h-4 w-14" />
+  <div className="flex size-8 items-center justify-center rounded-md border border-transparent">
+    <Skeleton className="size-5 rounded-sm" />
   </div>
 )
 
@@ -63,12 +65,15 @@ const UserMenu = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button size="sm" aria-label="Open user menu">
-          <User className="size-5" />
-          <span>{profile?.full_name || 'Account'}</span>
+        <Button size="icon-sm" aria-label="Open user menu">
+          <Menu className="size-5" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent align="end" className="min-w-56">
+        <DropdownMenuLabel className="max-w-52 truncate">
+          Welcome, {profile?.full_name || 'there'}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link href="/" className="w-full">
             Home
@@ -84,6 +89,12 @@ const UserMenu = () => {
             Dashboard
           </Link>
         </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <div className="flex items-center justify-between gap-4 px-2 py-1.5 text-sm">
+          <span>Theme</span>
+          <ThemeToggle />
+        </div>
+        <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" onClick={handleLogout}>
           Logout
         </DropdownMenuItem>
