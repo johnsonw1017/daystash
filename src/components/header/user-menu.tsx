@@ -9,7 +9,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
@@ -17,7 +16,6 @@ import { Skeleton } from '@/components/ui/skeleton'
 import ThemeToggle from '@/components/header/theme-toggle'
 import { logout } from '@/actions/auth'
 import { useAuthUser, useRefreshAuthUser } from '@/hooks/use-auth-user'
-import { useProfile } from '@/hooks/use-profile'
 import { Suspense } from 'react'
 
 const UserMenuSkeleton = () => (
@@ -28,7 +26,6 @@ const UserMenuSkeleton = () => (
 
 const UserMenu = () => {
   const authUser = useAuthUser()
-  const { data: profile } = useProfile()
   const refreshAuthUser = useRefreshAuthUser()
   const router = useRouter()
   const pathname = usePathname()
@@ -75,10 +72,6 @@ const UserMenu = () => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-56">
-        <DropdownMenuLabel className="max-w-52 truncate">
-          Welcome, {profile?.full_name || 'there'}
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link href="/" className="w-full">
             Home

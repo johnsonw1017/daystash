@@ -3,10 +3,6 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useTheme } from 'next-themes'
 import ThemeToggle from '@/components/header/theme-toggle'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-} from '@/components/ui/dropdown-menu'
 
 vi.mock('next-themes', () => ({
   useTheme: vi.fn(),
@@ -14,32 +10,23 @@ vi.mock('next-themes', () => ({
 
 const mockedUseTheme = vi.mocked(useTheme)
 
-const renderThemeToggle = () =>
-  render(
-    <DropdownMenu open>
-      <DropdownMenuContent>
-        <ThemeToggle />
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
-
 describe('ThemeToggle', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  it('renders the icon toggle as a keyboard-navigable menu item', () => {
+  it('renders an unchecked switch without a visible label', () => {
     mockedUseTheme.mockReturnValue({
       resolvedTheme: 'light',
       setTheme: vi.fn(),
       themes: [],
     })
 
-    renderThemeToggle()
+    render(<ThemeToggle />)
 
     expect(
-      screen.getByRole('menuitem', { name: /toggle dark mode/i })
-    ).toBeInTheDocument()
+      screen.getByRole('switch', { name: /toggle dark mode/i })
+    ).not.toBeChecked()
     expect(screen.queryByText(/theme|dark mode/i)).not.toBeInTheDocument()
   })
 
@@ -51,9 +38,9 @@ describe('ThemeToggle', () => {
       themes: [],
     })
 
-    renderThemeToggle()
+    render(<ThemeToggle />)
     await userEvent.click(
-      screen.getByRole('menuitem', { name: /toggle dark mode/i })
+      screen.getByRole('switch', { name: /toggle dark mode/i })
     )
 
     expect(setTheme).toHaveBeenCalledWith('dark')
@@ -67,9 +54,9 @@ describe('ThemeToggle', () => {
       themes: [],
     })
 
-    renderThemeToggle()
+    render(<ThemeToggle />)
     await userEvent.click(
-      screen.getByRole('menuitem', { name: /toggle dark mode/i })
+      screen.getByRole('switch', { name: /toggle dark mode/i })
     )
 
     expect(setTheme).toHaveBeenCalledWith('light')
