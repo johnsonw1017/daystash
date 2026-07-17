@@ -33,20 +33,6 @@ export const viewport: Viewport = {
   ],
 }
 
-const legacyThemeStorageScript = `
-  (() => {
-    const themeName = 'theme';
-    try {
-      const storedTheme = window.localStorage.getItem(themeName);
-      if (storedTheme !== '"dark"' && storedTheme !== '"light"') {
-        return;
-      }
-
-      window.localStorage.setItem(themeName, JSON.parse(storedTheme));
-    } catch {}
-  })();
-`
-
 const RootLayout = ({
   children,
 }: Readonly<{
@@ -58,11 +44,6 @@ const RootLayout = ({
       className={cn(inter.variable, cormorant.variable)}
       suppressHydrationWarning
     >
-      <head>
-        <script
-          dangerouslySetInnerHTML={{ __html: legacyThemeStorageScript }}
-        />
-      </head>
       <body className="font-sans" suppressHydrationWarning>
         <Providers>
           <header className="sticky top-0 z-50 h-16">
