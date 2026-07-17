@@ -27,6 +27,10 @@ const getCurrentUserId = async () => {
     error,
   } = await supabase.auth.getUser()
 
+  if (error?.name === 'AuthSessionMissingError') {
+    return null
+  }
+
   if (error) {
     throw new Error(error.message)
   }

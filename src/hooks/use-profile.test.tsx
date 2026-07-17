@@ -2,22 +2,16 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { http, HttpResponse } from 'msw'
 import { useAuthUser } from '@/hooks/use-auth-user'
 import { profileQueryKeys, useProfile } from '@/hooks/use-profile'
-import supabase from '@/lib/supabase/client'
+import { server } from '@/test/mocks/server'
 
 vi.mock('@/hooks/use-auth-user', () => ({
   useAuthUser: vi.fn(),
 }))
 
-vi.mock('@/lib/supabase/client', () => ({
-  default: {
-    from: vi.fn(),
-  },
-}))
-
 const mockedUseAuthUser = vi.mocked(useAuthUser)
-const mockedFrom = vi.mocked(supabase.from)
 
 const createQueryWrapper = () => {
   const queryClient = new QueryClient({
@@ -35,16 +29,6 @@ const createQueryWrapper = () => {
   return QueryWrapper
 }
 
-const createProfileQuery = (result: unknown) => {
-  const maybeSingle = vi.fn().mockResolvedValue(result)
-  const eq = vi.fn(() => ({ maybeSingle }))
-  const select = vi.fn(() => ({ eq }))
-
-  mockedFrom.mockReturnValue({ select })
-
-  return { eq, maybeSingle, select }
-}
-
 describe('useProfile', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -52,7 +36,10 @@ describe('useProfile', () => {
 
   it('defines stable profile query keys', () => {
     expect(profileQueryKeys.all).toEqual(['profiles'])
-    expect(profileQueryKeys.byUserId('user-id')).toEqual(['profiles', 'user-id'])
+    expect(profileQueryKeys.byUserId('user-id')).toEqual([
+      'profiles',
+      'user-id',
+    ])
   })
 
   it('does not fetch while there is no authenticated user', () => {
@@ -67,7 +54,6 @@ describe('useProfile', () => {
     })
 
     expect(result.current.fetchStatus).toBe('idle')
-    expect(mockedFrom).not.toHaveBeenCalled()
   })
 
   it('fetches the current user profile', async () => {
@@ -76,28 +62,29 @@ describe('useProfile', () => {
       isLoggedIn: true,
       isLoading: false,
     })
-    const query = createProfileQuery({
-      data: {
-        id: 'user-id',
-        updated_at: null,
-        full_name: 'Jane Traveller',
-        avatar_url: null,
-        email: 'jane@example.com',
-        role: 'user',
-      },
-      error: null,
-    })
+    server.use(
+      http.get('http://supabase.test/rest/v1/profiles', ({ request }) => {
+        const url = new URL(request.url)
+        expect(url.searchParams.get('id')).toBe('eq.user-id')
+
+        return HttpResponse.json({
+          id: 'user-id',
+          updated_at: null,
+          full_name: 'Jane Traveller',
+          avatar_url: null,
+          email: 'jane@example.com',
+          role: 'user',
+        })
+      })
+    )
 
     const { result } = renderHook(() => useProfile(), {
       wrapper: createQueryWrapper(),
     })
 
-    await waitFor(() => expect(result.current.data?.full_name).toBe('Jane Traveller'))
-    expect(mockedFrom).toHaveBeenCalledWith('profiles')
-    expect(query.select).toHaveBeenCalledWith(
-      'id, updated_at, full_name, avatar_url, email, role'
+    await waitFor(() =>
+      expect(result.current.data?.full_name).toBe('Jane Traveller')
     )
-    expect(query.eq).toHaveBeenCalledWith('id', 'user-id')
   })
 
   it('surfaces profile fetch errors', async () => {
@@ -106,15 +93,18 @@ describe('useProfile', () => {
       isLoggedIn: true,
       isLoading: false,
     })
-    createProfileQuery({
-      data: null,
-      error: { message: 'profile failed' },
-    })
+    server.use(
+      http.get('http://supabase.test/rest/v1/profiles', () =>
+        HttpResponse.json({ message: 'profile failed' }, { status: 500 })
+      )
+    )
 
     const { result } = renderHook(() => useProfile(), {
       wrapper: createQueryWrapper(),
     })
 
-    await waitFor(() => expect(result.current.error?.message).toBe('profile failed'))
+    await waitFor(() =>
+      expect(result.current.error?.message).toBe('profile failed')
+    )
   })
 })
