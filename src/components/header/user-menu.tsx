@@ -71,7 +71,7 @@ const UserMenu = () => {
           <Menu className="size-5" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-44">
+      <DropdownMenuContent align="end" className="min-w-32">
         <DropdownMenuItem asChild>
           <Link href="/" className="w-full">
             Home
@@ -87,12 +87,11 @@ const UserMenu = () => {
             Dashboard
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <ThemeToggle />
-        <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" onClick={handleLogout}>
           Logout
         </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <ThemeToggle />
       </DropdownMenuContent>
     </DropdownMenu>
   )

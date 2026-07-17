@@ -18,7 +18,7 @@ const ThemeToggle = () => {
   const isDark = resolvedTheme === 'dark'
 
   return (
-    <div className="flex items-center justify-center gap-1 px-2 py-1">
+    <div className="flex items-center gap-1 px-2 py-1">
       <Sun
         className={cn(
           'size-3.5',
