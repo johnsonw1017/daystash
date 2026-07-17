@@ -9,6 +9,7 @@ import {
   useJournalYears,
   useJournals,
 } from '@/hooks/use-journals'
+import supabase from '@/lib/supabase/client'
 import { server } from '@/test/mocks/server'
 
 const createQueryWrapper = () => {
@@ -28,21 +29,11 @@ const createQueryWrapper = () => {
 }
 
 const setAuthenticatedSession = () => {
-  const session = JSON.stringify({
+  return supabase.auth.setSession({
     access_token:
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjQwNzA5MDg4MDB9.signature',
-    expires_at: 4070908800,
-    expires_in: 3600,
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjQwNzA5MDg4MDB9.c2lnbmF0dXJl',
     refresh_token: 'test-refresh-token',
-    token_type: 'bearer',
-    user: { id: 'user-id' },
   })
-  const encodedSession = btoa(session)
-    .replaceAll('+', '-')
-    .replaceAll('/', '_')
-    .replaceAll('=', '')
-
-  document.cookie = `sb-supabase-auth-token=base64-${encodedSession}; Path=/`
 }
 
 describe('journal hooks', () => {
@@ -136,8 +127,6 @@ describe('journal hooks', () => {
   })
 
   it('fetches a journal by slug for the current user', async () => {
-    setAuthenticatedSession()
-
     server.use(
       http.get('http://supabase.test/auth/v1/user', () =>
         HttpResponse.json({
@@ -161,6 +150,8 @@ describe('journal hooks', () => {
         })
       })
     )
+    const { error } = await setAuthenticatedSession()
+    expect(error).toBeNull()
 
     const { result } = renderHook(() => useJournalBySlug('summer-trip'), {
       wrapper: createQueryWrapper(),
