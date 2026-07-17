@@ -23,7 +23,7 @@ vi.mock('@/hooks/use-profile', () => ({
 }))
 
 vi.mock('@/components/header/theme-toggle', () => ({
-  default: () => <button>Toggle dark mode</button>,
+  default: () => <div role="menuitem" aria-label="Toggle dark mode" />,
 }))
 
 const mockedUseAuthUser = vi.mocked(useAuthUser)
@@ -61,8 +61,7 @@ describe('UserMenu', () => {
 
     expect(screen.getByText('Welcome, Sam Rivera')).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Toggle dark mode' })
+      screen.getByRole('menuitem', { name: 'Toggle dark mode' })
     ).toBeInTheDocument()
-    expect(screen.getByText('Theme')).toBeInTheDocument()
   })
 })

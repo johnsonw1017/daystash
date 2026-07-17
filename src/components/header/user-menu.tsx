@@ -90,10 +90,7 @@ const UserMenu = () => {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <div className="flex items-center justify-between gap-4 px-2 py-1.5 text-sm">
-          <span>Theme</span>
-          <ThemeToggle />
-        </div>
+        <ThemeToggle />
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" onClick={handleLogout}>
           Logout

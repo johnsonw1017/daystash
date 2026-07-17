@@ -1,4 +1,5 @@
-const CACHE_NAME = 'daystash-shell-v1'
+const CACHE_PREFIX = 'daystash-shell-'
+const CACHE_NAME = `${CACHE_PREFIX}v1`
 const APP_SHELL = [
   '/offline.html',
   '/manifest.webmanifest',
@@ -22,7 +23,7 @@ self.addEventListener('activate', (event) => {
       .then((keys) =>
         Promise.all(
           keys
-            .filter((key) => key !== CACHE_NAME)
+            .filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME)
             .map((key) => caches.delete(key))
         )
       )
