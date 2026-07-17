@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   lint:
-    name: Lint
+    name: lint
     runs-on: ubuntu-latest
 
     steps:
@@ -34,7 +34,7 @@ jobs:
         run: npm run lint
 
   vitest:
-    name: Vitest
+    name: vitest
     runs-on: ubuntu-latest
 
     steps:
