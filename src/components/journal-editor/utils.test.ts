@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid'
 import type { BlockFocusTarget } from '@/components/journal-editor/types'
 import {
   focusBlockTarget,
+  getTextareaLineBoundaryState,
   makeImageBlock,
   makeListBlock,
   makeTextBlock,
@@ -115,5 +116,24 @@ describe('focusBlockTarget', () => {
 
     expect(() => focusBlockTarget(target, 'end')).not.toThrow()
     expect(target.getElement).toHaveBeenCalledWith('end')
+  })
+})
+
+describe('getTextareaLineBoundaryState', () => {
+  it('uses a mirrored textarea to determine line boundaries', () => {
+    const textarea = document.createElement('textarea')
+    textarea.value = 'One line'
+    Object.defineProperty(textarea, 'clientWidth', {
+      configurable: true,
+      value: 200,
+    })
+    document.body.append(textarea)
+
+    expect(getTextareaLineBoundaryState(textarea, 3)).toEqual({
+      isOnFirstLine: true,
+      isOnLastLine: true,
+    })
+
+    textarea.remove()
   })
 })
