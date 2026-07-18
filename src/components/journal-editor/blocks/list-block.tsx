@@ -4,10 +4,8 @@ import { useCallback, useEffect, useRef } from 'react'
 import type { KeyboardEvent } from 'react'
 import { List, ListOrdered } from 'lucide-react'
 import useJournalEditor from '@/components/journal-editor/hooks/use-journal-editor'
-import type {
-  BlockFocusTarget,
-  ListJournalBlock,
-} from '@/components/journal-editor/types'
+import useFocusRegistry from '@/components/journal-editor/hooks/use-focus-registry'
+import type { ListJournalBlock } from '@/components/journal-editor/types'
 import { getTextareaLineBoundaryState } from '@/components/journal-editor/utils'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -108,14 +106,22 @@ const ListItemRow = ({
       return
     }
 
-    if (event.key === 'Delete' && hasCollapsedSelection && isAtEnd && hasNextItem) {
+    if (
+      event.key === 'Delete' &&
+      hasCollapsedSelection &&
+      isAtEnd &&
+      hasNextItem
+    ) {
       event.preventDefault()
       focusListItem(blockId, itemIndex, selectionStart)
       mergeListItem(blockId, itemIndex, 'next')
       return
     }
 
-    if (hasCollapsedSelection && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+    if (
+      hasCollapsedSelection &&
+      (event.key === 'ArrowUp' || event.key === 'ArrowDown')
+    ) {
       const { isOnFirstLine, isOnLastLine } = getTextareaLineBoundaryState(
         event.currentTarget,
         selectionStart
@@ -165,7 +171,9 @@ const ListItemRow = ({
         onKeyDown={handleKeyDown}
         data-block-id={blockId}
         data-block-kind="list-item"
-        placeholder={itemCount === 1 && itemIndex === 0 ? 'List item' : undefined}
+        placeholder={
+          itemCount === 1 && itemIndex === 0 ? 'List item' : undefined
+        }
         className="placeholder:text-muted-foreground block min-h-0 w-full resize-none border-0 bg-transparent px-0 py-0 font-serif text-xl! leading-relaxed shadow-none focus-visible:ring-0 dark:bg-transparent"
       />
     </li>
@@ -173,9 +181,9 @@ const ListItemRow = ({
 }
 
 const ListBlock = ({ block, blockId }: ListBlockProps) => {
-  const { setBlockFocusTarget, updateListStyle } = useJournalEditor()
+  const { updateListStyle } = useJournalEditor()
+  const { registerFocusTarget } = useFocusRegistry()
   const itemRefs = useRef<Record<number, HTMLTextAreaElement | null>>({})
-  const itemTargetRefs = useRef<Record<number, BlockFocusTarget | null>>({})
 
   const getBoundaryElement = useCallback(
     (placement: 'start' | 'end') => {
@@ -187,58 +195,35 @@ const ListBlock = ({ block, blockId }: ListBlockProps) => {
       return (
         indexes
           .map((itemIndex) => itemRefs.current[itemIndex] ?? null)
-          .find((element): element is HTMLTextAreaElement => element !== null) ??
-        null
+          .find(
+            (element): element is HTMLTextAreaElement => element !== null
+          ) ?? null
       )
     },
     [block.items]
   )
 
   useEffect(() => {
-    setBlockFocusTarget(blockId, {
+    registerFocusTarget(blockId, {
       kind: 'list',
       getElement: getBoundaryElement,
     })
 
     return () => {
-      setBlockFocusTarget(blockId, null)
+      registerFocusTarget(blockId, null)
     }
-  }, [blockId, getBoundaryElement, setBlockFocusTarget])
+  }, [blockId, getBoundaryElement, registerFocusTarget])
 
   const setItemRef = useCallback(
     (itemIndex: number, node: HTMLTextAreaElement | null) => {
-      if (itemRefs.current[itemIndex] === node) {
-        return
-      }
-
       itemRefs.current[itemIndex] = node
 
-      if (node) {
-        const existingTarget = itemTargetRefs.current[itemIndex]
-
-        if (
-          existingTarget &&
-          existingTarget.kind === 'textarea' &&
-          existingTarget.element === node
-        ) {
-          setBlockFocusTarget(`${blockId}:${itemIndex}`, existingTarget)
-          return
-        }
-
-        const nextTarget: BlockFocusTarget = {
-          element: node,
-          kind: 'textarea',
-        }
-
-        itemTargetRefs.current[itemIndex] = nextTarget
-        setBlockFocusTarget(`${blockId}:${itemIndex}`, nextTarget)
-        return
-      }
-
-      itemTargetRefs.current[itemIndex] = null
-      setBlockFocusTarget(`${blockId}:${itemIndex}`, null)
+      registerFocusTarget(
+        `${blockId}:${itemIndex}`,
+        node ? { element: node, kind: 'textarea' } : null
+      )
     },
-    [blockId, setBlockFocusTarget]
+    [blockId, registerFocusTarget]
   )
 
   const ListTag = block.style === 'numbered' ? 'ol' : 'ul'

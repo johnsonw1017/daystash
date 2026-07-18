@@ -34,7 +34,7 @@ export type BlockFocusTarget =
       kind: 'list'
     }
 
-export type PendingBlockFocus =
+export type FocusRequest =
   | {
       blockId: string
       placement: BlockFocusPlacement
