@@ -1,24 +1,21 @@
 'use client'
 
-import { useCallback, useEffect } from 'react'
+import { useCallback } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAtom, useSetAtom } from 'jotai'
 import { saveJournal } from '@/app/(journal)/write/actions'
 import {
-  blockFocusTargetsAtom,
   blocksAtom,
   errorMessageAtom,
   isJournalSavingAtom,
   journalEditorConfigAtom,
   journalIdAtom,
   lastSavedTitleAtom,
-  pendingBlockFocusAtom,
   savedBlocksAtom,
   sessionAssetIdsAtom,
   titleAtom,
 } from '@/components/journal-editor/atoms'
 import {
-  focusBlockTarget,
   makeImageBlock,
   makeListBlock,
   makeTextBlock,
@@ -26,10 +23,7 @@ import {
 } from '@/components/journal-editor/utils'
 import { journalQueryKeys } from '@/hooks/use-journals'
 import type { JournalBlock, ListStyle } from '@/lib/journals'
-import type {
-  BlockFocusPlacement,
-  BlockFocusTarget,
-} from '@/components/journal-editor/types'
+import useFocusRegistry from '@/components/journal-editor/hooks/use-focus-registry'
 import { toast } from 'sonner'
 
 const ensureEditorHasBlock = (blocks: JournalBlock[]) =>
@@ -49,13 +43,11 @@ const useJournalEditor = () => {
   const [editorConfig] = useAtom(journalEditorConfigAtom)
   const [journalId, setJournalId] = useAtom(journalIdAtom)
   const [lastSavedTitle, setLastSavedTitle] = useAtom(lastSavedTitleAtom)
-  const [pendingBlockFocus, setPendingBlockFocus] = useAtom(pendingBlockFocusAtom)
   const [savedBlocks, setSavedBlocks] = useAtom(savedBlocksAtom)
   const setSessionAssetIds = useSetAtom(sessionAssetIdsAtom)
   const setIsJournalSaving = useSetAtom(isJournalSavingAtom)
-  const [blockFocusTargets] = useAtom(blockFocusTargetsAtom)
-  const setBlockFocusTargets = useSetAtom(blockFocusTargetsAtom)
   const [title, setTitle] = useAtom(titleAtom)
+  const { focusBlock, focusTextBlock } = useFocusRegistry()
   const normalizedBlocks = normalizeEditorBlocks(blocks)
   const isDirty =
     JSON.stringify(normalizedBlocks) !== JSON.stringify(savedBlocks) ||
@@ -97,86 +89,26 @@ const useJournalEditor = () => {
   )
 
   const handleMutationError = useCallback(
-    ({
-      message,
-      toastMessage,
-    }: {
-      message: string
-      toastMessage: string
-    }) => {
+    ({ message, toastMessage }: { message: string; toastMessage: string }) => {
       setErrorMessage(message)
       toast.error(toastMessage)
     },
     [setErrorMessage]
   )
 
-  const runMutation = useCallback((callback: () => void) => {
-    setErrorMessage('')
-    callback()
-  }, [setErrorMessage])
-
-  useEffect(() => {
-    if (pendingBlockFocus === null) return
-
-    const target = blockFocusTargets[pendingBlockFocus.blockId]
-    if (!target) return
-
-    if ('placement' in pendingBlockFocus) {
-      focusBlockTarget(target, pendingBlockFocus.placement)
-      setPendingBlockFocus(null)
-      return
-    }
-
-    if (target.kind !== 'textarea') {
-      setPendingBlockFocus(null)
-      return
-    }
-
-    target.element.focus()
-    target.element.setSelectionRange(pendingBlockFocus.start, pendingBlockFocus.end)
-    setPendingBlockFocus(null)
-  }, [blockFocusTargets, blocks, pendingBlockFocus, setPendingBlockFocus])
-
-  const focusBlock = useCallback(
-    (blockId: string, placement: BlockFocusPlacement) => {
-      setPendingBlockFocus({ blockId, placement })
+  const runMutation = useCallback(
+    (callback: () => void) => {
+      setErrorMessage('')
+      callback()
     },
-    [setPendingBlockFocus]
-  )
-
-  const focusTextBlock = useCallback(
-    (blockId: string, start: number, end = start) => {
-      setPendingBlockFocus({ blockId, start, end })
-    },
-    [setPendingBlockFocus]
+    [setErrorMessage]
   )
 
   const focusListItem = useCallback(
     (blockId: string, itemIndex: number, start: number, end = start) => {
-      setPendingBlockFocus({ blockId: `${blockId}:${itemIndex}`, start, end })
+      focusTextBlock(`${blockId}:${itemIndex}`, start, end)
     },
-    [setPendingBlockFocus]
-  )
-
-  const setBlockFocusTarget = useCallback(
-    (blockId: string, target: BlockFocusTarget | null) => {
-      setBlockFocusTargets((currentTargets) => {
-        if (currentTargets[blockId] === target) return currentTargets
-
-        if (!target && !(blockId in currentTargets)) return currentTargets
-
-        const nextTargets = { ...currentTargets }
-
-        if (target) {
-          nextTargets[blockId] = target
-        } else {
-          delete nextTargets[blockId]
-        }
-
-        return nextTargets
-      })
-    },
-    [setBlockFocusTargets]
+    [focusTextBlock]
   )
 
   const getBlockIndex = useCallback(
@@ -195,7 +127,7 @@ const useJournalEditor = () => {
   const getNextBlock = useCallback(
     (blockId: string) => {
       const blockIndex = getBlockIndex(blockId)
-      return blockIndex >= 0 ? blocks[blockIndex + 1] ?? null : null
+      return blockIndex >= 0 ? (blocks[blockIndex + 1] ?? null) : null
     },
     [blocks, getBlockIndex]
   )
@@ -214,7 +146,9 @@ const useJournalEditor = () => {
             : makeTextBlock()
 
       setBlocks((currentBlocks) => {
-        const blockIndex = currentBlocks.findIndex((block) => block.id === blockId)
+        const blockIndex = currentBlocks.findIndex(
+          (block) => block.id === blockId
+        )
         if (blockIndex === -1) return currentBlocks
 
         const nextBlocks =
@@ -246,7 +180,9 @@ const useJournalEditor = () => {
       const nextBlock = makeImageBlock(images)
 
       setBlocks((currentBlocks) => {
-        const blockIndex = currentBlocks.findIndex((block) => block.id === blockId)
+        const blockIndex = currentBlocks.findIndex(
+          (block) => block.id === blockId
+        )
         if (blockIndex === -1) return currentBlocks
 
         const nextBlocks =
@@ -268,7 +204,9 @@ const useJournalEditor = () => {
   const appendImagesToBlock = useCallback(
     (blockId: string, images: NonNullable<InsertBlockOptions['images']>) => {
       setBlocks((currentBlocks) => {
-        const blockIndex = currentBlocks.findIndex((block) => block.id === blockId)
+        const blockIndex = currentBlocks.findIndex(
+          (block) => block.id === blockId
+        )
         const block = currentBlocks[blockIndex]
 
         if (!block || block.type !== 'image') return currentBlocks
@@ -295,7 +233,9 @@ const useJournalEditor = () => {
       const nextBlock = makeTextBlock()
 
       setBlocks((currentBlocks) => {
-        const blockIndex = currentBlocks.findIndex((block) => block.id === blockId)
+        const blockIndex = currentBlocks.findIndex(
+          (block) => block.id === blockId
+        )
         const block = currentBlocks[blockIndex]
 
         if (block?.type !== 'text') return currentBlocks
@@ -319,7 +259,9 @@ const useJournalEditor = () => {
   const updateTextBlock = useCallback(
     (blockId: string, value: string) => {
       setBlocks((currentBlocks) => {
-        const blockIndex = currentBlocks.findIndex((block) => block.id === blockId)
+        const blockIndex = currentBlocks.findIndex(
+          (block) => block.id === blockId
+        )
         const block = currentBlocks[blockIndex]
 
         if (!block || block.type !== 'text') return currentBlocks
@@ -335,7 +277,9 @@ const useJournalEditor = () => {
   const updateImageCaption = useCallback(
     (blockId: string, value: string) => {
       setBlocks((currentBlocks) => {
-        const blockIndex = currentBlocks.findIndex((block) => block.id === blockId)
+        const blockIndex = currentBlocks.findIndex(
+          (block) => block.id === blockId
+        )
         const block = currentBlocks[blockIndex]
 
         if (!block || block.type !== 'image') return currentBlocks
@@ -358,7 +302,8 @@ const useJournalEditor = () => {
 
         if (!block || block.type !== 'list') return currentBlocks
 
-        if (itemIndex < 0 || itemIndex >= block.items.length) return currentBlocks
+        if (itemIndex < 0 || itemIndex >= block.items.length)
+          return currentBlocks
 
         const nextItems = [...block.items]
         nextItems[itemIndex] = value
@@ -374,7 +319,9 @@ const useJournalEditor = () => {
   const updateListStyle = useCallback(
     (blockId: string, style: ListStyle) => {
       setBlocks((currentBlocks) => {
-        const blockIndex = currentBlocks.findIndex((block) => block.id === blockId)
+        const blockIndex = currentBlocks.findIndex(
+          (block) => block.id === blockId
+        )
         const block = currentBlocks[blockIndex]
 
         if (!block || block.type !== 'list' || block.style === style) {
@@ -425,7 +372,11 @@ const useJournalEditor = () => {
   )
 
   const mergeListItem = useCallback(
-    (blockId: string, itemIndex: number, direction: MergeTextBlockDirection) => {
+    (
+      blockId: string,
+      itemIndex: number,
+      direction: MergeTextBlockDirection
+    ) => {
       setBlocks((currentBlocks) => {
         const blockIndex = currentBlocks.findIndex(
           (block) => block.id === blockId
@@ -500,7 +451,9 @@ const useJournalEditor = () => {
   const removeBlock = useCallback(
     (blockId: string) => {
       setBlocks((currentBlocks) =>
-        ensureEditorHasBlock(currentBlocks.filter((block) => block.id !== blockId))
+        ensureEditorHasBlock(
+          currentBlocks.filter((block) => block.id !== blockId)
+        )
       )
     },
     [setBlocks]
@@ -509,9 +462,13 @@ const useJournalEditor = () => {
   const mergeTextBlock = useCallback(
     (blockId: string, direction: MergeTextBlockDirection) => {
       setBlocks((currentBlocks) => {
-        const blockIndex = currentBlocks.findIndex((block) => block.id === blockId)
-        const sourceIndex = direction === 'previous' ? blockIndex - 1 : blockIndex
-        const targetIndex = direction === 'previous' ? blockIndex : blockIndex + 1
+        const blockIndex = currentBlocks.findIndex(
+          (block) => block.id === blockId
+        )
+        const sourceIndex =
+          direction === 'previous' ? blockIndex - 1 : blockIndex
+        const targetIndex =
+          direction === 'previous' ? blockIndex : blockIndex + 1
         const sourceBlock = currentBlocks[sourceIndex]
         const targetBlock = currentBlocks[targetIndex]
 
@@ -678,7 +635,6 @@ const useJournalEditor = () => {
     save,
     removeBlock,
     removeImage,
-    setBlockFocusTarget,
     setTitle,
     splitListItem,
     splitTextBlock,

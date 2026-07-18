@@ -3,6 +3,7 @@
 import { useCallback } from 'react'
 import type { KeyboardEvent } from 'react'
 import useJournalEditor from '@/components/journal-editor/hooks/use-journal-editor'
+import useFocusRegistry from '@/components/journal-editor/hooks/use-focus-registry'
 import type { TextJournalBlock } from '@/components/journal-editor/types'
 import { Textarea } from '@/components/ui/textarea'
 
@@ -20,15 +21,15 @@ const TextBlock = ({ block, blockId }: TextBlockProps) => {
     getPreviousBlock,
     mergeTextBlock,
     removeBlock,
-    setBlockFocusTarget,
     splitTextBlock,
     updateTextBlock,
   } = useJournalEditor()
   const blockCount = blocks.length
+  const { registerFocusTarget } = useFocusRegistry()
 
   const setTextareaRef = useCallback(
     (node: HTMLTextAreaElement | null) => {
-      setBlockFocusTarget(
+      registerFocusTarget(
         blockId,
         node
           ? {
@@ -38,22 +39,29 @@ const TextBlock = ({ block, blockId }: TextBlockProps) => {
           : null
       )
     },
-    [blockId, setBlockFocusTarget]
+    [blockId, registerFocusTarget]
   )
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     const { selectionStart, selectionEnd, value } = event.currentTarget
     const previousBlock = getPreviousBlock(blockId) ?? undefined
     const nextBlock = getNextBlock(blockId) ?? undefined
-    const previousTextBlock = previousBlock?.type === 'text' ? previousBlock : null
-    const previousListBlock = previousBlock?.type === 'list' ? previousBlock : null
+    const previousTextBlock =
+      previousBlock?.type === 'text' ? previousBlock : null
+    const previousListBlock =
+      previousBlock?.type === 'list' ? previousBlock : null
     const nextTextBlock = nextBlock?.type === 'text' ? nextBlock : null
     const hasCollapsedSelection = selectionStart === selectionEnd
     const isAtStart = selectionStart === 0
     const isAtEnd = selectionStart === value.length
     const isEmptyBlock = block.content.trim().length === 0
 
-    if (event.key === 'Backspace' && hasCollapsedSelection && isAtStart && previousTextBlock) {
+    if (
+      event.key === 'Backspace' &&
+      hasCollapsedSelection &&
+      isAtStart &&
+      previousTextBlock
+    ) {
       event.preventDefault()
       focusTextBlock(previousTextBlock.id, previousTextBlock.content.length)
       mergeTextBlock(blockId, 'previous')

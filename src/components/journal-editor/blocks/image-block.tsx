@@ -5,6 +5,7 @@ import { useCallback, useState, type KeyboardEvent } from 'react'
 import { Pencil, Trash2 } from 'lucide-react'
 import ImageEditDialog from '@/components/journal-editor/image-edit-dialog'
 import useJournalEditor from '@/components/journal-editor/hooks/use-journal-editor'
+import useFocusRegistry from '@/components/journal-editor/hooks/use-focus-registry'
 import type { ImageJournalBlock } from '@/components/journal-editor/types'
 import { Button } from '@/components/ui/button'
 import {
@@ -75,14 +76,15 @@ const ImageItem = ({
 }
 
 const ImageBlock = ({ block, blockId }: ImageBlockProps) => {
-  const { insertBlockBelow, removeImage, setBlockFocusTarget, updateImageCaption } =
+  const { insertBlockBelow, removeImage, updateImageCaption } =
     useJournalEditor()
+  const { registerFocusTarget } = useFocusRegistry()
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const carouselAspectRatio = getCarouselViewportAspectRatio(block.images)
 
   const setCaptionRef = useCallback(
     (node: HTMLInputElement | null) => {
-      setBlockFocusTarget(
+      registerFocusTarget(
         blockId,
         node
           ? {
@@ -92,7 +94,7 @@ const ImageBlock = ({ block, blockId }: ImageBlockProps) => {
           : null
       )
     },
-    [blockId, setBlockFocusTarget]
+    [blockId, registerFocusTarget]
   )
 
   const handleCaptionKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {

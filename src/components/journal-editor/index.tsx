@@ -10,6 +10,7 @@ import BlockMenu from '@/components/journal-editor/blocks/block-menu'
 import ImageDialog from '@/components/journal-editor/image-dialog'
 import ResolveBlock from '@/components/journal-editor/blocks/resolve-block'
 import useJournalEditor from '@/components/journal-editor/hooks/use-journal-editor'
+import { FocusRegistryProvider } from '@/components/journal-editor/hooks/use-focus-registry'
 import useJournalSessionCleanup from '@/components/journal-editor/hooks/use-journal-session-cleanup'
 import JournalHeader from '@/components/journal-editor/journal-header'
 import type { JournalEditorProps } from '@/components/journal-editor/types'
@@ -176,7 +177,9 @@ const JournalEditor = ({
 
   return (
     <JotaiProvider store={store}>
-      <JournalEditorContent />
+      <FocusRegistryProvider>
+        <JournalEditorContent />
+      </FocusRegistryProvider>
     </JotaiProvider>
   )
 }
