@@ -6,6 +6,7 @@ import RegisterPage from '@/app/(auth)/register/page'
 import VerifyEmailPage from '@/app/(auth)/verify-email/page'
 import { DEFAULT_POST_LOGIN_REDIRECT } from '@/lib/auth/redirect'
 import { createServerSideClient } from '@/lib/supabase/server'
+import { asMockedValue, createTestUser } from '@/test/mocks/types'
 
 vi.mock('next/navigation', () => ({
   redirect: vi.fn(),
@@ -26,14 +27,14 @@ vi.mock('@/app/(auth)/register/_components/register-form', () => ({
 const mockedCreateServerSideClient = vi.mocked(createServerSideClient)
 const mockedRedirect = vi.mocked(redirect)
 
-const mockAuthUser = (user: { id: string } | null) => {
-  mockedCreateServerSideClient.mockResolvedValue({
+const mockAuthUser = (user: ReturnType<typeof createTestUser> | null) => {
+  mockedCreateServerSideClient.mockResolvedValue(asMockedValue<Awaited<ReturnType<typeof createServerSideClient>>>({
     auth: {
       getUser: vi.fn().mockResolvedValue({
         data: { user },
       }),
     },
-  })
+  }))
 }
 
 describe('auth pages', () => {
@@ -51,7 +52,7 @@ describe('auth pages', () => {
   })
 
   it('redirects logged-in users away from login', async () => {
-    mockAuthUser({ id: 'user-id' })
+    mockAuthUser(createTestUser())
 
     await LoginPage({
       searchParams: Promise.resolve({ redirectTo: '/dashboard' }),
@@ -70,7 +71,7 @@ describe('auth pages', () => {
   })
 
   it('redirects logged-in users away from registration', async () => {
-    mockAuthUser({ id: 'user-id' })
+    mockAuthUser(createTestUser())
 
     await RegisterPage()
 

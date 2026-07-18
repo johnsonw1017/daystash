@@ -7,6 +7,7 @@ import {
 } from '@/app/(journal)/write/actions'
 import { requireAuth } from '@/lib/auth/require-auth'
 import { createAdminClient } from '@/lib/supabase/server'
+import { asMockedValue, createTestUser } from '@/test/mocks/types'
 
 vi.mock('@/lib/auth/require-auth', () => ({
   requireAuth: vi.fn(),
@@ -48,7 +49,9 @@ const createAdminClientMock = (results: unknown[]) => {
     return builder
   })
 
-  mockedCreateAdminClient.mockReturnValue({ from })
+  mockedCreateAdminClient.mockReturnValue(
+    asMockedValue<ReturnType<typeof createAdminClient>>({ from })
+  )
 
   return { builders, from }
 }
@@ -57,7 +60,7 @@ describe('journal write actions', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.spyOn(crypto, 'randomUUID').mockReturnValue('asset-id')
-    mockedRequireAuth.mockResolvedValue({ id: 'user-id' })
+    mockedRequireAuth.mockResolvedValue(createTestUser())
   })
 
   it('registers assets against a newly created journal', async () => {

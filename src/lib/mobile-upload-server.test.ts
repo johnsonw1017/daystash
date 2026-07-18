@@ -7,6 +7,7 @@ import {
   createAdminClient,
   createServerSideClient,
 } from '@/lib/supabase/server'
+import { asMockedValue } from '@/test/mocks/types'
 
 vi.mock('@/lib/supabase/server', () => ({
   createAdminClient: vi.fn(),
@@ -66,7 +67,9 @@ describe('mobile upload server helpers', () => {
       user_id: 'user-id',
     }
     const query = createSingleInsertClient({ data: row, error: null })
-    mockedCreateServerSideClient.mockResolvedValue(query.client)
+    mockedCreateServerSideClient.mockResolvedValue(
+      asMockedValue<Awaited<ReturnType<typeof createServerSideClient>>>(query.client)
+    )
 
     await expect(
       createMobileUploadSession({
@@ -91,7 +94,9 @@ describe('mobile upload server helpers', () => {
       data: null,
       error: { message: 'insert failed' },
     })
-    mockedCreateServerSideClient.mockResolvedValue(query.client)
+    mockedCreateServerSideClient.mockResolvedValue(
+      asMockedValue<Awaited<ReturnType<typeof createServerSideClient>>>(query.client)
+    )
 
     await expect(
       createMobileUploadSession({
@@ -112,7 +117,9 @@ describe('mobile upload server helpers', () => {
       user_id: 'user-id',
     }
     const query = createMaybeSingleSelectClient({ data: row, error: null })
-    mockedCreateServerSideClient.mockResolvedValue(query.client)
+    mockedCreateServerSideClient.mockResolvedValue(
+      asMockedValue<Awaited<ReturnType<typeof createServerSideClient>>>(query.client)
+    )
 
     await expect(getMobileUploadSessionByToken('session-token')).resolves.toEqual(row)
     expect(query.eq).toHaveBeenCalledWith('token', 'session-token')
@@ -120,7 +127,9 @@ describe('mobile upload server helpers', () => {
 
   it('uses the admin client when requested', async () => {
     const query = createMaybeSingleSelectClient({ data: null, error: null })
-    mockedCreateAdminClient.mockReturnValue(query.client)
+    mockedCreateAdminClient.mockReturnValue(
+      asMockedValue<ReturnType<typeof createAdminClient>>(query.client)
+    )
 
     await expect(
       getMobileUploadSessionByToken('session-token', { useAdminClient: true })
@@ -132,7 +141,9 @@ describe('mobile upload server helpers', () => {
 
   it('returns null for missing or expired sessions', async () => {
     const missingQuery = createMaybeSingleSelectClient({ data: null, error: null })
-    mockedCreateServerSideClient.mockResolvedValueOnce(missingQuery.client)
+    mockedCreateServerSideClient.mockResolvedValueOnce(
+      asMockedValue<Awaited<ReturnType<typeof createServerSideClient>>>(missingQuery.client)
+    )
 
     await expect(getMobileUploadSessionByToken('missing-token')).resolves.toBeNull()
 
@@ -147,7 +158,9 @@ describe('mobile upload server helpers', () => {
       },
       error: null,
     })
-    mockedCreateServerSideClient.mockResolvedValueOnce(expiredQuery.client)
+    mockedCreateServerSideClient.mockResolvedValueOnce(
+      asMockedValue<Awaited<ReturnType<typeof createServerSideClient>>>(expiredQuery.client)
+    )
 
     await expect(getMobileUploadSessionByToken('expired-token')).resolves.toBeNull()
   })
@@ -157,7 +170,9 @@ describe('mobile upload server helpers', () => {
       data: null,
       error: { message: 'lookup failed' },
     })
-    mockedCreateServerSideClient.mockResolvedValue(query.client)
+    mockedCreateServerSideClient.mockResolvedValue(
+      asMockedValue<Awaited<ReturnType<typeof createServerSideClient>>>(query.client)
+    )
 
     await expect(getMobileUploadSessionByToken('session-token')).rejects.toThrow(
       'lookup failed'

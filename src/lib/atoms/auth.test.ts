@@ -6,6 +6,7 @@ import {
   setAuthUserAtom,
 } from '@/lib/atoms/auth'
 import supabase from '@/lib/supabase/client'
+import { createTestUser } from '@/test/mocks/types'
 
 vi.mock('@/lib/supabase/client', () => ({
   default: {
@@ -29,8 +30,8 @@ describe('auth atoms', () => {
       isLoading: true,
     })
 
-    expect(createAuthUserState({ id: 'user-id' })).toEqual({
-      user: { id: 'user-id' },
+    expect(createAuthUserState(createTestUser())).toEqual({
+      user: createTestUser(),
       isLoggedIn: true,
       isLoading: false,
     })
@@ -39,15 +40,16 @@ describe('auth atoms', () => {
   it('refreshes the auth user atom from Supabase', async () => {
     mockedGetUser.mockResolvedValue({
       data: {
-        user: { id: 'user-id' },
+        user: createTestUser(),
       },
+      error: null,
     })
     const store = createStore()
 
     await store.set(setAuthUserAtom)
 
     expect(store.get(authUserAtom)).toEqual({
-      user: { id: 'user-id' },
+      user: createTestUser(),
       isLoggedIn: true,
       isLoading: false,
     })

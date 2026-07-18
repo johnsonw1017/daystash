@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 import { GET } from '@/app/(auth)/auth/callback/route'
 import { createServerSideClient } from '@/lib/supabase/server'
+import { asMockedValue } from '@/test/mocks/types'
 
 vi.mock('@/lib/supabase/server', () => ({
   createServerSideClient: vi.fn(),
@@ -12,11 +13,11 @@ const mockedCreateServerSideClient = vi.mocked(createServerSideClient)
 const mockExchangeCodeForSession = (error: { message: string } | null) => {
   const exchangeCodeForSession = vi.fn().mockResolvedValue({ error })
 
-  mockedCreateServerSideClient.mockResolvedValue({
+  mockedCreateServerSideClient.mockResolvedValue(asMockedValue<Awaited<ReturnType<typeof createServerSideClient>>>({
     auth: {
       exchangeCodeForSession,
     },
-  })
+  }))
 
   return exchangeCodeForSession
 }

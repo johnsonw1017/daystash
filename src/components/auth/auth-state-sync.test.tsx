@@ -3,6 +3,7 @@ import { useSetAtom } from 'jotai'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import AuthStateSync from '@/components/auth/auth-state-sync'
 import supabase from '@/lib/supabase/client'
+import { asMockedValue } from '@/test/mocks/types'
 
 vi.mock('jotai', async (importOriginal) => {
   const actual = await importOriginal<typeof import('jotai')>()
@@ -32,24 +33,24 @@ describe('AuthStateSync', () => {
   it('refreshes auth state on mount and auth changes', async () => {
     const refreshAuthUser = vi.fn()
     const unsubscribe = vi.fn()
-    let authChangeCallback: (() => void) | null = null
+    let authChangeCallback: Parameters<typeof supabase.auth.onAuthStateChange>[0] = vi.fn()
 
-    mockedUseSetAtom.mockReturnValue(refreshAuthUser)
+    mockedUseSetAtom.mockReturnValue(asMockedValue<ReturnType<typeof useSetAtom>>(refreshAuthUser))
     mockedOnAuthStateChange.mockImplementation((callback) => {
       authChangeCallback = callback
 
-      return {
+      return asMockedValue<ReturnType<typeof supabase.auth.onAuthStateChange>>({
         data: {
           subscription: { unsubscribe },
         },
-      }
+      })
     })
 
     render(<AuthStateSync />)
 
     await waitFor(() => expect(refreshAuthUser).toHaveBeenCalledOnce())
 
-    authChangeCallback?.()
+    authChangeCallback('SIGNED_IN', null)
 
     expect(refreshAuthUser).toHaveBeenCalledTimes(2)
   })
@@ -58,12 +59,12 @@ describe('AuthStateSync', () => {
     const refreshAuthUser = vi.fn()
     const unsubscribe = vi.fn()
 
-    mockedUseSetAtom.mockReturnValue(refreshAuthUser)
-    mockedOnAuthStateChange.mockReturnValue({
+    mockedUseSetAtom.mockReturnValue(asMockedValue<ReturnType<typeof useSetAtom>>(refreshAuthUser))
+    mockedOnAuthStateChange.mockReturnValue(asMockedValue<ReturnType<typeof supabase.auth.onAuthStateChange>>({
       data: {
         subscription: { unsubscribe },
       },
-    })
+    }))
 
     const { unmount } = render(<AuthStateSync />)
     unmount()

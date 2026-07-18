@@ -9,6 +9,7 @@ import {
 } from '@/actions/auth'
 import { DEFAULT_POST_LOGIN_REDIRECT } from '@/lib/auth/redirect'
 import { createServerSideClient } from '@/lib/supabase/server'
+import { asMockedValue } from '@/test/mocks/types'
 
 vi.mock('next/navigation', () => ({
   redirect: vi.fn(),
@@ -44,7 +45,9 @@ const createSupabaseAuthMock = ({
     updateUser: vi.fn().mockResolvedValue({ error: updatePasswordError ?? null }),
   }
 
-  mockedCreateServerSideClient.mockResolvedValue({ auth })
+  mockedCreateServerSideClient.mockResolvedValue(
+    asMockedValue<Awaited<ReturnType<typeof createServerSideClient>>>({ auth })
+  )
 
   return auth
 }

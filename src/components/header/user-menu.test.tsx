@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import UserMenu from '@/components/header/user-menu'
 import { useAuthUser } from '@/hooks/use-auth-user'
+import { createTestUser } from '@/test/mocks/types'
 
 const replace = vi.fn()
 
@@ -27,7 +28,7 @@ describe('UserMenu', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockedUseAuthUser.mockReturnValue({
-      user: { id: 'user-id' },
+      user: createTestUser(),
       isLoggedIn: true,
       isLoading: false,
     })

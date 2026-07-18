@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { redirect } from 'next/navigation'
 import { requireAuth } from '@/lib/auth/require-auth'
 import { createServerSideClient } from '@/lib/supabase/server'
+import { asMockedValue, createTestUser } from '@/test/mocks/types'
 
 vi.mock('next/navigation', () => ({
   redirect: vi.fn(),
@@ -14,14 +15,14 @@ vi.mock('@/lib/supabase/server', () => ({
 const mockedCreateServerSideClient = vi.mocked(createServerSideClient)
 const mockedRedirect = vi.mocked(redirect)
 
-const mockAuthUser = (user: { id: string } | null) => {
-  mockedCreateServerSideClient.mockResolvedValue({
+const mockAuthUser = (user: ReturnType<typeof createTestUser> | null) => {
+  mockedCreateServerSideClient.mockResolvedValue(asMockedValue<Awaited<ReturnType<typeof createServerSideClient>>>({
     auth: {
       getUser: vi.fn().mockResolvedValue({
         data: { user },
       }),
     },
-  })
+  }))
 }
 
 describe('requireAuth', () => {
@@ -30,9 +31,9 @@ describe('requireAuth', () => {
   })
 
   it('returns the current user when authenticated', async () => {
-    mockAuthUser({ id: 'user-id' })
+    mockAuthUser(createTestUser())
 
-    await expect(requireAuth('/dashboard')).resolves.toEqual({ id: 'user-id' })
+    await expect(requireAuth('/dashboard')).resolves.toMatchObject({ id: 'user-id' })
     expect(mockedRedirect).not.toHaveBeenCalled()
   })
 
