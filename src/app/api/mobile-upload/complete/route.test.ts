@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { POST } from '@/app/api/mobile-upload/complete/route'
 import { getMobileUploadSessionByToken } from '@/lib/mobile-upload-server'
 import { createAdminClient } from '@/lib/supabase/server'
+import { asMockedValue } from '@/test/mocks/types'
 
 vi.mock('@/lib/mobile-upload-server', () => ({
   getMobileUploadSessionByToken: vi.fn(),
@@ -47,7 +48,9 @@ const createAdminClientMock = (results: unknown[]) => {
     return builder
   })
 
-  mockedCreateAdminClient.mockReturnValue({ from })
+  mockedCreateAdminClient.mockReturnValue(
+    asMockedValue<ReturnType<typeof createAdminClient>>({ from })
+  )
 
   return { from }
 }

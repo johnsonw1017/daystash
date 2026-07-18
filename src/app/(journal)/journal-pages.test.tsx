@@ -6,6 +6,7 @@ import EntryEditPage from '@/app/(journal)/entries/[slug]/edit/page'
 import JournalLayout from '@/app/(journal)/layout'
 import WritePage from '@/app/(journal)/write/page'
 import { requireAuth } from '@/lib/auth/require-auth'
+import { createTestUser } from '@/test/mocks/types'
 
 vi.mock('@/lib/auth/require-auth', () => ({
   requireAuth: vi.fn(),
@@ -32,7 +33,7 @@ const mockedRequireAuth = vi.mocked(requireAuth)
 describe('journal pages', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockedRequireAuth.mockResolvedValue({ id: 'user-id' })
+    mockedRequireAuth.mockResolvedValue(createTestUser())
   })
 
   it('requires auth before rendering the journal layout children', async () => {

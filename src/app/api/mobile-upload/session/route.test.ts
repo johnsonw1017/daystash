@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { POST } from '@/app/api/mobile-upload/session/route'
 import { createMobileUploadSession } from '@/lib/mobile-upload-server'
 import { createServerSideClient } from '@/lib/supabase/server'
+import { asMockedValue, createTestUser } from '@/test/mocks/types'
 
 vi.mock('@/lib/mobile-upload-server', () => ({
   createMobileUploadSession: vi.fn(),
@@ -22,15 +23,15 @@ const createJsonRequest = (body: unknown) =>
     body: JSON.stringify(body),
   })
 
-const mockAuthUser = (user: { id: string } | null, error: { message: string } | null = null) => {
-  mockedCreateServerSideClient.mockResolvedValue({
+const mockAuthUser = (user: ReturnType<typeof createTestUser> | null, error: { message: string } | null = null) => {
+  mockedCreateServerSideClient.mockResolvedValue(asMockedValue<Awaited<ReturnType<typeof createServerSideClient>>>({
     auth: {
       getUser: vi.fn().mockResolvedValue({
         data: { user },
         error,
       }),
     },
-  })
+  }))
 }
 
 describe('POST /api/mobile-upload/session', () => {
@@ -39,7 +40,7 @@ describe('POST /api/mobile-upload/session', () => {
   })
 
   it('creates a mobile upload session for the authenticated user', async () => {
-    mockAuthUser({ id: 'user-id' })
+    mockAuthUser(createTestUser())
     mockedCreateMobileUploadSession.mockResolvedValue({
       editor_session_id: uuid,
       expires_at: '2026-07-17T00:30:00.000Z',
@@ -83,7 +84,7 @@ describe('POST /api/mobile-upload/session', () => {
   })
 
   it('returns a bad request for invalid payloads', async () => {
-    mockAuthUser({ id: 'user-id' })
+    mockAuthUser(createTestUser())
 
     const response = await POST(
       createJsonRequest({
@@ -97,7 +98,7 @@ describe('POST /api/mobile-upload/session', () => {
   })
 
   it('returns session creation errors', async () => {
-    mockAuthUser({ id: 'user-id' })
+    mockAuthUser(createTestUser())
     mockedCreateMobileUploadSession.mockRejectedValue(new Error('database unavailable'))
 
     const response = await POST(

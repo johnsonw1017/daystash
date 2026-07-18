@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import Home from '@/app/(home)/page'
 import { useAuthUser } from '@/hooks/use-auth-user'
+import { createTestUser } from '@/test/mocks/types'
 
 vi.mock('@/hooks/use-auth-user', () => ({
   useAuthUser: vi.fn(),
@@ -35,7 +36,7 @@ describe('Home', () => {
 
   it('shows a dashboard link for logged-in users', () => {
     mockedUseAuthUser.mockReturnValue({
-      user: { id: 'user-id' },
+      user: createTestUser(),
       isLoggedIn: true,
       isLoading: false,
     })

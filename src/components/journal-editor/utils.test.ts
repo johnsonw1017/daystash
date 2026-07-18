@@ -14,7 +14,7 @@ vi.mock('uuid', () => ({
   v4: vi.fn(),
 }))
 
-const mockedUuid = vi.mocked(uuidv4)
+const mockedUuid = vi.mocked(uuidv4 as () => string)
 
 describe('journal editor block factories', () => {
   it('creates text blocks with generated ids', () => {

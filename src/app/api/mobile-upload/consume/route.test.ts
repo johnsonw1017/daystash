@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { POST } from '@/app/api/mobile-upload/consume/route'
 import { getMobileUploadSessionByToken } from '@/lib/mobile-upload-server'
 import { createServerSideClient } from '@/lib/supabase/server'
+import { asMockedValue, createTestUser } from '@/test/mocks/types'
 
 vi.mock('@/lib/mobile-upload-server', () => ({
   getMobileUploadSessionByToken: vi.fn(),
@@ -36,10 +37,10 @@ const createQueryBuilder = (result: unknown) => {
 
 const mockSupabase = ({
   queryResult = { data: [], error: null },
-  user = { id: 'user-id' },
+  user = createTestUser(),
 }: {
   queryResult?: unknown
-  user?: { id: string } | null
+  user?: ReturnType<typeof createTestUser> | null
 } = {}) => {
   const builder = createQueryBuilder(queryResult)
   const from = vi.fn(() => builder)
@@ -48,10 +49,10 @@ const mockSupabase = ({
     error: null,
   })
 
-  mockedCreateServerSideClient.mockResolvedValue({
+  mockedCreateServerSideClient.mockResolvedValue(asMockedValue<Awaited<ReturnType<typeof createServerSideClient>>>({
     auth: { getUser },
     from,
-  })
+  }))
 
   return { builder, from, getUser }
 }
