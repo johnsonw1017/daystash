@@ -39,7 +39,7 @@ const initialBlocks: JournalBlock[] = [
 ]
 
 describe('useJournalEditor', () => {
-  it('stars one image at a time and allows it to be unstarred', () => {
+  it('uses the first image as the default thumbnail and switches it when starred', () => {
     const store = createJournalBlocksStore({ initialBlocks })
     const queryClient = new QueryClient()
     const wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -51,25 +51,12 @@ describe('useJournalEditor', () => {
     )
     const { result } = renderHook(() => useJournalEditor(), { wrapper })
 
-    act(() => result.current.toggleImageStar('asset-1'))
-    expect(result.current.blocks).toMatchObject([
-      { images: [{ assetId: 'asset-1' }] },
-      { images: [{ assetId: 'asset-2' }] },
-    ])
-    expect(result.current.starredImageAssetId).toBe('asset-1')
+    expect(result.current.activeThumbnailAssetId).toBe('asset-1')
 
     act(() => result.current.toggleImageStar('asset-2'))
-    expect(result.current.blocks).toMatchObject([
-      { images: [{ assetId: 'asset-1' }] },
-      { images: [{ assetId: 'asset-2' }] },
-    ])
-    expect(result.current.starredImageAssetId).toBe('asset-2')
+    expect(result.current.activeThumbnailAssetId).toBe('asset-2')
 
     act(() => result.current.toggleImageStar('asset-2'))
-    expect(result.current.blocks).toMatchObject([
-      { images: [{ assetId: 'asset-1' }] },
-      { images: [{ assetId: 'asset-2' }] },
-    ])
-    expect(result.current.starredImageAssetId).toBeNull()
+    expect(result.current.activeThumbnailAssetId).toBe('asset-1')
   })
 })

@@ -34,7 +34,7 @@ export type SaveJournalInput = {
   journalId?: string
   title: string
   blocks: JournalBlock[]
-  starredImageAssetId?: string | null
+  thumbnailAssetId?: string | null
 }
 
 export type RegisterJournalAssetsInput = {
@@ -70,12 +70,7 @@ export type JournalListItem = Pick<
 
 export type JournalDetail = JournalSummary & {
   blocks: JournalBlock[]
-  starredImageAssetId: string | null
-}
-
-export type JournalContent = {
-  blocks: JournalBlock[]
-  starredImageAssetId: string | null
+  thumbnailAssetId: string | null
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -200,24 +195,6 @@ export const parseJournalBlocks = (value: unknown): JournalBlock[] => {
     .filter((block): block is JournalBlock => block !== null)
 }
 
-export const parseJournalContent = (value: unknown): JournalContent => {
-  if (Array.isArray(value)) {
-    return { blocks: parseJournalBlocks(value), starredImageAssetId: null }
-  }
-
-  if (!isRecord(value)) {
-    return { blocks: [], starredImageAssetId: null }
-  }
-
-  return {
-    blocks: parseJournalBlocks(value.blocks),
-    starredImageAssetId:
-      typeof value.starredImageAssetId === 'string' && value.starredImageAssetId.length > 0
-        ? value.starredImageAssetId
-        : null,
-  }
-}
-
 export const normalizeJournalBlocks = (blocks: JournalBlock[]): JournalBlock[] => {
   const normalized = blocks
     .map((block) => {
@@ -291,14 +268,15 @@ export const getReferencedAssetIds = (blocks: JournalBlock[]) =>
 
 export const getJournalThumbnailAssetId = (
   blocks: JournalBlock[],
-  starredImageAssetId: string | null = null
+  thumbnailAssetId: string | null = null
 ) => {
-  if (starredImageAssetId) return starredImageAssetId
-
-  const firstImageBlock = blocks.find(
-    (block): block is ImageJournalBlock =>
-      block.type === 'image' && block.images.length > 0
+  const imageAssets = blocks.flatMap((block) =>
+    block.type === 'image' ? block.images : []
   )
 
-  return firstImageBlock?.images[0]?.assetId ?? null
+  if (thumbnailAssetId && imageAssets.some((image) => image.assetId === thumbnailAssetId)) {
+    return thumbnailAssetId
+  }
+
+  return imageAssets[0]?.assetId ?? null
 }

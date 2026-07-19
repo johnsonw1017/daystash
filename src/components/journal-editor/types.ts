@@ -5,7 +5,7 @@ export type JournalEditorProps = {
   initialJournalId?: string
   initialTitle?: string
   initialBlocks?: JournalBlock[]
-  initialStarredImageAssetId?: string | null
+  initialThumbnailAssetId?: string | null
   successMessage?: string
   isEditMode?: boolean
   viewHref?: string

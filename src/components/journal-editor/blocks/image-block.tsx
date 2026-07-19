@@ -90,7 +90,7 @@ const ImageItem = ({
 
 const ImageBlock = ({ block, blockId }: ImageBlockProps) => {
   const {
-    starredImageAssetId,
+    activeThumbnailAssetId,
     insertBlockBelow,
     removeImage,
     toggleImageStar,
@@ -161,14 +161,14 @@ const ImageBlock = ({ block, blockId }: ImageBlockProps) => {
                         size="icon-xs"
                         onClick={() => toggleImageStar(image.assetId)}
                         aria-label={
-                          starredImageAssetId === image.assetId
+                          activeThumbnailAssetId === image.assetId
                             ? 'Unstar image'
                             : 'Star image'
                         }
                       >
                         <Star
                           className={
-                            starredImageAssetId === image.assetId
+                            activeThumbnailAssetId === image.assetId
                               ? 'fill-current'
                               : undefined
                           }
@@ -200,7 +200,7 @@ const ImageBlock = ({ block, blockId }: ImageBlockProps) => {
           height={block.images[0].height}
           onRemove={() => removeImage(blockId, 0)}
           onEdit={() => setIsEditDialogOpen(true)}
-          isStarred={starredImageAssetId === block.images[0].assetId}
+          isStarred={activeThumbnailAssetId === block.images[0].assetId}
           onToggleStar={() => toggleImageStar(block.images[0].assetId)}
         />
       ) : null}

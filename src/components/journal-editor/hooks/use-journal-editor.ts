@@ -7,13 +7,13 @@ import { saveJournal } from '@/app/(journal)/write/actions'
 import {
   blocksAtom,
   errorMessageAtom,
-  starredImageAssetIdAtom,
+  thumbnailAssetIdAtom,
   isJournalSavingAtom,
   journalEditorConfigAtom,
   journalIdAtom,
   lastSavedTitleAtom,
   savedBlocksAtom,
-  savedStarredImageAssetIdAtom,
+  savedThumbnailAssetIdAtom,
   sessionAssetIdsAtom,
   titleAtom,
 } from '@/components/journal-editor/atoms'
@@ -24,7 +24,11 @@ import {
   normalizeEditorBlocks,
 } from '@/components/journal-editor/utils'
 import { journalQueryKeys } from '@/hooks/use-journals'
-import type { JournalBlock, ListStyle } from '@/lib/journals'
+import {
+  getJournalThumbnailAssetId,
+  type JournalBlock,
+  type ListStyle,
+} from '@/lib/journals'
 import useFocusRegistry from '@/components/journal-editor/hooks/use-focus-registry'
 import { toast } from 'sonner'
 
@@ -46,11 +50,11 @@ const useJournalEditor = () => {
   const [journalId, setJournalId] = useAtom(journalIdAtom)
   const [lastSavedTitle, setLastSavedTitle] = useAtom(lastSavedTitleAtom)
   const [savedBlocks, setSavedBlocks] = useAtom(savedBlocksAtom)
-  const [starredImageAssetId, setStarredImageAssetId] = useAtom(
-    starredImageAssetIdAtom
+  const [thumbnailAssetId, setThumbnailAssetId] = useAtom(
+    thumbnailAssetIdAtom
   )
-  const [savedStarredImageAssetId, setSavedStarredImageAssetId] = useAtom(
-    savedStarredImageAssetIdAtom
+  const [savedThumbnailAssetId, setSavedThumbnailAssetId] = useAtom(
+    savedThumbnailAssetIdAtom
   )
   const setSessionAssetIds = useSetAtom(sessionAssetIdsAtom)
   const setIsJournalSaving = useSetAtom(isJournalSavingAtom)
@@ -59,18 +63,18 @@ const useJournalEditor = () => {
   const normalizedBlocks = normalizeEditorBlocks(blocks)
   const isDirty =
     JSON.stringify(normalizedBlocks) !== JSON.stringify(savedBlocks) ||
-    starredImageAssetId !== savedStarredImageAssetId ||
+    thumbnailAssetId !== savedThumbnailAssetId ||
     title !== lastSavedTitle
 
   const applySavedState = useCallback(
     ({
       blocks: nextBlocks,
-      starredImageAssetId: nextStarredImageAssetId,
+      thumbnailAssetId: nextThumbnailAssetId,
       nextJournalId,
       successMessage,
     }: {
       blocks: JournalBlock[]
-      starredImageAssetId: string | null
+      thumbnailAssetId: string | null
       nextJournalId?: string
       successMessage: string
     }) => {
@@ -80,8 +84,8 @@ const useJournalEditor = () => {
 
       setBlocks(nextBlocks)
       setSavedBlocks(nextBlocks)
-      setStarredImageAssetId(nextStarredImageAssetId)
-      setSavedStarredImageAssetId(nextStarredImageAssetId)
+      setThumbnailAssetId(nextThumbnailAssetId)
+      setSavedThumbnailAssetId(nextThumbnailAssetId)
       setLastSavedTitle(title)
       setSessionAssetIds([])
       setIsJournalSaving(false)
@@ -96,8 +100,8 @@ const useJournalEditor = () => {
       setIsJournalSaving,
       setLastSavedTitle,
       setSavedBlocks,
-      setStarredImageAssetId,
-      setSavedStarredImageAssetId,
+      setThumbnailAssetId,
+      setSavedThumbnailAssetId,
       setSessionAssetIds,
       title,
     ]
@@ -573,13 +577,16 @@ const useJournalEditor = () => {
     [setBlocks]
   )
 
+  const activeThumbnailAssetId = getJournalThumbnailAssetId(
+    normalizedBlocks,
+    thumbnailAssetId
+  )
+
   const toggleImageStar = useCallback(
     (assetId: string) => {
-      setStarredImageAssetId((currentAssetId) =>
-        currentAssetId === assetId ? null : assetId
-      )
+      setThumbnailAssetId(activeThumbnailAssetId === assetId ? null : assetId)
     },
-    [setStarredImageAssetId]
+    [activeThumbnailAssetId, setThumbnailAssetId]
   )
 
   const moveBlock = useCallback(
@@ -614,12 +621,12 @@ const useJournalEditor = () => {
         journalId,
         title,
         blocks: normalizedBlocks,
-        starredImageAssetId,
+        thumbnailAssetId: activeThumbnailAssetId,
       }),
     onSuccess: (response) =>
       applySavedState({
         blocks: response.blocks,
-        starredImageAssetId: response.starredImageAssetId,
+        thumbnailAssetId: response.thumbnailAssetId,
         nextJournalId: response.journalId,
         successMessage: editorConfig.successMessage,
       }),
@@ -643,7 +650,7 @@ const useJournalEditor = () => {
     blocks,
     convertListBlockToTextBlock,
     errorMessage,
-    starredImageAssetId,
+    activeThumbnailAssetId,
     focusBlock,
     focusListItem,
     focusTextBlock,

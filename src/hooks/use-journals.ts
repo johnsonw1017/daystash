@@ -6,7 +6,7 @@ import {
   type InfiniteData,
 } from '@tanstack/react-query'
 import type { JournalDetail, JournalListItem } from '@/lib/journals'
-import { parseJournalContent } from '@/lib/journals'
+import { parseJournalBlocks } from '@/lib/journals'
 import supabase from '@/lib/supabase/client'
 
 const JOURNALS_PAGE_SIZE = 12
@@ -59,6 +59,7 @@ type JournalDetailRow = {
   created_at: string
   updated_at: string
   blocks: unknown
+  thumbnail_asset_id: string | null
 }
 
 type JournalCursor = {
@@ -92,7 +93,7 @@ const mapJournalListRow = (journal: JournalListRow): JournalListItem => {
 }
 
 const mapJournalDetailRow = (journal: JournalDetailRow): JournalDetail => {
-  const { blocks, starredImageAssetId } = parseJournalContent(journal.blocks)
+  const blocks = parseJournalBlocks(journal.blocks)
 
   return {
     id: journal.id,
@@ -101,7 +102,7 @@ const mapJournalDetailRow = (journal: JournalDetailRow): JournalDetail => {
     created_at: journal.created_at,
     updated_at: journal.updated_at,
     blocks,
-    starredImageAssetId,
+    thumbnailAssetId: journal.thumbnail_asset_id,
   }
 }
 
@@ -183,7 +184,7 @@ const fetchJournalBySlug = async (
 
   const { data: journal, error } = await supabase
     .from('journals')
-    .select('id, title, slug, created_at, updated_at, blocks')
+    .select('id, title, slug, created_at, updated_at, blocks, thumbnail_asset_id')
     .eq('user_id', userId)
     .eq('slug', slug)
     .maybeSingle()

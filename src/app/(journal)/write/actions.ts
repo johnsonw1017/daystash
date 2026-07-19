@@ -5,7 +5,7 @@ import {
   getJournalThumbnailAssetId,
   getReferencedAssetIds,
   normalizeJournalBlocks,
-  parseJournalContent,
+  parseJournalBlocks,
   type SaveJournalInput,
   type RegisterJournalAssetsInput,
 } from '@/lib/journals'
@@ -225,7 +225,7 @@ export const saveJournal = async ({
   journalId,
   title,
   blocks,
-  starredImageAssetId: requestedStarredImageAssetId = null,
+  thumbnailAssetId: requestedThumbnailAssetId = null,
 }: SaveJournalInput) => {
   const user = await requireAuth('/write')
   const nextJournal = await ensureJournal({
@@ -237,15 +237,13 @@ export const saveJournal = async ({
   const normalizedBlocks = normalizeJournalBlocks(blocks)
   const referencedAssetIds = getReferencedAssetIds(normalizedBlocks)
   const existingAssets = await getJournalAssets(nextJournal.journalId)
-  const starredImageAssetId =
-    requestedStarredImageAssetId &&
-    referencedAssetIds.has(requestedStarredImageAssetId) &&
-    existingAssets.some((asset) => asset.id === requestedStarredImageAssetId)
-      ? requestedStarredImageAssetId
-      : null
+  const requestedThumbnailAssetIdIsValid =
+    requestedThumbnailAssetId &&
+    referencedAssetIds.has(requestedThumbnailAssetId) &&
+    existingAssets.some((asset) => asset.id === requestedThumbnailAssetId)
   const thumbnailAssetId = getJournalThumbnailAssetId(
     normalizedBlocks,
-    starredImageAssetId
+    requestedThumbnailAssetIdIsValid ? requestedThumbnailAssetId : null
   )
   const orphanedAssetIds = existingAssets
     .filter((asset) => !referencedAssetIds.has(asset.id))
@@ -261,7 +259,7 @@ export const saveJournal = async ({
     .from('journals')
     .update({
       title: nextJournal.title,
-      blocks: { blocks: normalizedBlocks, starredImageAssetId },
+      blocks: normalizedBlocks,
       thumbnail_asset_id: thumbnailAssetId,
       draft_blocks: null,
       has_unsaved_draft: false,
@@ -277,7 +275,7 @@ export const saveJournal = async ({
   return {
     journalId: nextJournal.journalId,
     blocks: normalizedBlocks,
-    starredImageAssetId,
+    thumbnailAssetId,
   }
 }
 
@@ -290,7 +288,7 @@ export const discardJournalSessionChanges = async ({
 }) => {
   const user = await requireAuth('/write')
   const journal = await getOwnedJournalBlocks({ journalId, userId: user.id })
-  const { blocks: savedBlocks } = parseJournalContent(journal.blocks)
+  const savedBlocks = parseJournalBlocks(journal.blocks)
   const savedAssetIds = getReferencedAssetIds(savedBlocks)
   const staleSessionAssetIds = [...new Set(sessionAssetIds)].filter(
     (assetId) => !savedAssetIds.has(assetId)

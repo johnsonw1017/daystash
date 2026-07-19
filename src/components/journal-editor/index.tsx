@@ -158,7 +158,7 @@ const JournalEditor = ({
   initialJournalId,
   initialTitle = '',
   initialBlocks,
-  initialStarredImageAssetId,
+  initialThumbnailAssetId,
   successMessage = 'Journal saved',
   isEditMode = false,
   viewHref,
@@ -168,7 +168,7 @@ const JournalEditor = ({
     createJournalBlocksStore({
       headerActions,
       initialBlocks,
-      initialStarredImageAssetId,
+      initialThumbnailAssetId,
       initialJournalId,
       initialTitle,
       isEditMode,
