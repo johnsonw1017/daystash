@@ -140,7 +140,7 @@ const JournalEditorContent = () => {
       <JournalHeader />
 
       <DragDropProvider onDragEnd={handleDragEnd}>
-        <div className="space-y-2">
+        <div className="space-y-5">
           {blocks.map((block, index) => (
             <SortableBlockRow key={block.id} blockId={block.id} index={index}>
               <ResolveBlock block={block} blockId={block.id} />
