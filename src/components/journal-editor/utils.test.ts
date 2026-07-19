@@ -61,6 +61,7 @@ describe('journal editor block factories', () => {
           width: 1200,
           height: 900,
           altText: null,
+          isStarred: false,
         },
       ],
     })
