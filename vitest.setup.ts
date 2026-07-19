@@ -8,7 +8,7 @@ process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY =
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => {
-  localStorage.clear()
+  window.localStorage.clear()
   document.cookie = 'sb-supabase-auth-token=; Max-Age=0; Path=/'
   server.resetHandlers()
 })

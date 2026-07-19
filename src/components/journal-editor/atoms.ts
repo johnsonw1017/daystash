@@ -16,6 +16,8 @@ export const blocksAtom = atom<JournalBlock[]>([])
 export const errorMessageAtom = atom('')
 export const journalIdAtom = atom<string | undefined>(undefined)
 export const savedBlocksAtom = atom<JournalBlock[]>([])
+export const thumbnailAssetIdAtom = atom<string | null>(null)
+export const savedThumbnailAssetIdAtom = atom<string | null>(null)
 export const sessionAssetIdsAtom = atom<string[]>([])
 export const isJournalSavingAtom = atom(false)
 export const journalEditorConfigAtom = atom<JournalEditorConfig>({
@@ -45,6 +47,7 @@ type CreateJournalBlocksStoreParams = {
   initialBlocks?: JournalBlock[]
   initialJournalId?: string
   initialTitle?: string
+  initialThumbnailAssetId?: string | null
   headerActions?: JournalEditorConfig['headerActions']
   isEditMode?: boolean
   successMessage?: string
@@ -56,6 +59,7 @@ export const createJournalBlocksStore = ({
   initialBlocks,
   initialJournalId,
   initialTitle = '',
+  initialThumbnailAssetId = null,
   isEditMode = false,
   successMessage = 'Journal saved',
   viewHref,
@@ -76,6 +80,8 @@ export const createJournalBlocksStore = ({
   store.set(journalIdAtom, initialJournalId)
   store.set(lastSavedTitleAtom, initialTitle)
   store.set(savedBlocksAtom, nextBlocks)
+  store.set(thumbnailAssetIdAtom, initialThumbnailAssetId)
+  store.set(savedThumbnailAssetIdAtom, initialThumbnailAssetId)
   store.set(sessionAssetIdsAtom, [])
   store.set(isJournalSavingAtom, false)
   store.set(imageDialogStateAtom, initialImageDialogState)

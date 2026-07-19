@@ -34,6 +34,7 @@ export type SaveJournalInput = {
   journalId?: string
   title: string
   blocks: JournalBlock[]
+  thumbnailAssetId?: string | null
 }
 
 export type RegisterJournalAssetsInput = {
@@ -69,6 +70,7 @@ export type JournalListItem = Pick<
 
 export type JournalDetail = JournalSummary & {
   blocks: JournalBlock[]
+  thumbnailAssetId: string | null
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -264,11 +266,17 @@ export const getReferencedAssetIds = (blocks: JournalBlock[]) =>
     )
   )
 
-export const getJournalThumbnailAssetId = (blocks: JournalBlock[]) => {
-  const firstImageBlock = blocks.find(
-    (block): block is ImageJournalBlock =>
-      block.type === 'image' && block.images.length > 0
+export const getJournalThumbnailAssetId = (
+  blocks: JournalBlock[],
+  thumbnailAssetId: string | null = null
+) => {
+  const imageAssets = blocks.flatMap((block) =>
+    block.type === 'image' ? block.images : []
   )
 
-  return firstImageBlock?.images[0]?.assetId ?? null
+  if (thumbnailAssetId && imageAssets.some((image) => image.assetId === thumbnailAssetId)) {
+    return thumbnailAssetId
+  }
+
+  return imageAssets[0]?.assetId ?? null
 }

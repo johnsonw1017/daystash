@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import { useCallback, useState, type KeyboardEvent } from 'react'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Pencil, Star, Trash2 } from 'lucide-react'
 import ImageEditDialog from '@/components/journal-editor/image-edit-dialog'
 import useJournalEditor from '@/components/journal-editor/hooks/use-journal-editor'
 import useFocusRegistry from '@/components/journal-editor/hooks/use-focus-registry'
@@ -29,9 +29,53 @@ type ImageItemProps = {
   height: number
   publicId: string
   width: number
-  onRemove: () => void | Promise<void>
+  onRemove: () => void
   onEdit: () => void
+  isStarred: boolean
+  onToggleStar: () => void
 }
+
+type ImageActionsProps = Pick<
+  ImageItemProps,
+  'isStarred' | 'onEdit' | 'onRemove' | 'onToggleStar'
+>
+
+const ImageActions = ({
+  isStarred,
+  onEdit,
+  onRemove,
+  onToggleStar,
+}: ImageActionsProps) => (
+  <div className="absolute top-2 right-2 flex items-center gap-2">
+    <Button
+      type="button"
+      variant="secondary"
+      size="icon-xs"
+      onClick={onEdit}
+      aria-label="Edit images"
+    >
+      <Pencil />
+    </Button>
+    <Button
+      type="button"
+      variant="secondary"
+      size="icon-xs"
+      onClick={onToggleStar}
+      aria-label={isStarred ? 'Unstar image' : 'Star image'}
+    >
+      <Star className={isStarred ? 'fill-current' : undefined} />
+    </Button>
+    <Button
+      type="button"
+      variant="destructive"
+      size="icon-xs"
+      onClick={onRemove}
+      aria-label="Delete image"
+    >
+      <Trash2 />
+    </Button>
+  </div>
+)
 
 const ImageItem = ({
   alt,
@@ -40,6 +84,8 @@ const ImageItem = ({
   width,
   onRemove,
   onEdit,
+  isStarred,
+  onToggleStar,
 }: ImageItemProps) => {
   return (
     <div className="relative overflow-hidden rounded-md border">
@@ -51,32 +97,24 @@ const ImageItem = ({
         height={height}
         className="h-auto w-full object-contain"
       />
-      <div className="absolute top-2 right-2 flex items-center gap-2">
-        <Button
-          type="button"
-          variant="secondary"
-          size="icon-xs"
-          onClick={onEdit}
-          aria-label="Edit images"
-        >
-          <Pencil />
-        </Button>
-        <Button
-          type="button"
-          variant="destructive"
-          size="icon-xs"
-          onClick={() => void onRemove()}
-          aria-label="Delete image"
-        >
-          <Trash2 />
-        </Button>
-      </div>
+      <ImageActions
+        isStarred={isStarred}
+        onEdit={onEdit}
+        onRemove={onRemove}
+        onToggleStar={onToggleStar}
+      />
     </div>
   )
 }
 
 const ImageBlock = ({ block, blockId }: ImageBlockProps) => {
-  const { insertBlockBelow, removeImage, updateImageCaption } =
+  const {
+    activeThumbnailAssetId,
+    insertBlockBelow,
+    removeImage,
+    toggleImageStar,
+    updateImageCaption,
+  } =
     useJournalEditor()
   const { registerFocusTarget } = useFocusRegistry()
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
@@ -126,26 +164,12 @@ const ImageBlock = ({ block, blockId }: ImageBlockProps) => {
                         className="max-h-full w-auto max-w-full object-contain"
                       />
                     </div>
-                    <div className="absolute top-2 right-2 flex items-center gap-2">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="icon-xs"
-                        onClick={() => setIsEditDialogOpen(true)}
-                        aria-label="Edit images"
-                      >
-                        <Pencil />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon-xs"
-                        onClick={() => removeImage(blockId, imageIndex)}
-                        aria-label="Delete image"
-                      >
-                        <Trash2 />
-                      </Button>
-                    </div>
+                    <ImageActions
+                      isStarred={activeThumbnailAssetId === image.assetId}
+                      onEdit={() => setIsEditDialogOpen(true)}
+                      onRemove={() => removeImage(blockId, imageIndex)}
+                      onToggleStar={() => toggleImageStar(image.assetId)}
+                    />
                   </div>
                 </CarouselItem>
               ))}
@@ -162,6 +186,8 @@ const ImageBlock = ({ block, blockId }: ImageBlockProps) => {
           height={block.images[0].height}
           onRemove={() => removeImage(blockId, 0)}
           onEdit={() => setIsEditDialogOpen(true)}
+          isStarred={activeThumbnailAssetId === block.images[0].assetId}
+          onToggleStar={() => toggleImageStar(block.images[0].assetId)}
         />
       ) : null}
 

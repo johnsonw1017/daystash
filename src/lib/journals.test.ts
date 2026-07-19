@@ -168,4 +168,8 @@ describe('journal asset helpers', () => {
   it('returns the first image asset as the journal thumbnail', () => {
     expect(getJournalThumbnailAssetId(blocks)).toBe('asset-1')
   })
+
+  it('returns the starred image asset as the journal thumbnail', () => {
+    expect(getJournalThumbnailAssetId(blocks, 'asset-2')).toBe('asset-2')
+  })
 })

@@ -54,6 +54,7 @@ const EntryEdit = ({ slug }: EntryEditProps) => {
       initialJournalId={journal.id}
       initialTitle={journal.title ?? ''}
       initialBlocks={journal.blocks}
+      initialThumbnailAssetId={journal.thumbnailAssetId}
       successMessage="Journal saved"
       isEditMode
       viewHref={`/entries/${slug}`}

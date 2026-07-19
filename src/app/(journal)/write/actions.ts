@@ -225,6 +225,7 @@ export const saveJournal = async ({
   journalId,
   title,
   blocks,
+  thumbnailAssetId: requestedThumbnailAssetId = null,
 }: SaveJournalInput) => {
   const user = await requireAuth('/write')
   const nextJournal = await ensureJournal({
@@ -236,12 +237,14 @@ export const saveJournal = async ({
   const normalizedBlocks = normalizeJournalBlocks(blocks)
   const referencedAssetIds = getReferencedAssetIds(normalizedBlocks)
   const existingAssets = await getJournalAssets(nextJournal.journalId)
-  const requestedThumbnailAssetId = getJournalThumbnailAssetId(normalizedBlocks)
-  const thumbnailAssetId = existingAssets.some(
-    (asset) => asset.id === requestedThumbnailAssetId
+  const requestedThumbnailAssetIdIsValid =
+    requestedThumbnailAssetId &&
+    referencedAssetIds.has(requestedThumbnailAssetId) &&
+    existingAssets.some((asset) => asset.id === requestedThumbnailAssetId)
+  const thumbnailAssetId = getJournalThumbnailAssetId(
+    normalizedBlocks,
+    requestedThumbnailAssetIdIsValid ? requestedThumbnailAssetId : null
   )
-    ? requestedThumbnailAssetId
-    : null
   const orphanedAssetIds = existingAssets
     .filter((asset) => !referencedAssetIds.has(asset.id))
     .map((asset) => asset.id)
@@ -272,6 +275,7 @@ export const saveJournal = async ({
   return {
     journalId: nextJournal.journalId,
     blocks: normalizedBlocks,
+    thumbnailAssetId,
   }
 }
 
