@@ -5,7 +5,7 @@ import {
   getJournalThumbnailAssetId,
   getReferencedAssetIds,
   normalizeJournalBlocks,
-  parseJournalBlocks,
+  parseJournalContent,
   type SaveJournalInput,
   type RegisterJournalAssetsInput,
 } from '@/lib/journals'
@@ -225,6 +225,7 @@ export const saveJournal = async ({
   journalId,
   title,
   blocks,
+  starredImageAssetId: requestedStarredImageAssetId = null,
 }: SaveJournalInput) => {
   const user = await requireAuth('/write')
   const nextJournal = await ensureJournal({
@@ -236,12 +237,16 @@ export const saveJournal = async ({
   const normalizedBlocks = normalizeJournalBlocks(blocks)
   const referencedAssetIds = getReferencedAssetIds(normalizedBlocks)
   const existingAssets = await getJournalAssets(nextJournal.journalId)
-  const requestedThumbnailAssetId = getJournalThumbnailAssetId(normalizedBlocks)
-  const thumbnailAssetId = existingAssets.some(
-    (asset) => asset.id === requestedThumbnailAssetId
+  const starredImageAssetId =
+    requestedStarredImageAssetId &&
+    referencedAssetIds.has(requestedStarredImageAssetId) &&
+    existingAssets.some((asset) => asset.id === requestedStarredImageAssetId)
+      ? requestedStarredImageAssetId
+      : null
+  const thumbnailAssetId = getJournalThumbnailAssetId(
+    normalizedBlocks,
+    starredImageAssetId
   )
-    ? requestedThumbnailAssetId
-    : null
   const orphanedAssetIds = existingAssets
     .filter((asset) => !referencedAssetIds.has(asset.id))
     .map((asset) => asset.id)
@@ -256,7 +261,7 @@ export const saveJournal = async ({
     .from('journals')
     .update({
       title: nextJournal.title,
-      blocks: normalizedBlocks,
+      blocks: { blocks: normalizedBlocks, starredImageAssetId },
       thumbnail_asset_id: thumbnailAssetId,
       draft_blocks: null,
       has_unsaved_draft: false,
@@ -272,6 +277,7 @@ export const saveJournal = async ({
   return {
     journalId: nextJournal.journalId,
     blocks: normalizedBlocks,
+    starredImageAssetId,
   }
 }
 
@@ -284,7 +290,7 @@ export const discardJournalSessionChanges = async ({
 }) => {
   const user = await requireAuth('/write')
   const journal = await getOwnedJournalBlocks({ journalId, userId: user.id })
-  const savedBlocks = parseJournalBlocks(journal.blocks)
+  const { blocks: savedBlocks } = parseJournalContent(journal.blocks)
   const savedAssetIds = getReferencedAssetIds(savedBlocks)
   const staleSessionAssetIds = [...new Set(sessionAssetIds)].filter(
     (assetId) => !savedAssetIds.has(assetId)

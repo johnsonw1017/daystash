@@ -89,7 +89,13 @@ const ImageItem = ({
 }
 
 const ImageBlock = ({ block, blockId }: ImageBlockProps) => {
-  const { insertBlockBelow, removeImage, toggleImageStar, updateImageCaption } =
+  const {
+    starredImageAssetId,
+    insertBlockBelow,
+    removeImage,
+    toggleImageStar,
+    updateImageCaption,
+  } =
     useJournalEditor()
   const { registerFocusTarget } = useFocusRegistry()
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
@@ -154,9 +160,19 @@ const ImageBlock = ({ block, blockId }: ImageBlockProps) => {
                         variant="secondary"
                         size="icon-xs"
                         onClick={() => toggleImageStar(image.assetId)}
-                        aria-label={image.isStarred ? 'Unstar image' : 'Star image'}
+                        aria-label={
+                          starredImageAssetId === image.assetId
+                            ? 'Unstar image'
+                            : 'Star image'
+                        }
                       >
-                        <Star className={image.isStarred ? 'fill-current' : undefined} />
+                        <Star
+                          className={
+                            starredImageAssetId === image.assetId
+                              ? 'fill-current'
+                              : undefined
+                          }
+                        />
                       </Button>
                       <Button
                         type="button"
@@ -184,7 +200,7 @@ const ImageBlock = ({ block, blockId }: ImageBlockProps) => {
           height={block.images[0].height}
           onRemove={() => removeImage(blockId, 0)}
           onEdit={() => setIsEditDialogOpen(true)}
-          isStarred={block.images[0].isStarred === true}
+          isStarred={starredImageAssetId === block.images[0].assetId}
           onToggleStar={() => toggleImageStar(block.images[0].assetId)}
         />
       ) : null}

@@ -7,11 +7,13 @@ import { saveJournal } from '@/app/(journal)/write/actions'
 import {
   blocksAtom,
   errorMessageAtom,
+  starredImageAssetIdAtom,
   isJournalSavingAtom,
   journalEditorConfigAtom,
   journalIdAtom,
   lastSavedTitleAtom,
   savedBlocksAtom,
+  savedStarredImageAssetIdAtom,
   sessionAssetIdsAtom,
   titleAtom,
 } from '@/components/journal-editor/atoms'
@@ -44,6 +46,12 @@ const useJournalEditor = () => {
   const [journalId, setJournalId] = useAtom(journalIdAtom)
   const [lastSavedTitle, setLastSavedTitle] = useAtom(lastSavedTitleAtom)
   const [savedBlocks, setSavedBlocks] = useAtom(savedBlocksAtom)
+  const [starredImageAssetId, setStarredImageAssetId] = useAtom(
+    starredImageAssetIdAtom
+  )
+  const [savedStarredImageAssetId, setSavedStarredImageAssetId] = useAtom(
+    savedStarredImageAssetIdAtom
+  )
   const setSessionAssetIds = useSetAtom(sessionAssetIdsAtom)
   const setIsJournalSaving = useSetAtom(isJournalSavingAtom)
   const [title, setTitle] = useAtom(titleAtom)
@@ -51,15 +59,18 @@ const useJournalEditor = () => {
   const normalizedBlocks = normalizeEditorBlocks(blocks)
   const isDirty =
     JSON.stringify(normalizedBlocks) !== JSON.stringify(savedBlocks) ||
+    starredImageAssetId !== savedStarredImageAssetId ||
     title !== lastSavedTitle
 
   const applySavedState = useCallback(
     ({
       blocks: nextBlocks,
+      starredImageAssetId: nextStarredImageAssetId,
       nextJournalId,
       successMessage,
     }: {
       blocks: JournalBlock[]
+      starredImageAssetId: string | null
       nextJournalId?: string
       successMessage: string
     }) => {
@@ -69,6 +80,8 @@ const useJournalEditor = () => {
 
       setBlocks(nextBlocks)
       setSavedBlocks(nextBlocks)
+      setStarredImageAssetId(nextStarredImageAssetId)
+      setSavedStarredImageAssetId(nextStarredImageAssetId)
       setLastSavedTitle(title)
       setSessionAssetIds([])
       setIsJournalSaving(false)
@@ -83,6 +96,8 @@ const useJournalEditor = () => {
       setIsJournalSaving,
       setLastSavedTitle,
       setSavedBlocks,
+      setStarredImageAssetId,
+      setSavedStarredImageAssetId,
       setSessionAssetIds,
       title,
     ]
@@ -219,7 +234,6 @@ const useJournalEditor = () => {
             ...images.map((image) => ({
               ...image,
               altText: image.altText ?? null,
-              isStarred: image.isStarred ?? false,
             })),
           ],
         }
@@ -561,32 +575,11 @@ const useJournalEditor = () => {
 
   const toggleImageStar = useCallback(
     (assetId: string) => {
-      setBlocks((currentBlocks) => {
-        const imageToToggle = currentBlocks
-          .filter((block): block is Extract<JournalBlock, { type: 'image' }> =>
-            block.type === 'image'
-          )
-          .flatMap((block) => block.images)
-          .find((image) => image.assetId === assetId)
-
-        if (!imageToToggle) return currentBlocks
-
-        const nextIsStarred = !imageToToggle.isStarred
-
-        return currentBlocks.map((block) =>
-          block.type !== 'image'
-            ? block
-            : {
-                ...block,
-                images: block.images.map((image) => ({
-                  ...image,
-                  isStarred: image.assetId === assetId ? nextIsStarred : false,
-                })),
-              }
-        )
-      })
+      setStarredImageAssetId((currentAssetId) =>
+        currentAssetId === assetId ? null : assetId
+      )
     },
-    [setBlocks]
+    [setStarredImageAssetId]
   )
 
   const moveBlock = useCallback(
@@ -621,10 +614,12 @@ const useJournalEditor = () => {
         journalId,
         title,
         blocks: normalizedBlocks,
+        starredImageAssetId,
       }),
     onSuccess: (response) =>
       applySavedState({
         blocks: response.blocks,
+        starredImageAssetId: response.starredImageAssetId,
         nextJournalId: response.journalId,
         successMessage: editorConfig.successMessage,
       }),
@@ -648,6 +643,7 @@ const useJournalEditor = () => {
     blocks,
     convertListBlockToTextBlock,
     errorMessage,
+    starredImageAssetId,
     focusBlock,
     focusListItem,
     focusTextBlock,

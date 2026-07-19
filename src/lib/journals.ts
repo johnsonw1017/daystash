@@ -4,7 +4,6 @@ export type JournalImageAsset = {
   width: number
   height: number
   altText: string | null
-  isStarred?: boolean
 }
 
 export type TextJournalBlock = {
@@ -35,6 +34,7 @@ export type SaveJournalInput = {
   journalId?: string
   title: string
   blocks: JournalBlock[]
+  starredImageAssetId?: string | null
 }
 
 export type RegisterJournalAssetsInput = {
@@ -70,6 +70,12 @@ export type JournalListItem = Pick<
 
 export type JournalDetail = JournalSummary & {
   blocks: JournalBlock[]
+  starredImageAssetId: string | null
+}
+
+export type JournalContent = {
+  blocks: JournalBlock[]
+  starredImageAssetId: string | null
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -141,7 +147,6 @@ const normalizeImageAsset = (value: Record<string, unknown>): JournalImageAsset 
     width,
     height,
     altText: typeof value.altText === 'string' ? value.altText.trim() || null : null,
-    ...(value.isStarred === true ? { isStarred: true } : {}),
   }
 }
 
@@ -195,6 +200,24 @@ export const parseJournalBlocks = (value: unknown): JournalBlock[] => {
     .filter((block): block is JournalBlock => block !== null)
 }
 
+export const parseJournalContent = (value: unknown): JournalContent => {
+  if (Array.isArray(value)) {
+    return { blocks: parseJournalBlocks(value), starredImageAssetId: null }
+  }
+
+  if (!isRecord(value)) {
+    return { blocks: [], starredImageAssetId: null }
+  }
+
+  return {
+    blocks: parseJournalBlocks(value.blocks),
+    starredImageAssetId:
+      typeof value.starredImageAssetId === 'string' && value.starredImageAssetId.length > 0
+        ? value.starredImageAssetId
+        : null,
+  }
+}
+
 export const normalizeJournalBlocks = (blocks: JournalBlock[]): JournalBlock[] => {
   const normalized = blocks
     .map((block) => {
@@ -230,7 +253,6 @@ export const normalizeJournalBlocks = (blocks: JournalBlock[]): JournalBlock[] =
             width: image.width,
             height: image.height,
             altText: image.altText?.trim() || null,
-            ...(image.isStarred === true ? { isStarred: true } : {}),
           }))
           .filter((image) => image.publicId.length > 0),
       }
@@ -267,15 +289,11 @@ export const getReferencedAssetIds = (blocks: JournalBlock[]) =>
     )
   )
 
-export const getJournalThumbnailAssetId = (blocks: JournalBlock[]) => {
-  const starredImage = blocks
-    .filter((block): block is ImageJournalBlock => block.type === 'image')
-    .flatMap((block) => block.images)
-    .find((image) => image.isStarred)
-
-  if (starredImage) {
-    return starredImage.assetId
-  }
+export const getJournalThumbnailAssetId = (
+  blocks: JournalBlock[],
+  starredImageAssetId: string | null = null
+) => {
+  if (starredImageAssetId) return starredImageAssetId
 
   const firstImageBlock = blocks.find(
     (block): block is ImageJournalBlock =>

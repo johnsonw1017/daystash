@@ -53,20 +53,23 @@ describe('useJournalEditor', () => {
 
     act(() => result.current.toggleImageStar('asset-1'))
     expect(result.current.blocks).toMatchObject([
-      { images: [{ assetId: 'asset-1', isStarred: true }] },
-      { images: [{ assetId: 'asset-2', isStarred: false }] },
+      { images: [{ assetId: 'asset-1' }] },
+      { images: [{ assetId: 'asset-2' }] },
     ])
+    expect(result.current.starredImageAssetId).toBe('asset-1')
 
     act(() => result.current.toggleImageStar('asset-2'))
     expect(result.current.blocks).toMatchObject([
-      { images: [{ assetId: 'asset-1', isStarred: false }] },
-      { images: [{ assetId: 'asset-2', isStarred: true }] },
+      { images: [{ assetId: 'asset-1' }] },
+      { images: [{ assetId: 'asset-2' }] },
     ])
+    expect(result.current.starredImageAssetId).toBe('asset-2')
 
     act(() => result.current.toggleImageStar('asset-2'))
     expect(result.current.blocks).toMatchObject([
-      { images: [{ assetId: 'asset-1', isStarred: false }] },
-      { images: [{ assetId: 'asset-2', isStarred: false }] },
+      { images: [{ assetId: 'asset-1' }] },
+      { images: [{ assetId: 'asset-2' }] },
     ])
+    expect(result.current.starredImageAssetId).toBeNull()
   })
 })

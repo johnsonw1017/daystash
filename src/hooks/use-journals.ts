@@ -6,7 +6,7 @@ import {
   type InfiniteData,
 } from '@tanstack/react-query'
 import type { JournalDetail, JournalListItem } from '@/lib/journals'
-import { parseJournalBlocks } from '@/lib/journals'
+import { parseJournalContent } from '@/lib/journals'
 import supabase from '@/lib/supabase/client'
 
 const JOURNALS_PAGE_SIZE = 12
@@ -92,7 +92,7 @@ const mapJournalListRow = (journal: JournalListRow): JournalListItem => {
 }
 
 const mapJournalDetailRow = (journal: JournalDetailRow): JournalDetail => {
-  const blocks = parseJournalBlocks(journal.blocks)
+  const { blocks, starredImageAssetId } = parseJournalContent(journal.blocks)
 
   return {
     id: journal.id,
@@ -101,6 +101,7 @@ const mapJournalDetailRow = (journal: JournalDetailRow): JournalDetail => {
     created_at: journal.created_at,
     updated_at: journal.updated_at,
     blocks,
+    starredImageAssetId,
   }
 }
 
