@@ -196,6 +196,65 @@ describe('journal write actions', () => {
     )
   })
 
+  it('persists a selected non-first image as the thumbnail', async () => {
+    const admin = createAdminClientMock([
+      { data: { id: 'journal-id' }, error: null },
+      {
+        data: [
+          {
+            id: 'asset-1',
+            cloudinary_public_id: 'journal/first',
+            width: 1200,
+            height: 900,
+          },
+          {
+            id: 'asset-2',
+            cloudinary_public_id: 'journal/second',
+            width: 1200,
+            height: 900,
+          },
+        ],
+        error: null,
+      },
+      { data: null, error: null },
+    ])
+
+    await expect(
+      saveJournal({
+        journalId: 'journal-id',
+        title: 'Saved title',
+        thumbnailAssetId: 'asset-2',
+        blocks: [
+          {
+            id: 'image-1',
+            type: 'image',
+            caption: null,
+            images: [
+              {
+                assetId: 'asset-1',
+                publicId: 'journal/first',
+                width: 1200,
+                height: 900,
+                altText: null,
+              },
+              {
+                assetId: 'asset-2',
+                publicId: 'journal/second',
+                width: 1200,
+                height: 900,
+                altText: null,
+              },
+            ],
+          },
+        ],
+      })
+    ).resolves.toMatchObject({ thumbnailAssetId: 'asset-2' })
+
+    expect(admin.from.mock.results[2].value.update).toHaveBeenCalledWith(
+      expect.objectContaining({ thumbnail_asset_id: 'asset-2' })
+    )
+  })
+
   it('discards an unsaved empty journal by deleting its assets and record', async () => {
     const admin = createAdminClientMock([
       { data: { id: 'journal-id', blocks: [] }, error: null },
