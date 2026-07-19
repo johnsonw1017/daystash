@@ -219,6 +219,7 @@ const useJournalEditor = () => {
             ...images.map((image) => ({
               ...image,
               altText: image.altText ?? null,
+              isStarred: image.isStarred ?? false,
             })),
           ],
         }
@@ -558,6 +559,36 @@ const useJournalEditor = () => {
     [setBlocks]
   )
 
+  const toggleImageStar = useCallback(
+    (assetId: string) => {
+      setBlocks((currentBlocks) => {
+        const imageToToggle = currentBlocks
+          .filter((block): block is Extract<JournalBlock, { type: 'image' }> =>
+            block.type === 'image'
+          )
+          .flatMap((block) => block.images)
+          .find((image) => image.assetId === assetId)
+
+        if (!imageToToggle) return currentBlocks
+
+        const nextIsStarred = !imageToToggle.isStarred
+
+        return currentBlocks.map((block) =>
+          block.type !== 'image'
+            ? block
+            : {
+                ...block,
+                images: block.images.map((image) => ({
+                  ...image,
+                  isStarred: image.assetId === assetId ? nextIsStarred : false,
+                })),
+              }
+        )
+      })
+    },
+    [setBlocks]
+  )
+
   const moveBlock = useCallback(
     (fromIndex: number, toIndex: number) => {
       if (fromIndex === toIndex) return
@@ -638,6 +669,7 @@ const useJournalEditor = () => {
     setTitle,
     splitListItem,
     splitTextBlock,
+    toggleImageStar,
     title,
     updateImageCaption,
     updateListItem,

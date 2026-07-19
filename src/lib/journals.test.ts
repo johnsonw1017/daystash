@@ -149,6 +149,7 @@ describe('journal asset helpers', () => {
           width: 100,
           height: 100,
           altText: null,
+          isStarred: false,
         },
         {
           assetId: 'asset-2',
@@ -156,6 +157,7 @@ describe('journal asset helpers', () => {
           width: 100,
           height: 100,
           altText: null,
+          isStarred: false,
         },
       ],
     },
@@ -167,5 +169,23 @@ describe('journal asset helpers', () => {
 
   it('returns the first image asset as the journal thumbnail', () => {
     expect(getJournalThumbnailAssetId(blocks)).toBe('asset-1')
+  })
+
+  it('returns the starred image asset as the journal thumbnail', () => {
+    const starredBlocks: JournalBlock[] = [
+      {
+        id: 'image-1',
+        type: 'image',
+        caption: null,
+        images: blocks[1]?.type === 'image'
+          ? blocks[1].images.map((image) => ({
+              ...image,
+              isStarred: image.assetId === 'asset-2',
+            }))
+          : [],
+      },
+    ]
+
+    expect(getJournalThumbnailAssetId(starredBlocks)).toBe('asset-2')
   })
 })

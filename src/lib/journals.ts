@@ -4,6 +4,7 @@ export type JournalImageAsset = {
   width: number
   height: number
   altText: string | null
+  isStarred?: boolean
 }
 
 export type TextJournalBlock = {
@@ -140,6 +141,7 @@ const normalizeImageAsset = (value: Record<string, unknown>): JournalImageAsset 
     width,
     height,
     altText: typeof value.altText === 'string' ? value.altText.trim() || null : null,
+    ...(value.isStarred === true ? { isStarred: true } : {}),
   }
 }
 
@@ -228,6 +230,7 @@ export const normalizeJournalBlocks = (blocks: JournalBlock[]): JournalBlock[] =
             width: image.width,
             height: image.height,
             altText: image.altText?.trim() || null,
+            ...(image.isStarred === true ? { isStarred: true } : {}),
           }))
           .filter((image) => image.publicId.length > 0),
       }
@@ -265,6 +268,15 @@ export const getReferencedAssetIds = (blocks: JournalBlock[]) =>
   )
 
 export const getJournalThumbnailAssetId = (blocks: JournalBlock[]) => {
+  const starredImage = blocks
+    .filter((block): block is ImageJournalBlock => block.type === 'image')
+    .flatMap((block) => block.images)
+    .find((image) => image.isStarred)
+
+  if (starredImage) {
+    return starredImage.assetId
+  }
+
   const firstImageBlock = blocks.find(
     (block): block is ImageJournalBlock =>
       block.type === 'image' && block.images.length > 0

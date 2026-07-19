@@ -11,7 +11,7 @@ import {
 
 type NewJournalImageAsset = Pick<
   JournalImageAsset,
-  'assetId' | 'publicId' | 'width' | 'height'
+  'assetId' | 'publicId' | 'width' | 'height' | 'isStarred'
 > & {
   altText?: string | null
 }
@@ -41,6 +41,7 @@ export const makeImageBlock = (
   images: images.map((image) => ({
     ...image,
     altText: image.altText ?? null,
+    isStarred: image.isStarred ?? false,
   })),
 })
 

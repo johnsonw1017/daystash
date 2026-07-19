@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import { useCallback, useState, type KeyboardEvent } from 'react'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Pencil, Star, Trash2 } from 'lucide-react'
 import ImageEditDialog from '@/components/journal-editor/image-edit-dialog'
 import useJournalEditor from '@/components/journal-editor/hooks/use-journal-editor'
 import useFocusRegistry from '@/components/journal-editor/hooks/use-focus-registry'
@@ -31,6 +31,8 @@ type ImageItemProps = {
   width: number
   onRemove: () => void | Promise<void>
   onEdit: () => void
+  isStarred: boolean
+  onToggleStar: () => void
 }
 
 const ImageItem = ({
@@ -40,6 +42,8 @@ const ImageItem = ({
   width,
   onRemove,
   onEdit,
+  isStarred,
+  onToggleStar,
 }: ImageItemProps) => {
   return (
     <div className="relative overflow-hidden rounded-md border">
@@ -63,6 +67,15 @@ const ImageItem = ({
         </Button>
         <Button
           type="button"
+          variant="secondary"
+          size="icon-xs"
+          onClick={onToggleStar}
+          aria-label={isStarred ? 'Unstar image' : 'Star image'}
+        >
+          <Star className={isStarred ? 'fill-current' : undefined} />
+        </Button>
+        <Button
+          type="button"
           variant="destructive"
           size="icon-xs"
           onClick={() => void onRemove()}
@@ -76,7 +89,7 @@ const ImageItem = ({
 }
 
 const ImageBlock = ({ block, blockId }: ImageBlockProps) => {
-  const { insertBlockBelow, removeImage, updateImageCaption } =
+  const { insertBlockBelow, removeImage, toggleImageStar, updateImageCaption } =
     useJournalEditor()
   const { registerFocusTarget } = useFocusRegistry()
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
@@ -138,6 +151,15 @@ const ImageBlock = ({ block, blockId }: ImageBlockProps) => {
                       </Button>
                       <Button
                         type="button"
+                        variant="secondary"
+                        size="icon-xs"
+                        onClick={() => toggleImageStar(image.assetId)}
+                        aria-label={image.isStarred ? 'Unstar image' : 'Star image'}
+                      >
+                        <Star className={image.isStarred ? 'fill-current' : undefined} />
+                      </Button>
+                      <Button
+                        type="button"
                         variant="destructive"
                         size="icon-xs"
                         onClick={() => removeImage(blockId, imageIndex)}
@@ -162,6 +184,8 @@ const ImageBlock = ({ block, blockId }: ImageBlockProps) => {
           height={block.images[0].height}
           onRemove={() => removeImage(blockId, 0)}
           onEdit={() => setIsEditDialogOpen(true)}
+          isStarred={block.images[0].isStarred === true}
+          onToggleStar={() => toggleImageStar(block.images[0].assetId)}
         />
       ) : null}
 
