@@ -105,7 +105,7 @@ const ImageBlock = ({ block, blockId }: ImageBlockProps) => {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-5">
       {block.images.length > 1 ? (
         <div className="px-12">
           <Carousel opts={{ loop: false }}>

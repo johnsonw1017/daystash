@@ -73,7 +73,7 @@ const EntryView = ({ slug }: EntryViewProps) => {
         </Button>
       </div>
 
-      <article className="space-y-3 font-serif text-xl leading-relaxed">
+      <article className="space-y-5 font-serif text-xl leading-relaxed">
         {journal.blocks.length === 0 && (
           <p className="whitespace-pre-wrap">No journal content yet.</p>
         )}
@@ -89,9 +89,7 @@ const EntryView = ({ slug }: EntryViewProps) => {
 
           if (block.type === 'list') {
             return (
-              <div key={block.id}>
-                {renderList(block.items, block.style)}
-              </div>
+              <div key={block.id}>{renderList(block.items, block.style)}</div>
             )
           }
 
@@ -101,7 +99,7 @@ const EntryView = ({ slug }: EntryViewProps) => {
           )
 
           return (
-            <figure key={key} className="space-y-2">
+            <figure key={key} className="space-y-5">
               {block.images.length > 1 ? (
                 <div className="px-12">
                   <Carousel opts={{ loop: false }}>
