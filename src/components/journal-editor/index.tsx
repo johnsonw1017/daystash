@@ -13,6 +13,7 @@ import useJournalEditor from '@/components/journal-editor/hooks/use-journal-edit
 import { FocusRegistryProvider } from '@/components/journal-editor/hooks/use-focus-registry'
 import useJournalSessionCleanup from '@/components/journal-editor/hooks/use-journal-session-cleanup'
 import JournalHeader from '@/components/journal-editor/journal-header'
+import PlaceSelector from '@/components/journal-editor/place-selector'
 import type { JournalEditorProps } from '@/components/journal-editor/types'
 import { getTextareaLineBoundaryState } from '@/components/journal-editor/utils'
 import { cn } from '@/lib/utils'
@@ -134,10 +135,11 @@ const JournalEditorContent = () => {
 
   return (
     <section
-      className="mx-auto flex w-full max-w-[800px] flex-col gap-4"
+      className="mx-auto flex w-full max-w-200 flex-col gap-4"
       onKeyDownCapture={handleKeyDownCapture}
     >
       <JournalHeader />
+      <PlaceSelector />
 
       <DragDropProvider onDragEnd={handleDragEnd}>
         <div className="space-y-5">
@@ -159,6 +161,7 @@ const JournalEditor = ({
   initialTitle = '',
   initialBlocks,
   initialThumbnailAssetId,
+  initialPlaces,
   successMessage = 'Journal saved',
   isEditMode = false,
   viewHref,
@@ -170,6 +173,7 @@ const JournalEditor = ({
       initialBlocks,
       initialThumbnailAssetId,
       initialJournalId,
+      initialPlaces,
       initialTitle,
       isEditMode,
       successMessage,

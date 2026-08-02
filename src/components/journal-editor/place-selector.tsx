@@ -1,0 +1,193 @@
+'use client'
+
+import { useState } from 'react'
+import Link from 'next/link'
+import { useMutation, useQuery } from '@tanstack/react-query'
+import { ExternalLink, MapPin, X } from 'lucide-react'
+import { toast } from 'sonner'
+import useJournalEditor from '@/components/journal-editor/hooks/use-journal-editor'
+import {
+  Combobox,
+  ComboboxChip,
+  ComboboxChips,
+  ComboboxChipsInput,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxSeparator,
+  useComboboxAnchor,
+} from '@/components/ui/combobox'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import type { GooglePlaceSuggestion } from '@/lib/google-places'
+import type { JournalPlace } from '@/lib/journals'
+
+const waitForAutocompleteDelay = (signal: AbortSignal) =>
+  new Promise<void>((resolve, reject) => {
+    const handleAbort = () => {
+      window.clearTimeout(timeout)
+      reject(new DOMException('Autocomplete cancelled', 'AbortError'))
+    }
+    const timeout = window.setTimeout(() => {
+      signal.removeEventListener('abort', handleAbort)
+      resolve()
+    }, 300)
+
+    signal.addEventListener('abort', handleAbort, { once: true })
+  })
+
+const PlaceSelector = () => {
+  const { places, setPlaces } = useJournalEditor()
+  const anchor = useComboboxAnchor()
+  const [input, setInput] = useState('')
+  const [sessionToken, setSessionToken] = useState(() => crypto.randomUUID())
+  const cleanedInput = input.trim()
+
+  const autocompleteQuery = useQuery({
+    queryKey: ['places', 'autocomplete', sessionToken, cleanedInput],
+    queryFn: async ({ signal }) => {
+      await waitForAutocompleteDelay(signal)
+      const response = await fetch('/api/places/autocomplete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          input: cleanedInput,
+          sessionToken,
+        }),
+        signal,
+      })
+      if (!response.ok) throw new Error('Could not search places')
+
+      const data = (await response.json()) as {
+        suggestions?: GooglePlaceSuggestion[]
+      }
+      return (data.suggestions ?? []).slice(0, 5)
+    },
+    enabled: cleanedInput.length >= 2,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  })
+  const suggestions = autocompleteQuery.data ?? []
+
+  const placeDetailsMutation = useMutation({
+    mutationFn: async (suggestion: GooglePlaceSuggestion) => {
+      const response = await fetch('/api/places/details', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          googlePlaceId: suggestion.googlePlaceId,
+          sessionToken,
+        }),
+      })
+      if (!response.ok) throw new Error('Could not load place')
+
+      const data = (await response.json()) as { place?: JournalPlace }
+      if (!data.place) throw new Error('Place details were incomplete')
+      return data.place
+    },
+    onSuccess: (place) => {
+      setPlaces((currentPlaces) =>
+        currentPlaces.some((item) => item.googlePlaceId === place.googlePlaceId)
+          ? currentPlaces
+          : [...currentPlaces, place]
+      )
+      setInput('')
+      setSessionToken(crypto.randomUUID())
+    },
+    onError: () => toast.error('Could not add place'),
+  })
+
+  return (
+    <div className="space-y-2">
+      <Label htmlFor="journal-places" className="text-muted-foreground gap-1.5">
+        <MapPin className="size-4 text-red-500" /> Places
+      </Label>
+      <Combobox
+        items={suggestions}
+        inputValue={input}
+        onInputValueChange={setInput}
+        itemToStringLabel={(item: GooglePlaceSuggestion) => item.name}
+        itemToStringValue={(item: GooglePlaceSuggestion) => item.googlePlaceId}
+      >
+        <ComboboxChips ref={anchor}>
+          {places.map((place) => (
+            <ComboboxChip key={place.googlePlaceId} showRemove={false}>
+              <MapPin className="size-3 text-red-500" />
+              {place.name}
+              <Link
+                href={place.googleMapsUri}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={`Open ${place.name} in Google Maps`}
+              >
+                <ExternalLink className="size-3" />
+              </Link>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                className="text-muted-foreground hover:text-foreground -mr-1 size-5"
+                onClick={() =>
+                  setPlaces(
+                    places.filter(
+                      (item) => item.googlePlaceId !== place.googlePlaceId
+                    )
+                  )
+                }
+                aria-label={`Remove ${place.name}`}
+              >
+                <X />
+              </Button>
+            </ComboboxChip>
+          ))}
+          <ComboboxChipsInput
+            id="journal-places"
+            placeholder="Search Google Maps…"
+          />
+        </ComboboxChips>
+        <ComboboxContent anchor={anchor}>
+          <ComboboxList>
+            {suggestions.map((suggestion) => (
+              <ComboboxItem
+                key={suggestion.googlePlaceId}
+                value={suggestion}
+                onClick={() => {
+                  if (
+                    !places.some(
+                      (place) =>
+                        place.googlePlaceId === suggestion.googlePlaceId
+                    )
+                  ) {
+                    placeDetailsMutation.mutate(suggestion)
+                  }
+                }}
+              >
+                <MapPin className="size-4 text-red-500" />
+                <span>
+                  <span className="block">{suggestion.name}</span>
+                  <span className="text-muted-foreground block text-xs">
+                    {suggestion.description}
+                  </span>
+                </span>
+              </ComboboxItem>
+            ))}
+            <ComboboxEmpty>
+              {autocompleteQuery.isFetching ? 'Searching…' : 'No places found'}
+            </ComboboxEmpty>
+          </ComboboxList>
+          {suggestions.length > 0 && (
+            <>
+              <ComboboxSeparator />
+              <p className="text-muted-foreground px-3 py-2 text-right text-[10px] font-medium">
+                Powered by Google
+              </p>
+            </>
+          )}
+        </ComboboxContent>
+      </Combobox>
+    </div>
+  )
+}
+
+export default PlaceSelector

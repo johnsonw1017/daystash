@@ -29,8 +29,10 @@ const createQueryBuilder = (result: unknown) => {
     maybeSingle: vi.fn().mockResolvedValue(result),
     select: vi.fn(() => builder),
     single: vi.fn().mockResolvedValue(result),
-    then: (resolve: (value: unknown) => unknown, reject?: (reason: unknown) => unknown) =>
-      Promise.resolve(result).then(resolve, reject),
+    then: (
+      resolve: (value: unknown) => unknown,
+      reject?: (reason: unknown) => unknown
+    ) => Promise.resolve(result).then(resolve, reject),
     update: vi.fn(() => builder),
   }
 
@@ -138,6 +140,7 @@ describe('journal write actions', () => {
       },
       { data: null, error: null },
       { data: null, error: null },
+      { data: null, error: null },
     ])
 
     await expect(
@@ -217,6 +220,7 @@ describe('journal write actions', () => {
         error: null,
       },
       { data: null, error: null },
+      { data: null, error: null },
     ])
 
     await expect(
@@ -255,6 +259,47 @@ describe('journal write actions', () => {
     )
   })
 
+  it('replaces journal places only when the journal is saved', async () => {
+    const admin = createAdminClientMock([
+      { data: { id: 'journal-id' }, error: null },
+      { data: [], error: null },
+      { data: null, error: null },
+      { data: null, error: null },
+      { data: null, error: null },
+    ])
+
+    await saveJournal({
+      journalId: 'journal-id',
+      title: 'Kyoto',
+      blocks: [{ id: 'text-1', type: 'text', content: 'A morning walk' }],
+      places: [
+        {
+          googlePlaceId: 'google-place-1',
+          name: ' Fushimi Inari Taisha ',
+          formattedAddress: ' Kyoto, Japan ',
+          googleMapsUri: 'https://maps.google.com/place/1',
+          latitude: 34.9671,
+          longitude: 135.7727,
+        },
+      ],
+    })
+
+    expect(admin.from).toHaveBeenNthCalledWith(4, 'places')
+    expect(admin.from).toHaveBeenNthCalledWith(5, 'places')
+    expect(admin.from.mock.results[4].value.insert).toHaveBeenCalledWith([
+      {
+        journal_id: 'journal-id',
+        user_id: 'user-id',
+        name: 'Fushimi Inari Taisha',
+        formatted_address: 'Kyoto, Japan',
+        google_place_id: 'google-place-1',
+        google_maps_uri: 'https://maps.google.com/place/1',
+        latitude: 34.9671,
+        longitude: 135.7727,
+      },
+    ])
+  })
+
   it('discards an unsaved empty journal by deleting its assets and record', async () => {
     const admin = createAdminClientMock([
       { data: { id: 'journal-id', blocks: [] }, error: null },
@@ -280,7 +325,9 @@ describe('journal write actions', () => {
       })
     ).resolves.toEqual({ discarded: true, deletedJournal: true })
 
-    expect(admin.from.mock.results[2].value.in).toHaveBeenCalledWith('id', ['asset-1'])
+    expect(admin.from.mock.results[2].value.in).toHaveBeenCalledWith('id', [
+      'asset-1',
+    ])
     expect(admin.from.mock.results[3].value.delete).toHaveBeenCalledOnce()
   })
 
@@ -296,7 +343,10 @@ describe('journal write actions', () => {
 
     expect(mockedRequireAuth).toHaveBeenCalledWith('/dashboard')
     expect(admin.from.mock.results[1].value.delete).toHaveBeenCalledOnce()
-    expect(admin.from.mock.results[1].value.eq).toHaveBeenCalledWith('user_id', 'user-id')
+    expect(admin.from.mock.results[1].value.eq).toHaveBeenCalledWith(
+      'user_id',
+      'user-id'
+    )
   })
 
   it('throws when an existing journal is not owned by the current user', async () => {

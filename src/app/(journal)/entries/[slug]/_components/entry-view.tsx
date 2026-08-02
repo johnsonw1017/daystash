@@ -2,6 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
+import { ExternalLink, MapPin } from 'lucide-react'
 import {
   Carousel,
   CarouselContent,
@@ -10,6 +11,7 @@ import {
   CarouselPrevious,
 } from '@/components/ui/carousel'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { useJournalBySlug } from '@/hooks/use-journals'
 import { cloudinaryLoader } from '@/lib/cloudinary'
 import type { ListStyle } from '@/lib/journals'
@@ -72,6 +74,25 @@ const EntryView = ({ slug }: EntryViewProps) => {
           <Link href={`/entries/${journal.slug}/edit`}>Edit</Link>
         </Button>
       </div>
+
+      {journal.places.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2" aria-label="Places">
+          {journal.places.map((place) => (
+            <Badge
+              key={place.googlePlaceId}
+              variant="secondary"
+              asChild
+              className="gap-1.5 px-3 py-1.5 text-sm"
+            >
+              <Link href={place.googleMapsUri} target="_blank" rel="noreferrer">
+                <MapPin className="size-4 text-red-500" />
+                {place.name}
+                <ExternalLink className="text-muted-foreground size-3" />
+              </Link>
+            </Badge>
+          ))}
+        </div>
+      )}
 
       <article className="space-y-5 font-serif text-xl leading-relaxed">
         {journal.blocks.length === 0 && (

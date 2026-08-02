@@ -28,12 +28,25 @@ export type ImageJournalBlock = {
   images: JournalImageAsset[]
 }
 
-export type JournalBlock = TextJournalBlock | ListJournalBlock | ImageJournalBlock
+export type JournalBlock =
+  | TextJournalBlock
+  | ListJournalBlock
+  | ImageJournalBlock
+
+export type JournalPlace = {
+  googlePlaceId: string
+  name: string
+  formattedAddress: string | null
+  googleMapsUri: string
+  latitude: number
+  longitude: number
+}
 
 export type SaveJournalInput = {
   journalId?: string
   title: string
   blocks: JournalBlock[]
+  places?: JournalPlace[]
   thumbnailAssetId?: string | null
 }
 
@@ -66,18 +79,57 @@ export type JournalListItem = Pick<
   'id' | 'title' | 'slug' | 'created_at'
 > & {
   thumbnail: JournalThumbnail | null
+  placeCount: number
 }
 
 export type JournalDetail = JournalSummary & {
   blocks: JournalBlock[]
+  places: JournalPlace[]
   thumbnailAssetId: string | null
+}
+
+export const normalizeJournalPlaces = (places: JournalPlace[]) => {
+  const uniquePlaces = new Map<string, JournalPlace>()
+
+  places.slice(0, 50).forEach((place) => {
+    const googlePlaceId = place.googlePlaceId.trim()
+    const name = place.name.trim()
+
+    if (
+      !googlePlaceId ||
+      !name ||
+      !place.googleMapsUri.startsWith('https://') ||
+      !Number.isFinite(place.latitude) ||
+      !Number.isFinite(place.longitude) ||
+      place.latitude < -90 ||
+      place.latitude > 90 ||
+      place.longitude < -180 ||
+      place.longitude > 180
+    ) {
+      return
+    }
+
+    uniquePlaces.set(googlePlaceId, {
+      googlePlaceId,
+      name,
+      formattedAddress: place.formattedAddress?.trim() || null,
+      googleMapsUri: place.googleMapsUri,
+      latitude: place.latitude,
+      longitude: place.longitude,
+    })
+  })
+
+  return [...uniquePlaces.values()]
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
 
-const normalizeTextBlock = (value: Record<string, unknown>): TextJournalBlock | null => {
-  const id = typeof value.id === 'string' && value.id.length > 0 ? value.id : null
+const normalizeTextBlock = (
+  value: Record<string, unknown>
+): TextJournalBlock | null => {
+  const id =
+    typeof value.id === 'string' && value.id.length > 0 ? value.id : null
 
   if (!id) {
     return null
@@ -90,8 +142,11 @@ const normalizeTextBlock = (value: Record<string, unknown>): TextJournalBlock | 
   }
 }
 
-const normalizeListBlock = (value: Record<string, unknown>): ListJournalBlock | null => {
-  const id = typeof value.id === 'string' && value.id.length > 0 ? value.id : null
+const normalizeListBlock = (
+  value: Record<string, unknown>
+): ListJournalBlock | null => {
+  const id =
+    typeof value.id === 'string' && value.id.length > 0 ? value.id : null
   const itemsValue = Array.isArray(value.items) ? value.items : []
 
   if (!id) {
@@ -124,11 +179,17 @@ const normalizeListBlock = (value: Record<string, unknown>): ListJournalBlock | 
   }
 }
 
-const normalizeImageAsset = (value: Record<string, unknown>): JournalImageAsset | null => {
+const normalizeImageAsset = (
+  value: Record<string, unknown>
+): JournalImageAsset | null => {
   const assetId =
-    typeof value.assetId === 'string' && value.assetId.length > 0 ? value.assetId : null
+    typeof value.assetId === 'string' && value.assetId.length > 0
+      ? value.assetId
+      : null
   const publicId =
-    typeof value.publicId === 'string' && value.publicId.length > 0 ? value.publicId : null
+    typeof value.publicId === 'string' && value.publicId.length > 0
+      ? value.publicId
+      : null
   const width = typeof value.width === 'number' ? value.width : null
   const height = typeof value.height === 'number' ? value.height : null
 
@@ -141,12 +202,16 @@ const normalizeImageAsset = (value: Record<string, unknown>): JournalImageAsset 
     publicId,
     width,
     height,
-    altText: typeof value.altText === 'string' ? value.altText.trim() || null : null,
+    altText:
+      typeof value.altText === 'string' ? value.altText.trim() || null : null,
   }
 }
 
-const normalizeImageBlock = (value: Record<string, unknown>): ImageJournalBlock | null => {
-  const id = typeof value.id === 'string' && value.id.length > 0 ? value.id : null
+const normalizeImageBlock = (
+  value: Record<string, unknown>
+): ImageJournalBlock | null => {
+  const id =
+    typeof value.id === 'string' && value.id.length > 0 ? value.id : null
   const imagesValue = Array.isArray(value.images) ? value.images : []
 
   if (!id) {
@@ -165,7 +230,8 @@ const normalizeImageBlock = (value: Record<string, unknown>): ImageJournalBlock 
   return {
     id,
     type: 'image',
-    caption: typeof value.caption === 'string' ? value.caption.trim() || null : null,
+    caption:
+      typeof value.caption === 'string' ? value.caption.trim() || null : null,
     images,
   }
 }
@@ -195,7 +261,9 @@ export const parseJournalBlocks = (value: unknown): JournalBlock[] => {
     .filter((block): block is JournalBlock => block !== null)
 }
 
-export const normalizeJournalBlocks = (blocks: JournalBlock[]): JournalBlock[] => {
+export const normalizeJournalBlocks = (
+  blocks: JournalBlock[]
+): JournalBlock[] => {
   const normalized = blocks
     .map((block) => {
       if (block.type === 'text') {
@@ -274,7 +342,10 @@ export const getJournalThumbnailAssetId = (
     block.type === 'image' ? block.images : []
   )
 
-  if (thumbnailAssetId && imageAssets.some((image) => image.assetId === thumbnailAssetId)) {
+  if (
+    thumbnailAssetId &&
+    imageAssets.some((image) => image.assetId === thumbnailAssetId)
+  ) {
     return thumbnailAssetId
   }
 

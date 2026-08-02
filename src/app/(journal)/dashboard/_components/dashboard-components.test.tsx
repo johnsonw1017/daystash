@@ -13,8 +13,10 @@ import YearTimeline from '@/app/(journal)/dashboard/_components/year-timeline'
 import type { JournalListItem } from '@/lib/journals'
 
 vi.mock('next/image', () => ({
-  // eslint-disable-next-line @next/next/no-img-element
-  default: ({ alt, src }: { alt: string; src: string }) => <img alt={alt} src={src} />,
+  default: ({ alt, src }: { alt: string; src: string }) => (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img alt={alt} src={src} />
+  ),
 }))
 
 const journal: JournalListItem = {
@@ -27,13 +29,17 @@ const journal: JournalListItem = {
     width: 1200,
     height: 900,
   },
+  placeCount: 2,
 }
 
 describe('dashboard journal components', () => {
   it('renders linked journal cards with formatted dates and titles', () => {
     render(<JournalCard journal={journal} />)
 
-    expect(screen.getByRole('link')).toHaveAttribute('href', '/entries/summer-trip')
+    expect(screen.getByRole('link')).toHaveAttribute(
+      'href',
+      '/entries/summer-trip'
+    )
     expect(screen.getByText('17 July')).toBeInTheDocument()
     expect(screen.getByText('Summer trip')).toBeInTheDocument()
   })
@@ -62,7 +68,9 @@ describe('dashboard journal components', () => {
       journals: [journal],
     }
 
-    const { container } = render(<JournalMonthSection isFirstMonthOfYear month={month} />)
+    const { container } = render(
+      <JournalMonthSection isFirstMonthOfYear month={month} />
+    )
 
     expect(container.querySelector('#journal-year-2026')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'July' })).toBeInTheDocument()
@@ -94,13 +102,20 @@ describe('dashboard journal components', () => {
   it('renders loading states for timeline and journal grids', () => {
     const { container } = render(
       <>
-        <YearTimeline activeYear={null} isLoading onSelectYear={vi.fn()} years={[]} />
+        <YearTimeline
+          activeYear={null}
+          isLoading
+          onSelectYear={vi.fn()}
+          years={[]}
+        />
         <JournalCardSkeleton />
         <InitialJournalSkeletons />
       </>
     )
 
     expect(screen.getByLabelText('Loading journals')).toBeInTheDocument()
-    expect(container.querySelectorAll('[data-slot="skeleton"]').length).toBeGreaterThan(4)
+    expect(
+      container.querySelectorAll('[data-slot="skeleton"]').length
+    ).toBeGreaterThan(4)
   })
 })

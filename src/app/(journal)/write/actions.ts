@@ -5,6 +5,7 @@ import {
   getJournalThumbnailAssetId,
   getReferencedAssetIds,
   normalizeJournalBlocks,
+  normalizeJournalPlaces,
   parseJournalBlocks,
   type SaveJournalInput,
   type RegisterJournalAssetsInput,
@@ -225,6 +226,7 @@ export const saveJournal = async ({
   journalId,
   title,
   blocks,
+  places = [],
   thumbnailAssetId: requestedThumbnailAssetId = null,
 }: SaveJournalInput) => {
   const user = await requireAuth('/write')
@@ -235,6 +237,7 @@ export const saveJournal = async ({
   })
 
   const normalizedBlocks = normalizeJournalBlocks(blocks)
+  const normalizedPlaces = normalizeJournalPlaces(places)
   const referencedAssetIds = getReferencedAssetIds(normalizedBlocks)
   const existingAssets = await getJournalAssets(nextJournal.journalId)
   const requestedThumbnailAssetIdIsValid =
@@ -272,9 +275,34 @@ export const saveJournal = async ({
     throw new Error(error.message)
   }
 
+  const { error: deletePlacesError } = await supabase
+    .from('places')
+    .delete()
+    .eq('journal_id', nextJournal.journalId)
+    .eq('user_id', user.id)
+
+  if (deletePlacesError) throw new Error(deletePlacesError.message)
+
+  if (normalizedPlaces.length) {
+    const { error: insertPlacesError } = await supabase.from('places').insert(
+      normalizedPlaces.map((place) => ({
+        journal_id: nextJournal.journalId,
+        user_id: user.id,
+        name: place.name,
+        formatted_address: place.formattedAddress,
+        google_place_id: place.googlePlaceId,
+        google_maps_uri: place.googleMapsUri,
+        latitude: place.latitude,
+        longitude: place.longitude,
+      }))
+    )
+    if (insertPlacesError) throw new Error(insertPlacesError.message)
+  }
+
   return {
     journalId: nextJournal.journalId,
     blocks: normalizedBlocks,
+    places: normalizedPlaces,
     thumbnailAssetId,
   }
 }
@@ -295,7 +323,9 @@ export const discardJournalSessionChanges = async ({
   )
 
   if (!savedBlocks.length) {
-    const allAssetIds = (await getJournalAssets(journalId)).map((asset) => asset.id)
+    const allAssetIds = (await getJournalAssets(journalId)).map(
+      (asset) => asset.id
+    )
 
     await deleteJournalAssets({
       assetIds: allAssetIds,
