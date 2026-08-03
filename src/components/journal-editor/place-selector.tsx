@@ -179,7 +179,7 @@ const PlaceSelector = () => {
           {suggestions.length > 0 && (
             <>
               <ComboboxSeparator />
-              <p className="text-muted-foreground px-3 py-2 text-right text-[10px] font-medium">
+              <p className="text-muted-foreground px-3 py-2 text-right text-xs">
                 Powered by Google
               </p>
             </>
