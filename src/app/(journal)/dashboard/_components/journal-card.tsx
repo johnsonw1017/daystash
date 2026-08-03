@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { MapPin } from 'lucide-react'
 import {
   Card,
   CardDescription,
@@ -54,8 +55,17 @@ const JournalCard = ({ journal }: { journal: JournalListItem }) => {
           <JournalThumbnail journal={journal} />
         </div>
         <CardHeader className="gap-2 p-4 sm:p-5">
-          <CardDescription>
-            {dateFormatter.format(new Date(journal.created_at))}
+          <CardDescription className="flex items-center justify-between gap-2">
+            <span>{dateFormatter.format(new Date(journal.created_at))}</span>
+            {journal.placeCount > 0 && (
+              <span
+                className="inline-flex items-center gap-1"
+                aria-label={`${journal.placeCount} places`}
+              >
+                <MapPin className="size-4" />
+                {journal.placeCount}
+              </span>
+            )}
           </CardDescription>
           <CardTitle className="line-clamp-2 text-base leading-snug font-medium">
             {title}

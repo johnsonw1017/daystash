@@ -29,15 +29,20 @@ const createQueryBuilder = (result: unknown) => {
     maybeSingle: vi.fn().mockResolvedValue(result),
     select: vi.fn(() => builder),
     single: vi.fn().mockResolvedValue(result),
-    then: (resolve: (value: unknown) => unknown, reject?: (reason: unknown) => unknown) =>
-      Promise.resolve(result).then(resolve, reject),
+    then: (
+      resolve: (value: unknown) => unknown,
+      reject?: (reason: unknown) => unknown
+    ) => Promise.resolve(result).then(resolve, reject),
     update: vi.fn(() => builder),
   }
 
   return builder
 }
 
-const createAdminClientMock = (results: unknown[]) => {
+const createAdminClientMock = (
+  results: unknown[],
+  rpcResult: unknown = { data: null, error: null }
+) => {
   const builders = results.map(createQueryBuilder)
   const from = vi.fn(() => {
     const builder = builders.shift()
@@ -48,12 +53,13 @@ const createAdminClientMock = (results: unknown[]) => {
 
     return builder
   })
+  const rpc = vi.fn().mockResolvedValue(rpcResult)
 
   mockedCreateAdminClient.mockReturnValue(
-    asMockedValue<ReturnType<typeof createAdminClient>>({ from })
+    asMockedValue<ReturnType<typeof createAdminClient>>({ from, rpc })
   )
 
-  return { builders, from }
+  return { builders, from, rpc }
 }
 
 describe('journal write actions', () => {
@@ -138,6 +144,7 @@ describe('journal write actions', () => {
       },
       { data: null, error: null },
       { data: null, error: null },
+      { data: null, error: null },
     ])
 
     await expect(
@@ -183,15 +190,13 @@ describe('journal write actions', () => {
     })
 
     const deleteBuilder = admin.from.mock.results[2].value
-    const updateBuilder = admin.from.mock.results[3].value
 
     expect(deleteBuilder.in).toHaveBeenCalledWith('id', ['orphaned-asset'])
-    expect(updateBuilder.update).toHaveBeenCalledWith(
+    expect(admin.rpc).toHaveBeenCalledWith(
+      'save_journal_with_places',
       expect.objectContaining({
-        title: 'Saved title',
-        thumbnail_asset_id: 'asset-1',
-        draft_blocks: null,
-        has_unsaved_draft: false,
+        p_title: 'Saved title',
+        p_thumbnail_asset_id: 'asset-1',
       })
     )
   })
@@ -216,6 +221,7 @@ describe('journal write actions', () => {
         ],
         error: null,
       },
+      { data: null, error: null },
       { data: null, error: null },
     ])
 
@@ -250,9 +256,86 @@ describe('journal write actions', () => {
       })
     ).resolves.toMatchObject({ thumbnailAssetId: 'asset-2' })
 
-    expect(admin.from.mock.results[2].value.update).toHaveBeenCalledWith(
-      expect.objectContaining({ thumbnail_asset_id: 'asset-2' })
+    expect(admin.rpc).toHaveBeenCalledWith(
+      'save_journal_with_places',
+      expect.objectContaining({ p_thumbnail_asset_id: 'asset-2' })
     )
+  })
+
+  it('replaces journal places only when the journal is saved', async () => {
+    const admin = createAdminClientMock([
+      { data: { id: 'journal-id' }, error: null },
+      { data: [], error: null },
+      { data: null, error: null },
+      { data: null, error: null },
+      { data: null, error: null },
+    ])
+
+    await saveJournal({
+      journalId: 'journal-id',
+      title: 'Kyoto',
+      blocks: [{ id: 'text-1', type: 'text', content: 'A morning walk' }],
+      places: [
+        {
+          googlePlaceId: 'google-place-1',
+          name: ' Fushimi Inari Taisha ',
+          formattedAddress: ' Kyoto, Japan ',
+          googleMapsUri: 'https://maps.google.com/place/1',
+          latitude: 34.9671,
+          longitude: 135.7727,
+        },
+      ],
+    })
+
+    expect(admin.rpc).toHaveBeenCalledWith('save_journal_with_places', {
+      p_journal_id: 'journal-id',
+      p_user_id: 'user-id',
+      p_title: 'Kyoto',
+      p_blocks: [{ id: 'text-1', type: 'text', content: 'A morning walk' }],
+      p_thumbnail_asset_id: null,
+      p_updated_at: expect.any(String),
+      p_places: [
+        {
+          name: 'Fushimi Inari Taisha',
+          formatted_address: 'Kyoto, Japan',
+          google_place_id: 'google-place-1',
+          google_maps_uri: 'https://maps.google.com/place/1',
+          latitude: 34.9671,
+          longitude: 135.7727,
+        },
+      ],
+    })
+  })
+
+  it('keeps orphaned assets when the atomic place replacement fails', async () => {
+    const admin = createAdminClientMock(
+      [
+        { data: { id: 'journal-id' }, error: null },
+        {
+          data: [
+            {
+              id: 'orphaned-asset',
+              cloudinary_public_id: 'journal/old-photo',
+              width: 800,
+              height: 600,
+            },
+          ],
+          error: null,
+        },
+      ],
+      { data: null, error: { message: 'Could not save places' } }
+    )
+
+    await expect(
+      saveJournal({
+        journalId: 'journal-id',
+        title: 'Kyoto',
+        blocks: [{ id: 'text-1', type: 'text', content: 'A morning walk' }],
+      })
+    ).rejects.toThrow('Could not save places')
+
+    expect(admin.rpc).toHaveBeenCalledOnce()
+    expect(admin.from).toHaveBeenCalledTimes(2)
   })
 
   it('discards an unsaved empty journal by deleting its assets and record', async () => {
@@ -280,7 +363,9 @@ describe('journal write actions', () => {
       })
     ).resolves.toEqual({ discarded: true, deletedJournal: true })
 
-    expect(admin.from.mock.results[2].value.in).toHaveBeenCalledWith('id', ['asset-1'])
+    expect(admin.from.mock.results[2].value.in).toHaveBeenCalledWith('id', [
+      'asset-1',
+    ])
     expect(admin.from.mock.results[3].value.delete).toHaveBeenCalledOnce()
   })
 
@@ -296,7 +381,10 @@ describe('journal write actions', () => {
 
     expect(mockedRequireAuth).toHaveBeenCalledWith('/dashboard')
     expect(admin.from.mock.results[1].value.delete).toHaveBeenCalledOnce()
-    expect(admin.from.mock.results[1].value.eq).toHaveBeenCalledWith('user_id', 'user-id')
+    expect(admin.from.mock.results[1].value.eq).toHaveBeenCalledWith(
+      'user_id',
+      'user-id'
+    )
   })
 
   it('throws when an existing journal is not owned by the current user', async () => {

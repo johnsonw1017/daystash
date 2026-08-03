@@ -6,6 +6,8 @@ import { useAtom, useSetAtom } from 'jotai'
 import { saveJournal } from '@/app/(journal)/write/actions'
 import {
   blocksAtom,
+  placesAtom,
+  savedPlacesAtom,
   errorMessageAtom,
   thumbnailAssetIdAtom,
   isJournalSavingAtom,
@@ -45,14 +47,14 @@ type MergeTextBlockDirection = 'previous' | 'next'
 const useJournalEditor = () => {
   const queryClient = useQueryClient()
   const [blocks, setBlocks] = useAtom(blocksAtom)
+  const [places, setPlaces] = useAtom(placesAtom)
+  const [savedPlaces, setSavedPlaces] = useAtom(savedPlacesAtom)
   const [errorMessage, setErrorMessage] = useAtom(errorMessageAtom)
   const [editorConfig] = useAtom(journalEditorConfigAtom)
   const [journalId, setJournalId] = useAtom(journalIdAtom)
   const [lastSavedTitle, setLastSavedTitle] = useAtom(lastSavedTitleAtom)
   const [savedBlocks, setSavedBlocks] = useAtom(savedBlocksAtom)
-  const [thumbnailAssetId, setThumbnailAssetId] = useAtom(
-    thumbnailAssetIdAtom
-  )
+  const [thumbnailAssetId, setThumbnailAssetId] = useAtom(thumbnailAssetIdAtom)
   const [savedThumbnailAssetId, setSavedThumbnailAssetId] = useAtom(
     savedThumbnailAssetIdAtom
   )
@@ -64,7 +66,8 @@ const useJournalEditor = () => {
   const isDirty =
     JSON.stringify(normalizedBlocks) !== JSON.stringify(savedBlocks) ||
     thumbnailAssetId !== savedThumbnailAssetId ||
-    title !== lastSavedTitle
+    title !== lastSavedTitle ||
+    JSON.stringify(places) !== JSON.stringify(savedPlaces)
 
   const applySavedState = useCallback(
     ({
@@ -72,11 +75,13 @@ const useJournalEditor = () => {
       thumbnailAssetId: nextThumbnailAssetId,
       nextJournalId,
       successMessage,
+      places: nextPlaces,
     }: {
       blocks: JournalBlock[]
       thumbnailAssetId: string | null
       nextJournalId?: string
       successMessage: string
+      places: import('@/lib/journals').JournalPlace[]
     }) => {
       if (nextJournalId) {
         setJournalId(nextJournalId)
@@ -84,6 +89,8 @@ const useJournalEditor = () => {
 
       setBlocks(nextBlocks)
       setSavedBlocks(nextBlocks)
+      setPlaces(nextPlaces)
+      setSavedPlaces(nextPlaces)
       setThumbnailAssetId(nextThumbnailAssetId)
       setSavedThumbnailAssetId(nextThumbnailAssetId)
       setLastSavedTitle(title)
@@ -100,6 +107,8 @@ const useJournalEditor = () => {
       setIsJournalSaving,
       setLastSavedTitle,
       setSavedBlocks,
+      setPlaces,
+      setSavedPlaces,
       setThumbnailAssetId,
       setSavedThumbnailAssetId,
       setSessionAssetIds,
@@ -621,6 +630,7 @@ const useJournalEditor = () => {
         journalId,
         title,
         blocks: normalizedBlocks,
+        places,
         thumbnailAssetId: activeThumbnailAssetId,
       }),
     onSuccess: (response) =>
@@ -628,6 +638,7 @@ const useJournalEditor = () => {
         blocks: response.blocks,
         thumbnailAssetId: response.thumbnailAssetId,
         nextJournalId: response.journalId,
+        places: response.places,
         successMessage: editorConfig.successMessage,
       }),
     onError: () => {
@@ -665,6 +676,8 @@ const useJournalEditor = () => {
     mergeListItem,
     mergeTextBlock,
     moveImage,
+    places,
+    setPlaces,
     moveBlock,
     save,
     removeBlock,

@@ -84,6 +84,7 @@ describe('journal hooks', () => {
                 height: 900,
               },
             ],
+            places: [{ count: 2 }],
           },
         ])
       })
@@ -104,6 +105,7 @@ describe('journal hooks', () => {
           width: 1200,
           height: 900,
         },
+        placeCount: 2,
       })
     )
   })
@@ -147,6 +149,7 @@ describe('journal hooks', () => {
           created_at: '2026-07-17T00:00:00.000Z',
           updated_at: '2026-07-17T01:00:00.000Z',
           blocks: [{ id: 'text-1', type: 'text', content: 'Hello' }],
+          places: [],
         })
       })
     )

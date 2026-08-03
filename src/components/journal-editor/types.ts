@@ -1,11 +1,12 @@
 import type { ReactNode } from 'react'
-import type { JournalBlock } from '@/lib/journals'
+import type { JournalBlock, JournalPlace } from '@/lib/journals'
 
 export type JournalEditorProps = {
   initialJournalId?: string
   initialTitle?: string
   initialBlocks?: JournalBlock[]
   initialThumbnailAssetId?: string | null
+  initialPlaces?: JournalPlace[]
   successMessage?: string
   isEditMode?: boolean
   viewHref?: string

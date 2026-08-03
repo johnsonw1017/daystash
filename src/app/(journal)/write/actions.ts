@@ -5,6 +5,7 @@ import {
   getJournalThumbnailAssetId,
   getReferencedAssetIds,
   normalizeJournalBlocks,
+  normalizeJournalPlaces,
   parseJournalBlocks,
   type SaveJournalInput,
   type RegisterJournalAssetsInput,
@@ -225,6 +226,7 @@ export const saveJournal = async ({
   journalId,
   title,
   blocks,
+  places = [],
   thumbnailAssetId: requestedThumbnailAssetId = null,
 }: SaveJournalInput) => {
   const user = await requireAuth('/write')
@@ -235,6 +237,7 @@ export const saveJournal = async ({
   })
 
   const normalizedBlocks = normalizeJournalBlocks(blocks)
+  const normalizedPlaces = normalizeJournalPlaces(places)
   const referencedAssetIds = getReferencedAssetIds(normalizedBlocks)
   const existingAssets = await getJournalAssets(nextJournal.journalId)
   const requestedThumbnailAssetIdIsValid =
@@ -249,32 +252,35 @@ export const saveJournal = async ({
     .filter((asset) => !referencedAssetIds.has(asset.id))
     .map((asset) => asset.id)
 
+  const supabase = createAdminClient()
+  const { error } = await supabase.rpc('save_journal_with_places', {
+    p_journal_id: nextJournal.journalId,
+    p_user_id: user.id,
+    p_title: nextJournal.title,
+    p_blocks: normalizedBlocks,
+    p_thumbnail_asset_id: thumbnailAssetId,
+    p_updated_at: new Date().toISOString(),
+    p_places: normalizedPlaces.map((place) => ({
+      name: place.name,
+      formatted_address: place.formattedAddress,
+      google_place_id: place.googlePlaceId,
+      google_maps_uri: place.googleMapsUri,
+      latitude: place.latitude,
+      longitude: place.longitude,
+    })),
+  })
+
+  if (error) throw new Error(error.message)
+
   await deleteJournalAssets({
     assetIds: orphanedAssetIds,
     journalId: nextJournal.journalId,
   })
 
-  const supabase = createAdminClient()
-  const { error } = await supabase
-    .from('journals')
-    .update({
-      title: nextJournal.title,
-      blocks: normalizedBlocks,
-      thumbnail_asset_id: thumbnailAssetId,
-      draft_blocks: null,
-      has_unsaved_draft: false,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', nextJournal.journalId)
-    .eq('user_id', user.id)
-
-  if (error) {
-    throw new Error(error.message)
-  }
-
   return {
     journalId: nextJournal.journalId,
     blocks: normalizedBlocks,
+    places: normalizedPlaces,
     thumbnailAssetId,
   }
 }
@@ -295,7 +301,9 @@ export const discardJournalSessionChanges = async ({
   )
 
   if (!savedBlocks.length) {
-    const allAssetIds = (await getJournalAssets(journalId)).map((asset) => asset.id)
+    const allAssetIds = (await getJournalAssets(journalId)).map(
+      (asset) => asset.id
+    )
 
     await deleteJournalAssets({
       assetIds: allAssetIds,

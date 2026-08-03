@@ -6,7 +6,7 @@ import {
   type InfiniteData,
 } from '@tanstack/react-query'
 import type { JournalDetail, JournalListItem } from '@/lib/journals'
-import { parseJournalBlocks } from '@/lib/journals'
+import { parseJournalBlocks, type JournalPlace } from '@/lib/journals'
 import supabase from '@/lib/supabase/client'
 
 const JOURNALS_PAGE_SIZE = 12
@@ -50,6 +50,16 @@ type JournalListRow = {
   slug: string | null
   created_at: string
   thumbnail: JournalThumbnailRow | JournalThumbnailRow[] | null
+  places: Array<{ count: number }>
+}
+
+type JournalPlaceRow = {
+  name: string
+  formatted_address: string | null
+  google_place_id: string
+  google_maps_uri: string
+  latitude: number
+  longitude: number
 }
 
 type JournalDetailRow = {
@@ -60,6 +70,7 @@ type JournalDetailRow = {
   updated_at: string
   blocks: unknown
   thumbnail_asset_id: string | null
+  places: JournalPlaceRow[]
 }
 
 type JournalCursor = {
@@ -89,6 +100,7 @@ const mapJournalListRow = (journal: JournalListRow): JournalListItem => {
           height: thumbnail.height,
         }
       : null,
+    placeCount: journal.places[0]?.count ?? 0,
   }
 }
 
@@ -102,6 +114,16 @@ const mapJournalDetailRow = (journal: JournalDetailRow): JournalDetail => {
     created_at: journal.created_at,
     updated_at: journal.updated_at,
     blocks,
+    places: journal.places.map(
+      (place): JournalPlace => ({
+        name: place.name,
+        formattedAddress: place.formatted_address,
+        googlePlaceId: place.google_place_id,
+        googleMapsUri: place.google_maps_uri,
+        latitude: place.latitude,
+        longitude: place.longitude,
+      })
+    ),
     thumbnailAssetId: journal.thumbnail_asset_id,
   }
 }
@@ -122,7 +144,8 @@ const fetchJournalsPage = async (
           cloudinary_public_id,
           width,
           height
-        )
+        ),
+        places(count)
       `
     )
     .eq('user_id', userId)
@@ -184,7 +207,12 @@ const fetchJournalBySlug = async (
 
   const { data: journal, error } = await supabase
     .from('journals')
-    .select('id, title, slug, created_at, updated_at, blocks, thumbnail_asset_id')
+    .select(
+      `
+      id, title, slug, created_at, updated_at, blocks, thumbnail_asset_id,
+      places(name, formatted_address, google_place_id, google_maps_uri, latitude, longitude)
+    `
+    )
     .eq('user_id', userId)
     .eq('slug', slug)
     .maybeSingle()

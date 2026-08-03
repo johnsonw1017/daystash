@@ -1,18 +1,32 @@
 'use client'
 
 import { atom, createStore } from 'jotai'
+import { atomWithStorage } from 'jotai/utils'
 import type { Store } from 'jotai/vanilla/store'
 import type {
   JournalEditorConfig,
   ImageDialogState,
 } from '@/components/journal-editor/types'
-import type { JournalBlock } from '@/lib/journals'
+import type { JournalBlock, JournalPlace } from '@/lib/journals'
 import {
   makeTextBlock,
   normalizeEditorBlocks,
 } from '@/components/journal-editor/utils'
 
 export const blocksAtom = atom<JournalBlock[]>([])
+export const placesAtom = atom<JournalPlace[]>([])
+
+export type PlaceSearchBias = {
+  latitude: number
+  longitude: number
+  updatedAt: string
+}
+
+export const placeSearchBiasAtom = atomWithStorage<PlaceSearchBias | null>(
+  'daystash:place-search-bias',
+  null
+)
+export const savedPlacesAtom = atom<JournalPlace[]>([])
 export const errorMessageAtom = atom('')
 export const journalIdAtom = atom<string | undefined>(undefined)
 export const savedBlocksAtom = atom<JournalBlock[]>([])
@@ -48,6 +62,7 @@ type CreateJournalBlocksStoreParams = {
   initialJournalId?: string
   initialTitle?: string
   initialThumbnailAssetId?: string | null
+  initialPlaces?: JournalPlace[]
   headerActions?: JournalEditorConfig['headerActions']
   isEditMode?: boolean
   successMessage?: string
@@ -60,6 +75,7 @@ export const createJournalBlocksStore = ({
   initialJournalId,
   initialTitle = '',
   initialThumbnailAssetId = null,
+  initialPlaces = [],
   isEditMode = false,
   successMessage = 'Journal saved',
   viewHref,
@@ -70,6 +86,8 @@ export const createJournalBlocksStore = ({
     : [makeTextBlock()]
 
   store.set(blocksAtom, nextBlocks)
+  store.set(placesAtom, initialPlaces)
+  store.set(savedPlacesAtom, initialPlaces)
   store.set(errorMessageAtom, '')
   store.set(journalEditorConfigAtom, {
     headerActions,
