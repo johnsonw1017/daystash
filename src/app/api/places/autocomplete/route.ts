@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import {
+  GOOGLE_PLACE_BIAS_RADIUS_METERS,
   getGoogleMapsApiKey,
   GOOGLE_PLACE_SUGGESTION_LIMIT,
   type GooglePlaceSuggestion,
@@ -30,6 +31,10 @@ export const POST = async (request: Request) => {
   const body = (await request.json().catch(() => null)) as {
     input?: unknown
     sessionToken?: unknown
+    locationBias?: {
+      latitude?: unknown
+      longitude?: unknown
+    }
   } | null
   const input =
     typeof body?.input === 'string' ? body.input.trim().slice(0, 200) : ''
@@ -37,6 +42,17 @@ export const POST = async (request: Request) => {
     typeof body?.sessionToken === 'string'
       ? body.sessionToken.slice(0, 100)
       : ''
+  const latitude = body?.locationBias?.latitude
+  const longitude = body?.locationBias?.longitude
+  const hasValidLocationBias =
+    typeof latitude === 'number' &&
+    Number.isFinite(latitude) &&
+    latitude >= -90 &&
+    latitude <= 90 &&
+    typeof longitude === 'number' &&
+    Number.isFinite(longitude) &&
+    longitude >= -180 &&
+    longitude <= 180
 
   if (input.length < 2) return NextResponse.json({ suggestions: [] })
 
@@ -50,7 +66,18 @@ export const POST = async (request: Request) => {
         'X-Goog-FieldMask':
           'suggestions.placePrediction.placeId,suggestions.placePrediction.text.text,suggestions.placePrediction.structuredFormat.mainText.text,suggestions.placePrediction.structuredFormat.secondaryText.text',
       },
-      body: JSON.stringify({ input, sessionToken: sessionToken || undefined }),
+      body: JSON.stringify({
+        input,
+        sessionToken: sessionToken || undefined,
+        locationBias: hasValidLocationBias
+          ? {
+              circle: {
+                center: { latitude, longitude },
+                radius: GOOGLE_PLACE_BIAS_RADIUS_METERS,
+              },
+            }
+          : undefined,
+      }),
       cache: 'no-store',
     }
   )

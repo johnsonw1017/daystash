@@ -6,6 +6,12 @@ process.env.NEXT_PUBLIC_SUPABASE_URL = 'http://supabase.test'
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiJ9.signature'
 
+globalThis.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => {
   window.localStorage.clear()

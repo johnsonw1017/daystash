@@ -1,6 +1,7 @@
 'use client'
 
 import { atom, createStore } from 'jotai'
+import { atomWithStorage } from 'jotai/utils'
 import type { Store } from 'jotai/vanilla/store'
 import type {
   JournalEditorConfig,
@@ -14,6 +15,17 @@ import {
 
 export const blocksAtom = atom<JournalBlock[]>([])
 export const placesAtom = atom<JournalPlace[]>([])
+
+export type PlaceSearchBias = {
+  latitude: number
+  longitude: number
+  updatedAt: string
+}
+
+export const placeSearchBiasAtom = atomWithStorage<PlaceSearchBias | null>(
+  'daystash:place-search-bias',
+  null
+)
 export const savedPlacesAtom = atom<JournalPlace[]>([])
 export const errorMessageAtom = atom('')
 export const journalIdAtom = atom<string | undefined>(undefined)

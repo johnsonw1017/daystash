@@ -2,9 +2,17 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useAtom } from 'jotai'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { ExternalLink, MapPin, X } from 'lucide-react'
+import {
+  ExternalLink,
+  LoaderCircle,
+  LocateFixed,
+  MapPin,
+  X,
+} from 'lucide-react'
 import { toast } from 'sonner'
+import { placeSearchBiasAtom } from '@/components/journal-editor/atoms'
 import useJournalEditor from '@/components/journal-editor/hooks/use-journal-editor'
 import {
   Combobox,
@@ -20,8 +28,17 @@ import {
 } from '@/components/ui/combobox'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import type { GooglePlaceSuggestion } from '@/lib/google-places'
 import type { JournalPlace } from '@/lib/journals'
+
+const roundLocationForBias = (coordinate: number) =>
+  Math.round(coordinate * 1000) / 1000
 
 const waitForAutocompleteDelay = (signal: AbortSignal) =>
   new Promise<void>((resolve, reject) => {
@@ -42,10 +59,57 @@ const PlaceSelector = () => {
   const anchor = useComboboxAnchor()
   const [input, setInput] = useState('')
   const [sessionToken, setSessionToken] = useState(() => crypto.randomUUID())
+  const [locationBias, setLocationBias] = useAtom(placeSearchBiasAtom)
+  const [isLocating, setIsLocating] = useState(false)
   const cleanedInput = input.trim()
 
+  const useNearbyLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error('Location is not available in this browser')
+      return
+    }
+
+    setIsLocating(true)
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        if (
+          !Number.isFinite(coords.latitude) ||
+          !Number.isFinite(coords.longitude)
+        ) {
+          setIsLocating(false)
+          toast.error('Could not determine your location')
+          return
+        }
+
+        setLocationBias({
+          latitude: roundLocationForBias(coords.latitude),
+          longitude: roundLocationForBias(coords.longitude),
+          updatedAt: new Date().toISOString(),
+        })
+        setIsLocating(false)
+        toast.success('Nearby search enabled')
+      },
+      () => {
+        setIsLocating(false)
+        toast.error('Location permission was not granted')
+      },
+      {
+        enableHighAccuracy: false,
+        maximumAge: 10 * 60 * 1000,
+        timeout: 5000,
+      }
+    )
+  }
+
   const autocompleteQuery = useQuery({
-    queryKey: ['places', 'autocomplete', sessionToken, cleanedInput],
+    queryKey: [
+      'places',
+      'autocomplete',
+      sessionToken,
+      cleanedInput,
+      locationBias?.latitude,
+      locationBias?.longitude,
+    ],
     queryFn: async ({ signal }) => {
       await waitForAutocompleteDelay(signal)
       const response = await fetch('/api/places/autocomplete', {
@@ -54,6 +118,12 @@ const PlaceSelector = () => {
         body: JSON.stringify({
           input: cleanedInput,
           sessionToken,
+          locationBias: locationBias
+            ? {
+                latitude: locationBias.latitude,
+                longitude: locationBias.longitude,
+              }
+            : undefined,
         }),
         signal,
       })
@@ -100,9 +170,59 @@ const PlaceSelector = () => {
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="journal-places" className="text-muted-foreground gap-1.5">
-        <MapPin className="size-4" /> Places
-      </Label>
+      <div className="flex items-center justify-between gap-2">
+        <Label
+          htmlFor="journal-places"
+          className="text-muted-foreground gap-1.5"
+        >
+          <MapPin className="size-4" /> Places
+        </Label>
+        <div className="flex items-center gap-1">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant={locationBias ? 'secondary' : 'outline'}
+                  size="sm"
+                  onClick={useNearbyLocation}
+                  disabled={isLocating}
+                  aria-pressed={Boolean(locationBias)}
+                >
+                  {isLocating ? (
+                    <LoaderCircle className="animate-spin" />
+                  ) : (
+                    <LocateFixed />
+                  )}
+                  Use Nearby
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-64">
+                Uses your browser location to improve Google place suggestions.
+                It is saved only on this device and updates only when you click.
+              </TooltipContent>
+            </Tooltip>
+            {locationBias && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => setLocationBias(null)}
+                    aria-label="Stop using nearby location"
+                  >
+                    <X />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  Stop using your saved location
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </TooltipProvider>
+        </div>
+      </div>
       <Combobox
         items={suggestions}
         inputValue={input}

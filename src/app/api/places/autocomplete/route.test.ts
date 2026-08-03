@@ -77,6 +77,56 @@ describe('POST /api/places/autocomplete', () => {
     })
   })
 
+  it('softly biases Google suggestions around a valid nearby location', async () => {
+    server.use(
+      http.post(
+        'https://places.googleapis.com/v1/places:autocomplete',
+        async ({ request }) => {
+          await expect(request.json()).resolves.toEqual({
+            input: 'Cafe',
+            locationBias: {
+              circle: {
+                center: { latitude: -27.47, longitude: 153.025 },
+                radius: 50_000,
+              },
+            },
+          })
+          return HttpResponse.json({ suggestions: [] })
+        }
+      )
+    )
+
+    const response = await POST(
+      createRequest({
+        input: 'Cafe',
+        locationBias: { latitude: -27.47, longitude: 153.025 },
+      })
+    )
+
+    expect(response.status).toBe(200)
+  })
+
+  it('does not forward invalid nearby coordinates to Google', async () => {
+    server.use(
+      http.post(
+        'https://places.googleapis.com/v1/places:autocomplete',
+        async ({ request }) => {
+          await expect(request.json()).resolves.toEqual({ input: 'Cafe' })
+          return HttpResponse.json({ suggestions: [] })
+        }
+      )
+    )
+
+    const response = await POST(
+      createRequest({
+        input: 'Cafe',
+        locationBias: { latitude: -127, longitude: 253 },
+      })
+    )
+
+    expect(response.status).toBe(200)
+  })
+
   it('does not call Google for searches shorter than two characters', async () => {
     const googleRequest = vi.fn()
     server.use(
