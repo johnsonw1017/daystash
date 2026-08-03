@@ -205,7 +205,7 @@ const PlaceSelector = () => {
                 )}
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom" className="max-w-64">
+            <TooltipContent side="top" className="max-w-64">
               {locationBias
                 ? 'Nearby suggestions are active. Click to stop using your saved location.'
                 : 'Use your browser location to improve Google place suggestions. It is saved only on this device.'}
