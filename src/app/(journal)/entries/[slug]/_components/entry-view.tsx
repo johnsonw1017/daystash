@@ -85,7 +85,7 @@ const EntryView = ({ slug }: EntryViewProps) => {
               className="gap-1.5 px-3 py-1.5 text-sm"
             >
               <Link href={place.googleMapsUri} target="_blank" rel="noreferrer">
-                <MapPin className="size-4 text-red-500" />
+                <MapPin className="size-4" />
                 {place.name}
                 <ExternalLink className="text-muted-foreground size-3" />
               </Link>

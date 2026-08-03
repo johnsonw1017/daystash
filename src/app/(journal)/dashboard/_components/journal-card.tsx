@@ -62,7 +62,7 @@ const JournalCard = ({ journal }: { journal: JournalListItem }) => {
                 className="inline-flex items-center gap-1"
                 aria-label={`${journal.placeCount} places`}
               >
-                <MapPin className="size-4 text-red-500" />
+                <MapPin className="size-4" />
                 {journal.placeCount}
               </span>
             )}
