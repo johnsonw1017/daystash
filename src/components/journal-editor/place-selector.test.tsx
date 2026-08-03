@@ -82,7 +82,7 @@ describe('PlaceSelector', () => {
     expect(setPlaces).toHaveBeenCalledWith([])
   })
 
-  it('searches after typing and adds selected Google Place details', async () => {
+  it('adds selected Google Place details with the keyboard', async () => {
     server.use(
       http.post('/api/places/autocomplete', () =>
         HttpResponse.json({
@@ -101,7 +101,8 @@ describe('PlaceSelector', () => {
     const input = screen.getByLabelText('Places')
 
     await userEvent.type(input, 'Fushimi')
-    await userEvent.click(await screen.findByText('Fushimi Inari Taisha'))
+    await screen.findByText('Fushimi Inari Taisha')
+    await userEvent.keyboard('{ArrowDown}{Enter}')
 
     await waitFor(() => expect(setPlaces).toHaveBeenCalledOnce())
     const updatePlaces = setPlaces.mock.calls[0]?.[0]

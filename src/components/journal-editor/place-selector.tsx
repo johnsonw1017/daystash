@@ -173,6 +173,17 @@ const PlaceSelector = () => {
     onError: () => toast.error('Could not add place'),
   })
 
+  const selectPlace = (suggestion: GooglePlaceSuggestion | null) => {
+    if (
+      !suggestion ||
+      places.some((place) => place.googlePlaceId === suggestion.googlePlaceId)
+    ) {
+      return
+    }
+
+    placeDetailsMutation.mutate(suggestion)
+  }
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
@@ -217,6 +228,8 @@ const PlaceSelector = () => {
         items={suggestions}
         inputValue={input}
         onInputValueChange={setInput}
+        onValueChange={selectPlace}
+        value={null}
         itemToStringLabel={(item: GooglePlaceSuggestion) => item.name}
         itemToStringValue={(item: GooglePlaceSuggestion) => item.googlePlaceId}
       >
@@ -256,20 +269,7 @@ const PlaceSelector = () => {
         <ComboboxContent anchor={anchor}>
           <ComboboxList>
             {suggestions.map((suggestion) => (
-              <ComboboxItem
-                key={suggestion.googlePlaceId}
-                value={suggestion}
-                onClick={() => {
-                  if (
-                    !places.some(
-                      (place) =>
-                        place.googlePlaceId === suggestion.googlePlaceId
-                    )
-                  ) {
-                    placeDetailsMutation.mutate(suggestion)
-                  }
-                }}
-              >
+              <ComboboxItem key={suggestion.googlePlaceId} value={suggestion}>
                 <MapPin className="size-4" />
                 <span>
                   <span className="block">{suggestion.name}</span>

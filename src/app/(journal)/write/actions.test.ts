@@ -39,7 +39,10 @@ const createQueryBuilder = (result: unknown) => {
   return builder
 }
 
-const createAdminClientMock = (results: unknown[]) => {
+const createAdminClientMock = (
+  results: unknown[],
+  rpcResult: unknown = { data: null, error: null }
+) => {
   const builders = results.map(createQueryBuilder)
   const from = vi.fn(() => {
     const builder = builders.shift()
@@ -50,12 +53,13 @@ const createAdminClientMock = (results: unknown[]) => {
 
     return builder
   })
+  const rpc = vi.fn().mockResolvedValue(rpcResult)
 
   mockedCreateAdminClient.mockReturnValue(
-    asMockedValue<ReturnType<typeof createAdminClient>>({ from })
+    asMockedValue<ReturnType<typeof createAdminClient>>({ from, rpc })
   )
 
-  return { builders, from }
+  return { builders, from, rpc }
 }
 
 describe('journal write actions', () => {
@@ -186,15 +190,13 @@ describe('journal write actions', () => {
     })
 
     const deleteBuilder = admin.from.mock.results[2].value
-    const updateBuilder = admin.from.mock.results[3].value
 
     expect(deleteBuilder.in).toHaveBeenCalledWith('id', ['orphaned-asset'])
-    expect(updateBuilder.update).toHaveBeenCalledWith(
+    expect(admin.rpc).toHaveBeenCalledWith(
+      'save_journal_with_places',
       expect.objectContaining({
-        title: 'Saved title',
-        thumbnail_asset_id: 'asset-1',
-        draft_blocks: null,
-        has_unsaved_draft: false,
+        p_title: 'Saved title',
+        p_thumbnail_asset_id: 'asset-1',
       })
     )
   })
@@ -254,8 +256,9 @@ describe('journal write actions', () => {
       })
     ).resolves.toMatchObject({ thumbnailAssetId: 'asset-2' })
 
-    expect(admin.from.mock.results[2].value.update).toHaveBeenCalledWith(
-      expect.objectContaining({ thumbnail_asset_id: 'asset-2' })
+    expect(admin.rpc).toHaveBeenCalledWith(
+      'save_journal_with_places',
+      expect.objectContaining({ p_thumbnail_asset_id: 'asset-2' })
     )
   })
 
@@ -284,20 +287,44 @@ describe('journal write actions', () => {
       ],
     })
 
-    expect(admin.from).toHaveBeenNthCalledWith(4, 'places')
-    expect(admin.from).toHaveBeenNthCalledWith(5, 'places')
-    expect(admin.from.mock.results[4].value.insert).toHaveBeenCalledWith([
-      {
-        journal_id: 'journal-id',
-        user_id: 'user-id',
-        name: 'Fushimi Inari Taisha',
-        formatted_address: 'Kyoto, Japan',
-        google_place_id: 'google-place-1',
-        google_maps_uri: 'https://maps.google.com/place/1',
-        latitude: 34.9671,
-        longitude: 135.7727,
-      },
-    ])
+    expect(admin.rpc).toHaveBeenCalledWith('save_journal_with_places', {
+      p_journal_id: 'journal-id',
+      p_user_id: 'user-id',
+      p_title: 'Kyoto',
+      p_blocks: [{ id: 'text-1', type: 'text', content: 'A morning walk' }],
+      p_thumbnail_asset_id: null,
+      p_updated_at: expect.any(String),
+      p_places: [
+        {
+          name: 'Fushimi Inari Taisha',
+          formatted_address: 'Kyoto, Japan',
+          google_place_id: 'google-place-1',
+          google_maps_uri: 'https://maps.google.com/place/1',
+          latitude: 34.9671,
+          longitude: 135.7727,
+        },
+      ],
+    })
+  })
+
+  it('does not report a journal save when the atomic place replacement fails', async () => {
+    const admin = createAdminClientMock(
+      [
+        { data: { id: 'journal-id' }, error: null },
+        { data: [], error: null },
+      ],
+      { data: null, error: { message: 'Could not save places' } }
+    )
+
+    await expect(
+      saveJournal({
+        journalId: 'journal-id',
+        title: 'Kyoto',
+        blocks: [{ id: 'text-1', type: 'text', content: 'A morning walk' }],
+      })
+    ).rejects.toThrow('Could not save places')
+
+    expect(admin.rpc).toHaveBeenCalledOnce()
   })
 
   it('discards an unsaved empty journal by deleting its assets and record', async () => {

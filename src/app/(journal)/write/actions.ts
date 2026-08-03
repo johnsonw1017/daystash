@@ -258,46 +258,24 @@ export const saveJournal = async ({
   })
 
   const supabase = createAdminClient()
-  const { error } = await supabase
-    .from('journals')
-    .update({
-      title: nextJournal.title,
-      blocks: normalizedBlocks,
-      thumbnail_asset_id: thumbnailAssetId,
-      draft_blocks: null,
-      has_unsaved_draft: false,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', nextJournal.journalId)
-    .eq('user_id', user.id)
+  const { error } = await supabase.rpc('save_journal_with_places', {
+    p_journal_id: nextJournal.journalId,
+    p_user_id: user.id,
+    p_title: nextJournal.title,
+    p_blocks: normalizedBlocks,
+    p_thumbnail_asset_id: thumbnailAssetId,
+    p_updated_at: new Date().toISOString(),
+    p_places: normalizedPlaces.map((place) => ({
+      name: place.name,
+      formatted_address: place.formattedAddress,
+      google_place_id: place.googlePlaceId,
+      google_maps_uri: place.googleMapsUri,
+      latitude: place.latitude,
+      longitude: place.longitude,
+    })),
+  })
 
-  if (error) {
-    throw new Error(error.message)
-  }
-
-  const { error: deletePlacesError } = await supabase
-    .from('places')
-    .delete()
-    .eq('journal_id', nextJournal.journalId)
-    .eq('user_id', user.id)
-
-  if (deletePlacesError) throw new Error(deletePlacesError.message)
-
-  if (normalizedPlaces.length) {
-    const { error: insertPlacesError } = await supabase.from('places').insert(
-      normalizedPlaces.map((place) => ({
-        journal_id: nextJournal.journalId,
-        user_id: user.id,
-        name: place.name,
-        formatted_address: place.formattedAddress,
-        google_place_id: place.googlePlaceId,
-        google_maps_uri: place.googleMapsUri,
-        latitude: place.latitude,
-        longitude: place.longitude,
-      }))
-    )
-    if (insertPlacesError) throw new Error(insertPlacesError.message)
-  }
+  if (error) throw new Error(error.message)
 
   return {
     journalId: nextJournal.journalId,
