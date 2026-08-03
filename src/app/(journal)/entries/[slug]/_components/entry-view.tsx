@@ -60,7 +60,7 @@ const EntryView = ({ slug }: EntryViewProps) => {
   }
 
   return (
-    <section className="mx-auto flex w-full max-w-[800px] flex-col gap-6">
+    <section className="mx-auto flex w-full max-w-200 flex-col gap-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="font-serif text-3xl font-semibold md:text-4xl">
