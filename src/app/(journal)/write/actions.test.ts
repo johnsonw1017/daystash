@@ -307,11 +307,21 @@ describe('journal write actions', () => {
     })
   })
 
-  it('does not report a journal save when the atomic place replacement fails', async () => {
+  it('keeps orphaned assets when the atomic place replacement fails', async () => {
     const admin = createAdminClientMock(
       [
         { data: { id: 'journal-id' }, error: null },
-        { data: [], error: null },
+        {
+          data: [
+            {
+              id: 'orphaned-asset',
+              cloudinary_public_id: 'journal/old-photo',
+              width: 800,
+              height: 600,
+            },
+          ],
+          error: null,
+        },
       ],
       { data: null, error: { message: 'Could not save places' } }
     )
@@ -325,6 +335,7 @@ describe('journal write actions', () => {
     ).rejects.toThrow('Could not save places')
 
     expect(admin.rpc).toHaveBeenCalledOnce()
+    expect(admin.from).toHaveBeenCalledTimes(2)
   })
 
   it('discards an unsaved empty journal by deleting its assets and record', async () => {

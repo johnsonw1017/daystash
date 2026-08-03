@@ -252,11 +252,6 @@ export const saveJournal = async ({
     .filter((asset) => !referencedAssetIds.has(asset.id))
     .map((asset) => asset.id)
 
-  await deleteJournalAssets({
-    assetIds: orphanedAssetIds,
-    journalId: nextJournal.journalId,
-  })
-
   const supabase = createAdminClient()
   const { error } = await supabase.rpc('save_journal_with_places', {
     p_journal_id: nextJournal.journalId,
@@ -276,6 +271,11 @@ export const saveJournal = async ({
   })
 
   if (error) throw new Error(error.message)
+
+  await deleteJournalAssets({
+    assetIds: orphanedAssetIds,
+    journalId: nextJournal.journalId,
+  })
 
   return {
     journalId: nextJournal.journalId,
