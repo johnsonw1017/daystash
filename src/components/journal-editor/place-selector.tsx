@@ -101,7 +101,7 @@ const PlaceSelector = () => {
   return (
     <div className="space-y-2">
       <Label htmlFor="journal-places" className="text-muted-foreground gap-1.5">
-        <MapPin className="size-4 text-red-500" /> Places
+        <MapPin className="size-4" /> Places
       </Label>
       <Combobox
         items={suggestions}
@@ -113,7 +113,7 @@ const PlaceSelector = () => {
         <ComboboxChips ref={anchor}>
           {places.map((place) => (
             <ComboboxChip key={place.googlePlaceId} showRemove={false}>
-              <MapPin className="size-3 text-red-500" />
+              <MapPin className="size-3" />
               {place.name}
               <Link
                 href={place.googleMapsUri}
@@ -163,7 +163,7 @@ const PlaceSelector = () => {
                   }
                 }}
               >
-                <MapPin className="size-4 text-red-500" />
+                <MapPin className="size-4" />
                 <span>
                   <span className="block">{suggestion.name}</span>
                   <span className="text-muted-foreground block text-xs">
