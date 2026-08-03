@@ -251,10 +251,7 @@ const PlaceSelector = () => {
               </Button>
             </ComboboxChip>
           ))}
-          <ComboboxChipsInput
-            id="journal-places"
-            placeholder="Search Google Maps…"
-          />
+          <ComboboxChipsInput id="journal-places" placeholder="Add a place…" />
         </ComboboxChips>
         <ComboboxContent anchor={anchor}>
           <ComboboxList>
