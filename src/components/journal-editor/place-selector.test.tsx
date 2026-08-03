@@ -127,7 +127,9 @@ describe('PlaceSelector', () => {
       })
     )
     renderSelector()
-    const useNearbyButton = screen.getByRole('button', { name: 'Use Nearby' })
+    const useNearbyButton = screen.getByRole('button', {
+      name: 'Use nearby place suggestions',
+    })
 
     await userEvent.hover(useNearbyButton)
     expect(await screen.findByRole('tooltip')).toHaveTextContent(
@@ -161,7 +163,7 @@ describe('PlaceSelector', () => {
     )
   })
 
-  it('lets the user remove a saved nearby bias', async () => {
+  it('turns off a saved nearby bias from the active toggle', async () => {
     const { store } = renderSelector()
     act(() => {
       store.set(placeSearchBiasAtom, {
@@ -172,13 +174,14 @@ describe('PlaceSelector', () => {
     })
 
     const stopNearbyButton = await screen.findByRole('button', {
-      name: 'Stop using nearby location',
+      name: 'Disable nearby place suggestions',
     })
+    expect(stopNearbyButton).toHaveAttribute('aria-pressed', 'true')
     await userEvent.click(stopNearbyButton)
 
     expect(store.get(placeSearchBiasAtom)).toBeNull()
     expect(
-      screen.queryByRole('button', { name: 'Stop using nearby location' })
-    ).not.toBeInTheDocument()
+      screen.getByRole('button', { name: 'Use nearby place suggestions' })
+    ).toHaveAttribute('aria-pressed', 'false')
   })
 })

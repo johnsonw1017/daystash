@@ -63,7 +63,12 @@ const PlaceSelector = () => {
   const [isLocating, setIsLocating] = useState(false)
   const cleanedInput = input.trim()
 
-  const useNearbyLocation = () => {
+  const toggleNearbyLocation = () => {
+    if (locationBias) {
+      setLocationBias(null)
+      return
+    }
+
     if (!navigator.geolocation) {
       toast.error('Location is not available in this browser')
       return
@@ -177,51 +182,36 @@ const PlaceSelector = () => {
         >
           <MapPin className="size-4" /> Places
         </Label>
-        <div className="flex items-center gap-1">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant={locationBias ? 'secondary' : 'outline'}
-                  size="sm"
-                  onClick={useNearbyLocation}
-                  disabled={isLocating}
-                  aria-pressed={Boolean(locationBias)}
-                >
-                  {isLocating ? (
-                    <LoaderCircle className="animate-spin" />
-                  ) : (
-                    <LocateFixed />
-                  )}
-                  Use Nearby
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="max-w-64">
-                Uses your browser location to improve Google place suggestions.
-                It is saved only on this device and updates only when you click.
-              </TooltipContent>
-            </Tooltip>
-            {locationBias && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() => setLocationBias(null)}
-                    aria-label="Stop using nearby location"
-                  >
-                    <X />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  Stop using your saved location
-                </TooltipContent>
-              </Tooltip>
-            )}
-          </TooltipProvider>
-        </div>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant={locationBias ? 'default' : 'outline'}
+                size="icon-sm"
+                onClick={toggleNearbyLocation}
+                disabled={isLocating}
+                aria-label={
+                  locationBias
+                    ? 'Disable nearby place suggestions'
+                    : 'Use nearby place suggestions'
+                }
+                aria-pressed={Boolean(locationBias)}
+              >
+                {isLocating ? (
+                  <LoaderCircle className="animate-spin" />
+                ) : (
+                  <LocateFixed />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="max-w-64">
+              {locationBias
+                ? 'Nearby suggestions are active. Click to stop using your saved location.'
+                : 'Use your browser location to improve Google place suggestions. It is saved only on this device.'}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
       <Combobox
         items={suggestions}
