@@ -170,13 +170,13 @@ const DashboardJournals = () => {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">
-            Your Journals
+            Your Stash
           </h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            Browse your latest entries.
+            Browse your journals by month and year.
           </p>
         </div>
-        <Button variant="accent" asChild>
+        <Button variant="accent" className="hidden lg:inline-flex" asChild>
           <Link href="/write">
             <SquarePen />
             Write

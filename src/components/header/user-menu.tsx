@@ -17,6 +17,7 @@ import ThemeToggle from '@/components/header/theme-toggle'
 import { logout } from '@/actions/auth'
 import { useAuthUser, useRefreshAuthUser } from '@/hooks/use-auth-user'
 import { Suspense } from 'react'
+import type { ReactNode } from 'react'
 
 const UserMenuSkeleton = () => (
   <div className="flex size-8 items-center justify-center rounded-md border border-transparent">
@@ -24,7 +25,11 @@ const UserMenuSkeleton = () => (
   </div>
 )
 
-const UserMenu = () => {
+type UserMenuProps = {
+  trigger?: ReactNode
+}
+
+const UserMenu = ({ trigger }: UserMenuProps) => {
   const authUser = useAuthUser()
   const refreshAuthUser = useRefreshAuthUser()
   const router = useRouter()
@@ -48,7 +53,7 @@ const UserMenu = () => {
   }
 
   if (authUser.isLoading) {
-    return <UserMenuSkeleton />
+    return trigger ?? <UserMenuSkeleton />
   }
 
   if (!authUser.isLoggedIn) {
@@ -62,14 +67,16 @@ const UserMenu = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className="shadow-none"
-          aria-label="Open user menu"
-        >
-          <Menu className="size-5" />
-        </Button>
+        {trigger ?? (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="size-11 shadow-none lg:size-8"
+            aria-label="Open user menu"
+          >
+            <Menu className="size-6 lg:size-5" />
+          </Button>
+        )}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-32">
         <DropdownMenuItem asChild>
@@ -84,7 +91,7 @@ const UserMenu = () => {
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link href="/dashboard" className="w-full">
-            Dashboard
+            Stash
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem variant="destructive" onClick={handleLogout}>
@@ -97,10 +104,10 @@ const UserMenu = () => {
   )
 }
 
-const UserMenuWrapper = () => {
+const UserMenuWrapper = ({ trigger }: UserMenuProps) => {
   return (
     <Suspense fallback={<UserMenuSkeleton />}>
-      <UserMenu />
+      <UserMenu trigger={trigger} />
     </Suspense>
   )
 }

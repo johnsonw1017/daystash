@@ -51,28 +51,33 @@ const ImageActions = ({
       type="button"
       variant="secondary"
       size="icon-xs"
+      className="size-11 lg:size-6"
       onClick={onEdit}
       aria-label="Edit images"
     >
-      <Pencil />
+      <Pencil className="size-5 lg:size-3" />
     </Button>
     <Button
       type="button"
       variant="secondary"
       size="icon-xs"
+      className="size-11 lg:size-6"
       onClick={onToggleStar}
       aria-label={isStarred ? 'Unstar image' : 'Star image'}
     >
-      <Star className={isStarred ? 'fill-current' : undefined} />
+      <Star
+        className={isStarred ? 'size-5 fill-current lg:size-3' : 'size-5 lg:size-3'}
+      />
     </Button>
     <Button
       type="button"
       variant="destructive"
       size="icon-xs"
+      className="size-11 lg:size-6"
       onClick={onRemove}
       aria-label="Delete image"
     >
-      <Trash2 />
+      <Trash2 className="size-5 lg:size-3" />
     </Button>
   </div>
 )

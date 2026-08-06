@@ -1,4 +1,5 @@
 import { requireAuth } from '@/lib/auth/require-auth'
+import JournalMobileShell from '@/components/navigation/journal-mobile-shell'
 
 type JournalLayoutProps = {
   children: React.ReactNode
@@ -6,7 +7,7 @@ type JournalLayoutProps = {
 
 const JournalLayout = async ({ children }: JournalLayoutProps) => {
   await requireAuth('/dashboard')
-  return children
+  return <JournalMobileShell>{children}</JournalMobileShell>
 }
 
 export default JournalLayout

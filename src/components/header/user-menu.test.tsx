@@ -46,5 +46,9 @@ describe('UserMenu', () => {
     expect(
       screen.getByRole('button', { name: 'Toggle dark mode' })
     ).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Stash' })).toHaveAttribute(
+      'href',
+      '/dashboard'
+    )
   })
 })
