@@ -2,8 +2,7 @@
 
 import type { ReactNode } from 'react'
 import { usePathname } from 'next/navigation'
-import { BookOpen, Menu, Pencil, Plus, SquarePen } from 'lucide-react'
-import UserMenu from '@/components/header/user-menu'
+import { BookOpen, Pencil, Plus, SquarePen } from 'lucide-react'
 import {
   MobileToolbar,
   MobileToolbarAction,
@@ -25,20 +24,11 @@ const JournalMobileNavigation = ({ pathname }: { pathname: string }) => {
     return (
       <MobileToolbar label="Journal navigation">
         <MobileToolbarAction
-          active
-          icon={BookOpen}
-          label="Stash"
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-        />
-        <MobileToolbarAction
+          className="w-full max-w-sm justify-self-center"
           href="/write"
           icon={SquarePen}
           label="Write"
           variant="accent"
-        />
-        <UserMenu
-          mobileClassName="flex"
-          trigger={<MobileToolbarAction icon={Menu} label="Menu" />}
         />
       </MobileToolbar>
     )
@@ -48,13 +38,13 @@ const JournalMobileNavigation = ({ pathname }: { pathname: string }) => {
     return (
       <MobileToolbar label="Journal entry actions">
         <MobileToolbarAction href="/dashboard" icon={BookOpen} label="Stash" />
-        <MobileToolbarAction href="/write" icon={Plus} label="New" />
         <MobileToolbarAction
           href={`${pathname}/edit`}
           icon={Pencil}
           label="Edit entry"
           variant="accent"
         />
+        <MobileToolbarAction href="/write" icon={Plus} label="New" />
       </MobileToolbar>
     )
   }

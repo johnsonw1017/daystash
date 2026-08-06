@@ -1,64 +1,54 @@
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { render, screen, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import JournalMobileShell from '@/components/navigation/journal-mobile-shell'
 
 let pathname = '/dashboard'
-const scrollTo = vi.fn()
 
 vi.mock('next/navigation', () => ({
   usePathname: () => pathname,
 }))
 
-vi.mock('@/components/header/user-menu', () => ({
-  default: ({ trigger }: { trigger?: React.ReactNode }) => trigger,
-}))
-
 describe('JournalMobileShell', () => {
   beforeEach(() => {
     pathname = '/dashboard'
-    scrollTo.mockReset()
-    window.scrollTo = scrollTo
   })
 
-  it('shows equal primary actions and scrolls to the top from Stash', async () => {
-    const user = userEvent.setup()
+  it('shows Write as the only Stash toolbar action', () => {
     render(
       <JournalMobileShell>
         <main>Journal content</main>
       </JournalMobileShell>
     )
 
-    expect(
-      screen.getByRole('navigation', { name: 'Journal navigation' })
-    ).toBeInTheDocument()
-    const stashAction = screen.getByRole('button', { name: 'Stash' })
-    expect(stashAction).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByRole('link', { name: 'Write' })).toHaveAttribute(
-      'href',
-      '/write'
-    )
-    expect(screen.getByRole('button', { name: 'Menu' })).toBeInTheDocument()
+    const navigation = screen.getByRole('navigation', {
+      name: 'Journal navigation',
+    })
+    const writeAction = within(navigation).getByRole('link', { name: 'Write' })
+    expect(writeAction).toHaveAttribute('href', '/write')
+    expect(writeAction).toHaveClass('max-w-sm', 'justify-self-center')
+    expect(within(navigation).getAllByRole('link')).toHaveLength(1)
     expect(screen.getByText('Journal content').parentElement).toHaveClass(
       'pb-24'
     )
-
-    await user.click(stashAction)
-    expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' })
   })
 
-  it('shows entry actions with a slug-specific edit link', () => {
+  it('centres the slug-specific edit action between Stash and New', () => {
     pathname = '/entries/sunday-walk'
 
     render(<JournalMobileShell>Entry content</JournalMobileShell>)
 
-    expect(
-      screen.getByRole('navigation', { name: 'Journal entry actions' })
-    ).toBeInTheDocument()
+    const navigation = screen.getByRole('navigation', {
+      name: 'Journal entry actions',
+    })
     expect(screen.getByRole('link', { name: 'Edit entry' })).toHaveAttribute(
       'href',
       '/entries/sunday-walk/edit'
     )
+    expect(
+      within(navigation)
+        .getAllByRole('link')
+        .map((link) => link.textContent)
+    ).toEqual(['Stash', 'Edit entry', 'New'])
   })
 
   it('reserves toolbar space without duplicating navigation in the editor', () => {
