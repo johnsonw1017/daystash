@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import UserMenu from '@/components/header/user-menu'
 import { useAuthUser } from '@/hooks/use-auth-user'
@@ -34,23 +33,14 @@ describe('UserMenu', () => {
     })
   })
 
-  it('renders a mobile trigger and keeps the compact desktop menu', async () => {
-    const user = userEvent.setup()
+  it('renders responsive user menu drawer triggers', () => {
     render(<UserMenu />)
 
     const triggers = screen.getAllByRole('button', {
       name: 'Open user menu',
     })
     expect(triggers).toHaveLength(2)
-    await user.click(triggers[1])
-
-    expect(screen.queryByText(/welcome/i)).not.toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Toggle dark mode' })
-    ).toBeInTheDocument()
-    expect(screen.getByRole('menuitem', { name: 'Stash' })).toHaveAttribute(
-      'href',
-      '/dashboard'
-    )
+    expect(triggers[0].parentElement).toHaveClass('lg:hidden')
+    expect(triggers[1].parentElement).toHaveClass('hidden', 'lg:block')
   })
 })

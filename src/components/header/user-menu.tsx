@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from 'react'
 
-import { BookOpen, Home, LogOut, Menu, SquarePen } from 'lucide-react'
+import { BookOpen, Home, LogOut, Menu, SquarePen, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Drawer,
@@ -21,13 +21,6 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from '@/components/ui/drawer'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
 import ThemeToggle from '@/components/header/theme-toggle'
 import { logout } from '@/actions/auth'
@@ -69,6 +62,88 @@ const DefaultMenuTrigger = forwardRef<
   )
 })
 
+type UserMenuDrawerProps = {
+  className: string
+  direction: 'bottom' | 'right'
+  onLogout: () => void
+  trigger: ReactNode
+}
+
+const UserMenuDrawer = ({
+  className,
+  direction,
+  onLogout,
+  trigger,
+}: UserMenuDrawerProps) => (
+  <div className={className}>
+    <Drawer direction={direction}>
+      <DrawerTrigger asChild>{trigger}</DrawerTrigger>
+      <DrawerContent
+        style={
+          direction === 'bottom'
+            ? { paddingBottom: 'env(safe-area-inset-bottom)' }
+            : undefined
+        }
+      >
+        <div className="mx-auto flex w-full max-w-lg flex-1 flex-col">
+          <DrawerClose asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="absolute top-4 right-4 hidden lg:inline-flex"
+              aria-label="Close menu"
+            >
+              <X />
+            </Button>
+          </DrawerClose>
+          <DrawerHeader className="text-left">
+            <DrawerTitle>Menu</DrawerTitle>
+            <DrawerDescription>
+              Navigate Daystash and manage your preferences.
+            </DrawerDescription>
+          </DrawerHeader>
+          <nav aria-label="User navigation" className="grid gap-2 px-4">
+            {navigationItems.map(({ href, icon: Icon, label }) => (
+              <DrawerClose key={href} asChild>
+                <Button
+                  variant="outline"
+                  className="h-14 justify-start px-4"
+                  asChild
+                >
+                  <Link href={href}>
+                    <Icon className="size-5" />
+                    {label}
+                  </Link>
+                </Button>
+              </DrawerClose>
+            ))}
+          </nav>
+          <div className="px-4 pt-2">
+            <div className="flex h-14 items-center justify-between rounded-md border px-4">
+              <span className="text-sm font-medium">Appearance</span>
+              <ThemeToggle />
+            </div>
+          </div>
+          <DrawerFooter>
+            <DrawerClose asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                className="text-destructive hover:bg-destructive/10 hover:text-destructive h-12"
+                onClick={onLogout}
+              >
+                <LogOut className="size-5" />
+                Logout
+              </Button>
+            </DrawerClose>
+          </DrawerFooter>
+        </div>
+      </DrawerContent>
+    </Drawer>
+  </div>
+)
+
 const UserMenu = ({ mobileClassName, trigger }: UserMenuProps) => {
   const authUser = useAuthUser()
   const refreshAuthUser = useRefreshAuthUser()
@@ -106,82 +181,18 @@ const UserMenu = ({ mobileClassName, trigger }: UserMenuProps) => {
 
   return (
     <>
-      <div className={cn('lg:hidden', mobileClassName)}>
-        <Drawer direction="bottom">
-          <DrawerTrigger asChild>
-            {trigger ?? <DefaultMenuTrigger />}
-          </DrawerTrigger>
-          <DrawerContent
-            style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
-          >
-            <div className="mx-auto w-full max-w-lg">
-              <DrawerHeader className="text-left">
-                <DrawerTitle>Menu</DrawerTitle>
-                <DrawerDescription>
-                  Navigate Daystash and manage your preferences.
-                </DrawerDescription>
-              </DrawerHeader>
-              <nav aria-label="User navigation" className="grid gap-2 px-4">
-                {navigationItems.map(({ href, icon: Icon, label }) => (
-                  <DrawerClose key={href} asChild>
-                    <Button
-                      variant="outline"
-                      className="h-14 justify-start px-4"
-                      asChild
-                    >
-                      <Link href={href}>
-                        <Icon className="size-5" />
-                        {label}
-                      </Link>
-                    </Button>
-                  </DrawerClose>
-                ))}
-              </nav>
-              <div className="px-4 pt-2">
-                <div className="flex h-14 items-center justify-between rounded-md border px-4">
-                  <span className="text-sm font-medium">Appearance</span>
-                  <ThemeToggle />
-                </div>
-              </div>
-              <DrawerFooter>
-                <DrawerClose asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="text-destructive hover:bg-destructive/10 hover:text-destructive h-12"
-                    onClick={handleLogout}
-                  >
-                    <LogOut className="size-5" />
-                    Logout
-                  </Button>
-                </DrawerClose>
-              </DrawerFooter>
-            </div>
-          </DrawerContent>
-        </Drawer>
-      </div>
-
-      <div className="hidden lg:block">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            {trigger ?? <DefaultMenuTrigger />}
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="min-w-32">
-            {navigationItems.map(({ href, label }) => (
-              <DropdownMenuItem key={href} asChild>
-                <Link href={href} className="w-full">
-                  {label}
-                </Link>
-              </DropdownMenuItem>
-            ))}
-            <DropdownMenuItem variant="destructive" onClick={handleLogout}>
-              Logout
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <ThemeToggle />
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      <UserMenuDrawer
+        className={cn('lg:hidden', mobileClassName)}
+        direction="bottom"
+        onLogout={handleLogout}
+        trigger={trigger ?? <DefaultMenuTrigger />}
+      />
+      <UserMenuDrawer
+        className="hidden lg:block"
+        direction="right"
+        onLogout={handleLogout}
+        trigger={trigger ?? <DefaultMenuTrigger />}
+      />
     </>
   )
 }
