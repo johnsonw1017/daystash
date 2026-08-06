@@ -200,6 +200,7 @@ const PlaceSelector = () => {
                 type="button"
                 variant={locationBias ? 'default' : 'outline'}
                 size="icon-sm"
+                className="size-11 lg:size-8"
                 onClick={toggleNearbyLocation}
                 disabled={isLocating}
                 aria-label={
@@ -210,9 +211,9 @@ const PlaceSelector = () => {
                 aria-pressed={Boolean(locationBias)}
               >
                 {isLocating ? (
-                  <LoaderCircle className="animate-spin" />
+                  <LoaderCircle className="size-5 animate-spin lg:size-4" />
                 ) : (
-                  <LocateFixed />
+                  <LocateFixed className="size-5 lg:size-4" />
                 )}
               </Button>
             </TooltipTrigger>

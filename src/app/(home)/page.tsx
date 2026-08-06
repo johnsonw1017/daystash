@@ -11,7 +11,7 @@ const Home = () => {
   const isLoggedIn = authUser.isLoggedIn
 
   return (
-    <div className="bg-background flex min-h-screen flex-col items-center overflow-hidden">
+    <div className="bg-background flex min-h-[calc(100svh-4rem)] flex-col items-center overflow-x-hidden">
       <div className="mt-16 flex flex-col items-center px-4">
         <Tree src="/tree.svg" />
       </div>

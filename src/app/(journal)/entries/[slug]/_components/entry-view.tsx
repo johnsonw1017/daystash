@@ -70,7 +70,7 @@ const EntryView = ({ slug }: EntryViewProps) => {
             {dateFormatter.format(new Date(journal.created_at))}
           </p>
         </div>
-        <Button asChild>
+        <Button className="hidden lg:inline-flex" asChild>
           <Link href={`/entries/${journal.slug}/edit`}>Edit</Link>
         </Button>
       </div>

@@ -21,7 +21,7 @@ const YearTimeline = ({
     >
       {isLoading
         ? Array.from({ length: 4 }, (_, index) => (
-            <Skeleton key={index} className="h-8 w-16 shrink-0 lg:w-full" />
+            <Skeleton key={index} className="h-11 w-16 shrink-0 lg:h-8 lg:w-full" />
           ))
         : years.map((year) => (
             <Button
@@ -29,7 +29,7 @@ const YearTimeline = ({
               type="button"
               variant={year === activeYear ? 'default' : 'ghost'}
               size="sm"
-              className="h-8 min-w-16 shrink-0 px-2 text-sm lg:w-full"
+              className="h-11 min-w-16 shrink-0 px-2 text-sm lg:h-8 lg:w-full"
               aria-current={year === activeYear ? 'true' : undefined}
               onClick={() => onSelectYear(year)}
             >

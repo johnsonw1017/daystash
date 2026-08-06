@@ -237,7 +237,7 @@ const ListBlock = ({ block, blockId }: ListBlockProps) => {
           size="xs"
           onClick={() => updateListStyle(blockId, 'bullet')}
           aria-pressed={block.style === 'bullet'}
-          className="h-7 px-2.5"
+          className="h-11 px-3 lg:h-7 lg:px-2.5"
         >
           <List />
           <span>Bullets</span>
@@ -248,7 +248,7 @@ const ListBlock = ({ block, blockId }: ListBlockProps) => {
           size="xs"
           onClick={() => updateListStyle(blockId, 'numbered')}
           aria-pressed={block.style === 'numbered'}
-          className="h-7 px-2.5"
+          className="h-11 px-3 lg:h-7 lg:px-2.5"
         >
           <ListOrdered />
           <span>Numbers</span>

@@ -4,7 +4,12 @@ import type { DragEndEvent } from '@dnd-kit/react'
 import { DragDropProvider } from '@dnd-kit/react'
 import { isSortableOperation, useSortable } from '@dnd-kit/react/sortable'
 import { Provider as JotaiProvider } from 'jotai'
-import { useState, type KeyboardEvent, type ReactNode } from 'react'
+import {
+  useState,
+  type FocusEvent,
+  type KeyboardEvent,
+  type ReactNode,
+} from 'react'
 import { createJournalBlocksStore } from '@/components/journal-editor/atoms'
 import BlockMenu from '@/components/journal-editor/blocks/block-menu'
 import ImageDialog from '@/components/journal-editor/image-dialog'
@@ -13,6 +18,7 @@ import useJournalEditor from '@/components/journal-editor/hooks/use-journal-edit
 import { FocusRegistryProvider } from '@/components/journal-editor/hooks/use-focus-registry'
 import useJournalSessionCleanup from '@/components/journal-editor/hooks/use-journal-session-cleanup'
 import JournalHeader from '@/components/journal-editor/journal-header'
+import MobileEditorToolbar from '@/components/journal-editor/mobile-editor-toolbar'
 import PlaceSelector from '@/components/journal-editor/place-selector'
 import type { JournalEditorProps } from '@/components/journal-editor/types'
 import { getTextareaLineBoundaryState } from '@/components/journal-editor/utils'
@@ -24,12 +30,16 @@ type SortableBlockRowProps = {
   blockId: string
   index: number
   children: ReactNode
+  isReordering: boolean
+  onActivate: (blockId: string) => void
 }
 
 const SortableBlockRow = ({
   blockId,
   index,
   children,
+  isReordering,
+  onActivate,
 }: SortableBlockRowProps) => {
   const { handleRef, isDragging, ref } = useSortable({
     id: blockId,
@@ -44,10 +54,13 @@ const SortableBlockRow = ({
         'group relative overflow-visible',
         isDragging && 'z-10 opacity-70'
       )}
+      onPointerDownCapture={() => onActivate(blockId)}
     >
-      <div className="mb-1 flex justify-start sm:absolute sm:top-0 sm:-left-20 sm:mb-0">
-        <BlockMenu blockId={blockId} dragHandleRef={handleRef} />
-      </div>
+      <BlockMenu
+        blockId={blockId}
+        dragHandleRef={handleRef}
+        isReordering={isReordering}
+      />
 
       {children}
     </div>
@@ -59,6 +72,12 @@ const JournalEditorContent = () => {
 
   const { blocks, focusBlock, getNextBlock, getPreviousBlock, moveBlock } =
     useJournalEditor()
+  const [activeBlockId, setActiveBlockId] = useState('')
+  const [isAddBlockOpen, setIsAddBlockOpen] = useState(false)
+  const [isReordering, setIsReordering] = useState(false)
+  const insertionBlockId = blocks.some((block) => block.id === activeBlockId)
+    ? activeBlockId
+    : (blocks.at(-1)?.id ?? '')
 
   const handleDragEnd = ({ canceled, operation }: DragEndEvent) => {
     if (canceled) return
@@ -133,26 +152,50 @@ const JournalEditorContent = () => {
     focusBlock(adjacentBlock.id, isMovingUp ? 'end' : 'start')
   }
 
+  const handleFocusCapture = (event: FocusEvent<HTMLElement>) => {
+    const target = event.target
+    if (!(target instanceof HTMLElement)) return
+
+    const blockId = target.dataset.blockId
+    if (blockId) setActiveBlockId(blockId)
+  }
+
   return (
-    <section
-      className="mx-auto flex w-full max-w-200 flex-col gap-4"
-      onKeyDownCapture={handleKeyDownCapture}
-    >
-      <JournalHeader />
-      <PlaceSelector />
+    <>
+      <section
+        className="mx-auto flex w-full max-w-200 flex-col gap-4"
+        onFocusCapture={handleFocusCapture}
+        onKeyDownCapture={handleKeyDownCapture}
+      >
+        <JournalHeader />
+        <PlaceSelector />
 
-      <DragDropProvider onDragEnd={handleDragEnd}>
-        <div className="space-y-5">
-          {blocks.map((block, index) => (
-            <SortableBlockRow key={block.id} blockId={block.id} index={index}>
-              <ResolveBlock block={block} blockId={block.id} />
-            </SortableBlockRow>
-          ))}
-        </div>
-      </DragDropProvider>
+        <DragDropProvider onDragEnd={handleDragEnd}>
+          <div className="space-y-5">
+            {blocks.map((block, index) => (
+              <SortableBlockRow
+                key={block.id}
+                blockId={block.id}
+                index={index}
+                isReordering={isReordering}
+                onActivate={setActiveBlockId}
+              >
+                <ResolveBlock block={block} blockId={block.id} />
+              </SortableBlockRow>
+            ))}
+          </div>
+        </DragDropProvider>
 
-      <ImageDialog />
-    </section>
+        <ImageDialog />
+      </section>
+      <MobileEditorToolbar
+        activeBlockId={insertionBlockId}
+        isAddBlockOpen={isAddBlockOpen}
+        isReordering={isReordering}
+        onAddBlockOpenChange={setIsAddBlockOpen}
+        onReorderingChange={setIsReordering}
+      />
+    </>
   )
 }
 

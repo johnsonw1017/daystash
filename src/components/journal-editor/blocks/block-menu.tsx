@@ -1,10 +1,8 @@
 'use client'
 
 import type { RefCallback } from 'react'
-import { useSetAtom } from 'jotai'
 import { GripVertical, ImageIcon, List, Plus, Type } from 'lucide-react'
-import { imageDialogStateAtom } from '@/components/journal-editor/atoms'
-import useJournalEditor from '@/components/journal-editor/hooks/use-journal-editor'
+import useBlockInsertion from '@/components/journal-editor/hooks/use-block-insertion'
 import { Button, buttonVariants } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -17,24 +15,34 @@ import { cn } from '@/lib/utils'
 type BlockMenuProps = {
   blockId: string
   dragHandleRef?: RefCallback<HTMLButtonElement>
+  isReordering?: boolean
 }
 
-const BlockMenu = ({ blockId, dragHandleRef }: BlockMenuProps) => {
-  const setImageDialogState = useSetAtom(imageDialogStateAtom)
-  const { insertBlockBelow } = useJournalEditor()
+const BlockMenu = ({
+  blockId,
+  dragHandleRef,
+  isReordering = false,
+}: BlockMenuProps) => {
+  const { insertImage, insertList, insertText } = useBlockInsertion(blockId)
 
   return (
-    <div className="flex items-center gap-1">
+    <div
+      className={cn(
+        'mb-1 items-center gap-1 lg:absolute lg:top-0 lg:-left-20 lg:mb-0 lg:flex',
+        isReordering ? 'flex' : 'hidden'
+      )}
+    >
       <button
         ref={dragHandleRef}
         type="button"
         className={cn(
           buttonVariants({ variant: 'ghost', size: 'icon-sm' }),
-          'cursor-grab opacity-100 transition-opacity active:cursor-grabbing sm:opacity-0 sm:group-hover:opacity-100'
+          'cursor-grab transition-opacity active:cursor-grabbing lg:opacity-0 lg:group-hover:opacity-100',
+          isReordering ? 'size-11 lg:size-8' : 'hidden lg:inline-flex'
         )}
         aria-label="Reorder block"
       >
-        <GripVertical />
+        <GripVertical className="size-5 lg:size-4" />
       </button>
 
       <DropdownMenu>
@@ -43,32 +51,23 @@ const BlockMenu = ({ blockId, dragHandleRef }: BlockMenuProps) => {
             type="button"
             variant="outline"
             size="icon-sm"
-            className="opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
+            className="hidden opacity-0 transition-opacity lg:inline-flex lg:group-hover:opacity-100"
             aria-label="Open block tools"
           >
             <Plus />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" side="right" className="min-w-36">
-          <DropdownMenuItem onSelect={() => insertBlockBelow(blockId, 'text')}>
+          <DropdownMenuItem onSelect={insertText}>
             <Type />
             <span>Text</span>
           </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => insertBlockBelow(blockId, 'list')}>
+          <DropdownMenuItem onSelect={insertList}>
             <List />
             <span>List</span>
           </DropdownMenuItem>
           <DropdownMenuItem
-            onSelect={() => {
-              setImageDialogState({
-                isOpen: true,
-                insertBelowBlockId: blockId,
-                targetBlockId: null,
-                mobileSession: null,
-                mode: 'device',
-                pendingFiles: [],
-              })
-            }}
+            onSelect={insertImage}
           >
             <ImageIcon />
             <span>Image</span>

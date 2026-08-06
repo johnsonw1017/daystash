@@ -34,17 +34,44 @@ describe('UserMenu', () => {
     })
   })
 
-  it('opens a compact navigation menu with the theme control', async () => {
+  it('renders responsive user menu drawer triggers', () => {
+    render(<UserMenu />)
+
+    const triggers = screen.getAllByRole('button', {
+      name: 'Open user menu',
+    })
+    expect(triggers).toHaveLength(2)
+    expect(triggers[0].parentElement).toHaveClass('lg:hidden')
+    expect(triggers[1].parentElement).toHaveClass('hidden', 'lg:block')
+  })
+
+  it('opens the mobile drawer with navigation and account actions', async () => {
     const user = userEvent.setup()
     render(<UserMenu />)
 
-    const trigger = screen.getByRole('button', { name: 'Open user menu' })
-    expect(trigger).toBeInTheDocument()
-    await user.click(trigger)
+    const [mobileTrigger] = screen.getAllByRole('button', {
+      name: 'Open user menu',
+    })
+    await user.click(mobileTrigger)
 
-    expect(screen.queryByText(/welcome/i)).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('navigation', { name: 'User navigation' })
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute(
+      'href',
+      '/'
+    )
+    expect(screen.getByRole('link', { name: 'Write' })).toHaveAttribute(
+      'href',
+      '/write'
+    )
+    expect(screen.getByRole('link', { name: 'Stash' })).toHaveAttribute(
+      'href',
+      '/dashboard'
+    )
     expect(
       screen.getByRole('button', { name: 'Toggle dark mode' })
     ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Logout' })).toBeInTheDocument()
   })
 })

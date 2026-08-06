@@ -64,11 +64,12 @@ const EntryEdit = ({ slug }: EntryEditProps) => {
           <DialogTrigger asChild>
             <Button
               type="button"
-              variant="destructive"
+              variant="ghost"
               size="icon"
+              className="text-destructive hover:bg-destructive/10 hover:text-destructive size-11 lg:size-9"
               aria-label="Delete journal"
             >
-              <Trash2 />
+              <Trash2 className="size-5 lg:size-4" />
             </Button>
           </DialogTrigger>
           <DialogContent>
