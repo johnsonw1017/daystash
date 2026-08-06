@@ -1,5 +1,6 @@
 'use client'
 
+import { useRef } from 'react'
 import { ImageIcon, List, Type } from 'lucide-react'
 import useBlockInsertion from '@/components/journal-editor/hooks/use-block-insertion'
 import { Button } from '@/components/ui/button'
@@ -25,14 +26,24 @@ const AddBlockDrawer = ({
   open,
 }: AddBlockDrawerProps) => {
   const { insertImage, insertList, insertText } = useBlockInsertion(blockId)
+  const pendingActionRef = useRef<(() => void) | null>(null)
 
   const selectAction = (action: () => void) => {
-    onOpenChange(false)
-    action()
+    pendingActionRef.current = action
   }
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
+    <Drawer
+      open={open}
+      onOpenChange={onOpenChange}
+      onAnimationEnd={(isOpen) => {
+        if (isOpen) return
+
+        const pendingAction = pendingActionRef.current
+        pendingActionRef.current = null
+        pendingAction?.()
+      }}
+    >
       <DrawerContent>
         <div className="mx-auto w-full max-w-lg">
           <DrawerHeader className="text-left">
@@ -42,33 +53,39 @@ const AddBlockDrawer = ({
             </DrawerDescription>
           </DrawerHeader>
           <div className="grid gap-2 px-4">
-            <Button
-              type="button"
-              variant="outline"
-              className="h-14 justify-start px-4"
-              onClick={() => selectAction(insertText)}
-            >
-              <Type className="size-5" />
-              Text
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="h-14 justify-start px-4"
-              onClick={() => selectAction(insertList)}
-            >
-              <List className="size-5" />
-              List
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="h-14 justify-start px-4"
-              onClick={() => selectAction(insertImage)}
-            >
-              <ImageIcon className="size-5" />
-              Images
-            </Button>
+            <DrawerClose asChild>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-14 justify-start px-4"
+                onClick={() => selectAction(insertText)}
+              >
+                <Type className="size-5" />
+                Text
+              </Button>
+            </DrawerClose>
+            <DrawerClose asChild>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-14 justify-start px-4"
+                onClick={() => selectAction(insertList)}
+              >
+                <List className="size-5" />
+                List
+              </Button>
+            </DrawerClose>
+            <DrawerClose asChild>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-14 justify-start px-4"
+                onClick={() => selectAction(insertImage)}
+              >
+                <ImageIcon className="size-5" />
+                Images
+              </Button>
+            </DrawerClose>
           </div>
           <DrawerFooter>
             <DrawerClose asChild>

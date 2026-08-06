@@ -26,6 +26,10 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 })
 
+HTMLElement.prototype.setPointerCapture = vi.fn()
+HTMLElement.prototype.releasePointerCapture = vi.fn()
+HTMLElement.prototype.hasPointerCapture = vi.fn()
+
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => {
   window.localStorage.clear()
