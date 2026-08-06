@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import UserMenu from '@/components/header/user-menu'
 import { useAuthUser } from '@/hooks/use-auth-user'
@@ -42,5 +43,35 @@ describe('UserMenu', () => {
     expect(triggers).toHaveLength(2)
     expect(triggers[0].parentElement).toHaveClass('lg:hidden')
     expect(triggers[1].parentElement).toHaveClass('hidden', 'lg:block')
+  })
+
+  it('opens the mobile drawer with navigation and account actions', async () => {
+    const user = userEvent.setup()
+    render(<UserMenu />)
+
+    const [mobileTrigger] = screen.getAllByRole('button', {
+      name: 'Open user menu',
+    })
+    await user.click(mobileTrigger)
+
+    expect(
+      screen.getByRole('navigation', { name: 'User navigation' })
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute(
+      'href',
+      '/'
+    )
+    expect(screen.getByRole('link', { name: 'Write' })).toHaveAttribute(
+      'href',
+      '/write'
+    )
+    expect(screen.getByRole('link', { name: 'Stash' })).toHaveAttribute(
+      'href',
+      '/dashboard'
+    )
+    expect(
+      screen.getByRole('button', { name: 'Toggle dark mode' })
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Logout' })).toBeInTheDocument()
   })
 })

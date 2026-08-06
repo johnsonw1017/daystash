@@ -85,7 +85,7 @@ const UserMenuDrawer = ({
             : undefined
         }
       >
-        <div className="mx-auto flex w-full max-w-lg flex-1 flex-col">
+        <div className="mx-auto flex min-h-0 w-full max-w-lg flex-1 flex-col overflow-y-auto">
           <DrawerClose asChild>
             <Button
               type="button"
