@@ -22,7 +22,7 @@ const MobileToolbar = ({ children, label }: MobileToolbarProps) => (
   >
     <nav
       aria-label={label}
-      className="mx-auto flex min-h-18 w-full max-w-200 items-stretch gap-1 px-2 py-2"
+      className="mx-auto grid min-h-18 w-full max-w-200 auto-cols-fr grid-flow-col items-stretch gap-1 px-2 py-2"
     >
       {children}
     </nav>

@@ -26,9 +26,9 @@ const JournalMobileNavigation = ({ pathname }: { pathname: string }) => {
       <MobileToolbar label="Journal navigation">
         <MobileToolbarAction
           active
-          href="/dashboard"
           icon={BookOpen}
           label="Stash"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
         />
         <MobileToolbarAction
           href="/write"
@@ -37,6 +37,7 @@ const JournalMobileNavigation = ({ pathname }: { pathname: string }) => {
           variant="accent"
         />
         <UserMenu
+          mobileClassName="flex"
           trigger={<MobileToolbarAction icon={Menu} label="Menu" />}
         />
       </MobileToolbar>

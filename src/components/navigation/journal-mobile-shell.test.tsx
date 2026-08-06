@@ -1,8 +1,10 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import JournalMobileShell from '@/components/navigation/journal-mobile-shell'
 
 let pathname = '/dashboard'
+const scrollTo = vi.fn()
 
 vi.mock('next/navigation', () => ({
   usePathname: () => pathname,
@@ -15,9 +17,12 @@ vi.mock('@/components/header/user-menu', () => ({
 describe('JournalMobileShell', () => {
   beforeEach(() => {
     pathname = '/dashboard'
+    scrollTo.mockReset()
+    window.scrollTo = scrollTo
   })
 
-  it('shows the primary journal navigation on the Stash', () => {
+  it('shows equal primary actions and scrolls to the top from Stash', async () => {
+    const user = userEvent.setup()
     render(
       <JournalMobileShell>
         <main>Journal content</main>
@@ -27,10 +32,8 @@ describe('JournalMobileShell', () => {
     expect(
       screen.getByRole('navigation', { name: 'Journal navigation' })
     ).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Stash' })).toHaveAttribute(
-      'href',
-      '/dashboard'
-    )
+    const stashAction = screen.getByRole('button', { name: 'Stash' })
+    expect(stashAction).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('link', { name: 'Write' })).toHaveAttribute(
       'href',
       '/write'
@@ -39,6 +42,9 @@ describe('JournalMobileShell', () => {
     expect(screen.getByText('Journal content').parentElement).toHaveClass(
       'pb-24'
     )
+
+    await user.click(stashAction)
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' })
   })
 
   it('shows entry actions with a slug-specific edit link', () => {

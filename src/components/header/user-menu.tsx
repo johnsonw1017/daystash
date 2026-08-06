@@ -32,6 +32,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import ThemeToggle from '@/components/header/theme-toggle'
 import { logout } from '@/actions/auth'
 import { useAuthUser, useRefreshAuthUser } from '@/hooks/use-auth-user'
+import { cn } from '@/lib/utils'
 
 const UserMenuSkeleton = () => (
   <div className="flex size-8 items-center justify-center rounded-md border border-transparent">
@@ -40,6 +41,7 @@ const UserMenuSkeleton = () => (
 )
 
 type UserMenuProps = {
+  mobileClassName?: string
   trigger?: ReactNode
 }
 
@@ -67,7 +69,7 @@ const DefaultMenuTrigger = forwardRef<
   )
 })
 
-const UserMenu = ({ trigger }: UserMenuProps) => {
+const UserMenu = ({ mobileClassName, trigger }: UserMenuProps) => {
   const authUser = useAuthUser()
   const refreshAuthUser = useRefreshAuthUser()
   const router = useRouter()
@@ -104,7 +106,7 @@ const UserMenu = ({ trigger }: UserMenuProps) => {
 
   return (
     <>
-      <div className="lg:hidden">
+      <div className={cn('lg:hidden', mobileClassName)}>
         <Drawer direction="bottom">
           <DrawerTrigger asChild>
             {trigger ?? <DefaultMenuTrigger />}
@@ -184,10 +186,10 @@ const UserMenu = ({ trigger }: UserMenuProps) => {
   )
 }
 
-const UserMenuWrapper = ({ trigger }: UserMenuProps) => {
+const UserMenuWrapper = ({ mobileClassName, trigger }: UserMenuProps) => {
   return (
     <Suspense fallback={<UserMenuSkeleton />}>
-      <UserMenu trigger={trigger} />
+      <UserMenu mobileClassName={mobileClassName} trigger={trigger} />
     </Suspense>
   )
 }
