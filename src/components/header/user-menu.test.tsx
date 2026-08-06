@@ -34,13 +34,15 @@ describe('UserMenu', () => {
     })
   })
 
-  it('opens a compact navigation menu with the theme control', async () => {
+  it('renders a mobile trigger and keeps the compact desktop menu', async () => {
     const user = userEvent.setup()
     render(<UserMenu />)
 
-    const trigger = screen.getByRole('button', { name: 'Open user menu' })
-    expect(trigger).toBeInTheDocument()
-    await user.click(trigger)
+    const triggers = screen.getAllByRole('button', {
+      name: 'Open user menu',
+    })
+    expect(triggers).toHaveLength(2)
+    await user.click(triggers[1])
 
     expect(screen.queryByText(/welcome/i)).not.toBeInTheDocument()
     expect(
