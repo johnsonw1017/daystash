@@ -45,6 +45,7 @@ export type JournalPlace = {
 export type SaveJournalInput = {
   journalId?: string
   title: string
+  date?: string
   blocks: JournalBlock[]
   places?: JournalPlace[]
   thumbnailAssetId?: string | null
@@ -64,6 +65,7 @@ export type JournalSummary = {
   id: string
   title: string | null
   slug: string | null
+  created_at: string
   date: string
   updated_at: string
 }

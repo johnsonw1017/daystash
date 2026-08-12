@@ -12,9 +12,11 @@ import {
   thumbnailAssetIdAtom,
   isJournalSavingAtom,
   journalEditorConfigAtom,
+  journalDateAtom,
   journalIdAtom,
   lastSavedTitleAtom,
   savedBlocksAtom,
+  savedJournalDateAtom,
   savedThumbnailAssetIdAtom,
   sessionAssetIdsAtom,
   titleAtom,
@@ -52,8 +54,10 @@ const useJournalEditor = () => {
   const [errorMessage, setErrorMessage] = useAtom(errorMessageAtom)
   const [editorConfig] = useAtom(journalEditorConfigAtom)
   const [journalId, setJournalId] = useAtom(journalIdAtom)
+  const [journalDate, setJournalDate] = useAtom(journalDateAtom)
   const [lastSavedTitle, setLastSavedTitle] = useAtom(lastSavedTitleAtom)
   const [savedBlocks, setSavedBlocks] = useAtom(savedBlocksAtom)
+  const [savedJournalDate, setSavedJournalDate] = useAtom(savedJournalDateAtom)
   const [thumbnailAssetId, setThumbnailAssetId] = useAtom(thumbnailAssetIdAtom)
   const [savedThumbnailAssetId, setSavedThumbnailAssetId] = useAtom(
     savedThumbnailAssetIdAtom
@@ -66,6 +70,7 @@ const useJournalEditor = () => {
   const isDirty =
     JSON.stringify(normalizedBlocks) !== JSON.stringify(savedBlocks) ||
     thumbnailAssetId !== savedThumbnailAssetId ||
+    journalDate !== savedJournalDate ||
     title !== lastSavedTitle ||
     JSON.stringify(places) !== JSON.stringify(savedPlaces)
 
@@ -89,6 +94,7 @@ const useJournalEditor = () => {
 
       setBlocks(nextBlocks)
       setSavedBlocks(nextBlocks)
+      setSavedJournalDate(journalDate)
       setPlaces(nextPlaces)
       setSavedPlaces(nextPlaces)
       setThumbnailAssetId(nextThumbnailAssetId)
@@ -104,9 +110,11 @@ const useJournalEditor = () => {
       queryClient,
       setBlocks,
       setJournalId,
+      journalDate,
       setIsJournalSaving,
       setLastSavedTitle,
       setSavedBlocks,
+      setSavedJournalDate,
       setPlaces,
       setSavedPlaces,
       setThumbnailAssetId,
@@ -629,6 +637,7 @@ const useJournalEditor = () => {
       saveJournal({
         journalId,
         title,
+        date: journalDate,
         blocks: normalizedBlocks,
         places,
         thumbnailAssetId: activeThumbnailAssetId,
@@ -672,12 +681,15 @@ const useJournalEditor = () => {
     insertImagesBelow,
     isDirty,
     isEditMode: editorConfig.isEditMode ?? false,
+    journalDate,
+    journalCreatedAt: editorConfig.initialCreatedAt,
     isSaving: saveMutation.isPending,
     mergeListItem,
     mergeTextBlock,
     moveImage,
     places,
     setPlaces,
+    setJournalDate,
     moveBlock,
     save,
     removeBlock,

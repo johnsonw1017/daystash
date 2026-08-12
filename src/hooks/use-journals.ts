@@ -67,6 +67,7 @@ type JournalDetailRow = {
   id: string
   title: string | null
   slug: string | null
+  created_at: string
   date: string
   updated_at: string
   blocks: unknown
@@ -112,6 +113,7 @@ const mapJournalDetailRow = (journal: JournalDetailRow): JournalDetail => {
     id: journal.id,
     title: journal.title,
     slug: journal.slug,
+    created_at: journal.created_at,
     date: journal.date,
     updated_at: journal.updated_at,
     blocks,
@@ -210,7 +212,7 @@ const fetchJournalBySlug = async (
     .from('journals')
     .select(
       `
-      id, title, slug, date, updated_at, blocks, thumbnail_asset_id,
+      id, title, slug, created_at, date, updated_at, blocks, thumbnail_asset_id,
       places(name, formatted_address, google_place_id, google_maps_uri, latitude, longitude)
     `
     )

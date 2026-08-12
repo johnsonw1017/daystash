@@ -29,6 +29,8 @@ export const placeSearchBiasAtom = atomWithStorage<PlaceSearchBias | null>(
 export const savedPlacesAtom = atom<JournalPlace[]>([])
 export const errorMessageAtom = atom('')
 export const journalIdAtom = atom<string | undefined>(undefined)
+export const journalDateAtom = atom<string | undefined>(undefined)
+export const savedJournalDateAtom = atom<string | undefined>(undefined)
 export const savedBlocksAtom = atom<JournalBlock[]>([])
 export const thumbnailAssetIdAtom = atom<string | null>(null)
 export const savedThumbnailAssetIdAtom = atom<string | null>(null)
@@ -61,6 +63,8 @@ type CreateJournalBlocksStoreParams = {
   initialBlocks?: JournalBlock[]
   initialJournalId?: string
   initialTitle?: string
+  initialDate?: string
+  initialCreatedAt?: string
   initialThumbnailAssetId?: string | null
   initialPlaces?: JournalPlace[]
   headerActions?: JournalEditorConfig['headerActions']
@@ -74,6 +78,8 @@ export const createJournalBlocksStore = ({
   initialBlocks,
   initialJournalId,
   initialTitle = '',
+  initialDate,
+  initialCreatedAt,
   initialThumbnailAssetId = null,
   initialPlaces = [],
   isEditMode = false,
@@ -91,11 +97,14 @@ export const createJournalBlocksStore = ({
   store.set(errorMessageAtom, '')
   store.set(journalEditorConfigAtom, {
     headerActions,
+    initialCreatedAt,
     isEditMode,
     successMessage,
     viewHref,
   })
   store.set(journalIdAtom, initialJournalId)
+  store.set(journalDateAtom, initialDate)
+  store.set(savedJournalDateAtom, initialDate)
   store.set(lastSavedTitleAtom, initialTitle)
   store.set(savedBlocksAtom, nextBlocks)
   store.set(thumbnailAssetIdAtom, initialThumbnailAssetId)
