@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { parseISO } from 'date-fns'
 import { MapPin } from 'lucide-react'
 import {
   Card,
@@ -56,7 +57,7 @@ const JournalCard = ({ journal }: { journal: JournalListItem }) => {
         </div>
         <CardHeader className="gap-2 p-4 sm:p-5">
           <CardDescription className="flex items-center justify-between gap-2">
-            <span>{dateFormatter.format(new Date(journal.created_at))}</span>
+            <span>{dateFormatter.format(parseISO(journal.date))}</span>
             {journal.placeCount > 0 && (
               <span
                 className="inline-flex items-center gap-1"

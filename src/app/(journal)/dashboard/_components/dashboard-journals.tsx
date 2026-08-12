@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
+import { parseISO } from 'date-fns'
 import { SquarePen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -29,7 +30,7 @@ const groupJournalsByMonth = (journals: JournalListItem[]) => {
   const months = new Map<string, JournalMonth>()
 
   journals.forEach((journal) => {
-    const date = new Date(journal.created_at)
+    const date = parseISO(journal.date)
     const key = `${date.getFullYear()}-${date.getMonth()}`
     const existingMonth = months.get(key)
 

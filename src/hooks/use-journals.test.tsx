@@ -70,13 +70,15 @@ describe('journal hooks', () => {
         const url = new URL(request.url)
         expect(url.searchParams.get('user_id')).toBe('eq.user-id')
         expect(url.searchParams.get('limit')).toBe('13')
+        expect(url.searchParams.get('order')).toBe('date.desc,id.desc')
+        expect(url.searchParams.get('select')).toContain('date')
 
         return HttpResponse.json([
           {
             id: 'journal-1',
             title: 'Summer trip',
             slug: 'summer-trip',
-            created_at: '2026-07-17T00:00:00.000Z',
+            date: '2026-07-17',
             thumbnail: [
               {
                 cloudinary_public_id: 'journal/photo',
@@ -99,7 +101,7 @@ describe('journal hooks', () => {
         id: 'journal-1',
         title: 'Summer trip',
         slug: 'summer-trip',
-        created_at: '2026-07-17T00:00:00.000Z',
+        date: '2026-07-17',
         thumbnail: {
           publicId: 'journal/photo',
           width: 1200,
@@ -114,9 +116,9 @@ describe('journal hooks', () => {
     server.use(
       http.get('http://supabase.test/rest/v1/journals', () =>
         HttpResponse.json([
-          { created_at: '2026-07-17T00:00:00.000Z' },
-          { created_at: '2026-01-01T00:00:00.000Z' },
-          { created_at: '2025-01-01T00:00:00.000Z' },
+          { date: '2026-07-17' },
+          { date: '2026-01-01' },
+          { date: '2025-01-01' },
         ])
       )
     )
@@ -146,7 +148,7 @@ describe('journal hooks', () => {
           id: 'journal-1',
           title: 'Summer trip',
           slug: 'summer-trip',
-          created_at: '2026-07-17T00:00:00.000Z',
+          date: '2026-07-17',
           updated_at: '2026-07-17T01:00:00.000Z',
           blocks: [{ id: 'text-1', type: 'text', content: 'Hello' }],
           places: [],

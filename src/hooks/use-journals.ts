@@ -5,6 +5,7 @@ import {
   useQuery,
   type InfiniteData,
 } from '@tanstack/react-query'
+import { parseISO } from 'date-fns'
 import type { JournalDetail, JournalListItem } from '@/lib/journals'
 import { parseJournalBlocks, type JournalPlace } from '@/lib/journals'
 import supabase from '@/lib/supabase/client'
@@ -48,7 +49,7 @@ type JournalListRow = {
   id: string
   title: string | null
   slug: string | null
-  created_at: string
+  date: string
   thumbnail: JournalThumbnailRow | JournalThumbnailRow[] | null
   places: Array<{ count: number }>
 }
@@ -66,7 +67,7 @@ type JournalDetailRow = {
   id: string
   title: string | null
   slug: string | null
-  created_at: string
+  date: string
   updated_at: string
   blocks: unknown
   thumbnail_asset_id: string | null
@@ -74,7 +75,7 @@ type JournalDetailRow = {
 }
 
 type JournalCursor = {
-  createdAt: string
+  date: string
   id: string
 }
 
@@ -92,7 +93,7 @@ const mapJournalListRow = (journal: JournalListRow): JournalListItem => {
     id: journal.id,
     title: journal.title,
     slug: journal.slug,
-    created_at: journal.created_at,
+    date: journal.date,
     thumbnail: thumbnail
       ? {
           publicId: thumbnail.cloudinary_public_id,
@@ -111,7 +112,7 @@ const mapJournalDetailRow = (journal: JournalDetailRow): JournalDetail => {
     id: journal.id,
     title: journal.title,
     slug: journal.slug,
-    created_at: journal.created_at,
+    date: journal.date,
     updated_at: journal.updated_at,
     blocks,
     places: journal.places.map(
@@ -139,7 +140,7 @@ const fetchJournalsPage = async (
         id,
         title,
         slug,
-        created_at,
+        date,
         thumbnail:journal_assets!journals_thumbnail_asset_id_fkey(
           cloudinary_public_id,
           width,
@@ -149,13 +150,13 @@ const fetchJournalsPage = async (
       `
     )
     .eq('user_id', userId)
-    .order('created_at', { ascending: false })
+    .order('date', { ascending: false })
     .order('id', { ascending: false })
     .limit(JOURNALS_PAGE_SIZE + 1)
 
   if (cursor) {
     query = query.or(
-      `created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`
+      `date.lt.${cursor.date},and(date.eq.${cursor.date},id.lt.${cursor.id})`
     )
   }
 
@@ -173,7 +174,7 @@ const fetchJournalsPage = async (
     journals: pageRows.map(mapJournalListRow),
     nextCursor:
       rows.length > JOURNALS_PAGE_SIZE && lastJournal
-        ? { createdAt: lastJournal.created_at, id: lastJournal.id }
+        ? { date: lastJournal.date, id: lastJournal.id }
         : null,
   }
 }
@@ -181,9 +182,9 @@ const fetchJournalsPage = async (
 const fetchJournalYears = async (userId: string) => {
   const { data, error } = await supabase
     .from('journals')
-    .select('created_at')
+    .select('date')
     .eq('user_id', userId)
-    .order('created_at', { ascending: false })
+    .order('date', { ascending: false })
 
   if (error) {
     throw new Error(error.message)
@@ -191,7 +192,7 @@ const fetchJournalYears = async (userId: string) => {
 
   return [
     ...new Set(
-      (data ?? []).map((journal) => new Date(journal.created_at).getFullYear())
+      (data ?? []).map((journal) => parseISO(journal.date).getFullYear())
     ),
   ]
 }
@@ -209,7 +210,7 @@ const fetchJournalBySlug = async (
     .from('journals')
     .select(
       `
-      id, title, slug, created_at, updated_at, blocks, thumbnail_asset_id,
+      id, title, slug, date, updated_at, blocks, thumbnail_asset_id,
       places(name, formatted_address, google_place_id, google_maps_uri, latitude, longitude)
     `
     )
