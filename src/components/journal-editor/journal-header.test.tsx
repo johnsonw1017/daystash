@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import JournalHeader from '@/components/journal-editor/journal-header'
@@ -33,26 +33,34 @@ describe('JournalHeader', () => {
     render(<JournalHeader />)
 
     expect(
-      screen.getByText('Choose from 10 Aug to 17 Aug 2026.')
+      screen.queryByText('Choose from 10 Aug to 17 Aug 2026.')
+    ).not.toBeInTheDocument()
+
+    const desktopDateTrigger = screen
+      .getAllByRole('button', { name: /august 17th, 2026/i })
+      .find((button) => button.dataset.slot === 'popover-trigger')
+
+    expect(desktopDateTrigger).toBeDefined()
+    await userEvent.click(desktopDateTrigger!)
+
+    const popoverContent = screen.getByRole('dialog', {
+      name: 'Select journal date',
+    })
+    const calendar = within(popoverContent)
+
+    expect(
+      calendar.getByRole('grid', { name: 'August 2026' })
     ).toBeInTheDocument()
 
-    await userEvent.click(
-      screen.getByRole('button', { name: /august 17th, 2026/i })
-    )
-
     expect(
-      screen.getByRole('heading', { name: 'Select journal date' })
-    ).toBeInTheDocument()
-
-    expect(
-      screen.getByRole('button', { name: /august 9th, 2026/i })
+      calendar.getByRole('button', { name: /august 9th, 2026/i })
     ).toBeDisabled()
     expect(
-      screen.getByRole('button', { name: /august 18th, 2026/i })
+      calendar.getByRole('button', { name: /august 18th, 2026/i })
     ).toBeDisabled()
 
     await userEvent.click(
-      screen.getByRole('button', { name: /august 10th, 2026/i })
+      calendar.getByRole('button', { name: /august 10th, 2026/i })
     )
 
     expect(setJournalDate).toHaveBeenCalledWith('2026-08-10')
