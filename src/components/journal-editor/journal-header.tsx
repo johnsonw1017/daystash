@@ -1,22 +1,51 @@
 'use client'
 
+import { useState } from 'react'
+import { format, parseISO, subDays } from 'date-fns'
 import Link from 'next/link'
+import { CalendarIcon } from 'lucide-react'
 import useJournalEditor from '@/components/journal-editor/hooks/use-journal-editor'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { Calendar } from '@/components/ui/calendar'
 import { Input } from '@/components/ui/input'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 
 const JournalHeader = () => {
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
   const {
     errorMessage,
     headerActions,
     isEditMode,
+    journalCreatedAt,
+    journalDate,
     isSaving,
     save,
     setTitle,
+    setJournalDate,
     title,
     viewHref,
   } = useJournalEditor()
+  const createdAt = journalCreatedAt ? new Date(journalCreatedAt) : null
+  const createdDate = createdAt
+    ? new Date(
+        createdAt.getUTCFullYear(),
+        createdAt.getUTCMonth(),
+        createdAt.getUTCDate()
+      )
+    : null
+  const earliestDate = createdDate ? subDays(createdDate, 7) : null
+  const selectedDate = journalDate ? parseISO(journalDate) : null
+  const selectDate = (date: Date | undefined) => {
+    if (!date) return
+
+    setJournalDate(format(date, 'yyyy-MM-dd'))
+    setIsDatePickerOpen(false)
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -41,6 +70,33 @@ const JournalHeader = () => {
           {headerActions}
         </div>
       </div>
+
+      {isEditMode && selectedDate && createdDate && earliestDate && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-muted-foreground text-sm">Date</span>
+          <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+            <PopoverTrigger asChild>
+              <Button type="button" variant="outline" size="sm">
+                <CalendarIcon />
+                {format(selectedDate, 'PPP')}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              aria-label="Select journal date"
+              aria-describedby={undefined}
+            >
+              <Calendar
+                className="p-0"
+                mode="single"
+                selected={selectedDate}
+                defaultMonth={selectedDate}
+                disabled={{ before: earliestDate, after: createdDate }}
+                onSelect={selectDate}
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+      )}
 
       {errorMessage && (
         <Alert variant="destructive">

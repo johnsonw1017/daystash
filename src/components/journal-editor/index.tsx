@@ -202,6 +202,8 @@ const JournalEditorContent = () => {
 const JournalEditor = ({
   initialJournalId,
   initialTitle = '',
+  initialDate,
+  initialCreatedAt,
   initialBlocks,
   initialThumbnailAssetId,
   initialPlaces,
@@ -218,6 +220,8 @@ const JournalEditor = ({
       initialJournalId,
       initialPlaces,
       initialTitle,
+      initialDate,
+      initialCreatedAt,
       isEditMode,
       successMessage,
       viewHref,

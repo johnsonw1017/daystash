@@ -53,6 +53,8 @@ const EntryEdit = ({ slug }: EntryEditProps) => {
     <JournalEditor
       initialJournalId={journal.id}
       initialTitle={journal.title ?? ''}
+      initialDate={journal.date}
+      initialCreatedAt={journal.created_at}
       initialBlocks={journal.blocks}
       initialPlaces={journal.places}
       initialThumbnailAssetId={journal.thumbnailAssetId}

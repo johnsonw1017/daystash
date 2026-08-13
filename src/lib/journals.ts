@@ -45,6 +45,7 @@ export type JournalPlace = {
 export type SaveJournalInput = {
   journalId?: string
   title: string
+  date?: string
   blocks: JournalBlock[]
   places?: JournalPlace[]
   thumbnailAssetId?: string | null
@@ -65,6 +66,7 @@ export type JournalSummary = {
   title: string | null
   slug: string | null
   created_at: string
+  date: string
   updated_at: string
 }
 
@@ -76,7 +78,7 @@ export type JournalThumbnail = {
 
 export type JournalListItem = Pick<
   JournalSummary,
-  'id' | 'title' | 'slug' | 'created_at'
+  'id' | 'title' | 'slug' | 'date'
 > & {
   thumbnail: JournalThumbnail | null
   placeCount: number

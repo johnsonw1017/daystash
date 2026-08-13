@@ -2,6 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
+import { parseISO } from 'date-fns'
 import { ExternalLink, MapPin } from 'lucide-react'
 import {
   Carousel,
@@ -67,7 +68,7 @@ const EntryView = ({ slug }: EntryViewProps) => {
             {journal.title?.trim() || 'Untitled Journal'}
           </h1>
           <p className="text-muted-foreground mt-2 text-sm">
-            {dateFormatter.format(new Date(journal.created_at))}
+            {dateFormatter.format(parseISO(journal.date))}
           </p>
         </div>
         <Button className="hidden lg:inline-flex" asChild>

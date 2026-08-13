@@ -225,6 +225,7 @@ export const registerJournalAssets = async ({
 export const saveJournal = async ({
   journalId,
   title,
+  date,
   blocks,
   places = [],
   thumbnailAssetId: requestedThumbnailAssetId = null,
@@ -259,6 +260,7 @@ export const saveJournal = async ({
     p_title: nextJournal.title,
     p_blocks: normalizedBlocks,
     p_thumbnail_asset_id: thumbnailAssetId,
+    p_date: date ?? null,
     p_updated_at: new Date().toISOString(),
     p_places: normalizedPlaces.map((place) => ({
       name: place.name,

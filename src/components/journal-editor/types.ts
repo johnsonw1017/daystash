@@ -4,6 +4,8 @@ import type { JournalBlock, JournalPlace } from '@/lib/journals'
 export type JournalEditorProps = {
   initialJournalId?: string
   initialTitle?: string
+  initialDate?: string
+  initialCreatedAt?: string
   initialBlocks?: JournalBlock[]
   initialThumbnailAssetId?: string | null
   initialPlaces?: JournalPlace[]
@@ -15,7 +17,7 @@ export type JournalEditorProps = {
 
 export type JournalEditorConfig = Pick<
   JournalEditorProps,
-  'headerActions' | 'isEditMode' | 'successMessage' | 'viewHref'
+  'headerActions' | 'initialCreatedAt' | 'isEditMode' | 'successMessage' | 'viewHref'
 > & {
   successMessage: string
 }

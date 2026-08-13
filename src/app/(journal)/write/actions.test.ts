@@ -293,6 +293,7 @@ describe('journal write actions', () => {
       p_title: 'Kyoto',
       p_blocks: [{ id: 'text-1', type: 'text', content: 'A morning walk' }],
       p_thumbnail_asset_id: null,
+      p_date: null,
       p_updated_at: expect.any(String),
       p_places: [
         {
@@ -305,6 +306,26 @@ describe('journal write actions', () => {
         },
       ],
     })
+  })
+
+  it('passes the selected journal date to the atomic save function', async () => {
+    const admin = createAdminClientMock([
+      { data: { id: 'journal-id' }, error: null },
+      { data: [], error: null },
+      { data: null, error: null },
+    ])
+
+    await saveJournal({
+      journalId: 'journal-id',
+      title: 'Kyoto',
+      date: '2026-08-05',
+      blocks: [{ id: 'text-1', type: 'text', content: 'A morning walk' }],
+    })
+
+    expect(admin.rpc).toHaveBeenCalledWith(
+      'save_journal_with_places',
+      expect.objectContaining({ p_date: '2026-08-05' })
+    )
   })
 
   it('keeps orphaned assets when the atomic place replacement fails', async () => {

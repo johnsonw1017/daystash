@@ -23,7 +23,7 @@ const journal: JournalListItem = {
   id: 'journal-1',
   title: 'Summer trip',
   slug: 'summer-trip',
-  created_at: '2026-07-17T00:00:00.000Z',
+  date: '2026-07-17',
   thumbnail: {
     publicId: 'journal/photo',
     width: 1200,
