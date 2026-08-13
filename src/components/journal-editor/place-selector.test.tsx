@@ -185,4 +185,27 @@ describe('PlaceSelector', () => {
       screen.getByRole('button', { name: 'Use nearby place suggestions' })
     ).toHaveAttribute('aria-pressed', 'false')
   })
+
+  it('shows the place-search diagnostic when the request fails', async () => {
+    server.use(
+      http.post('/api/places/autocomplete', () =>
+        HttpResponse.json(
+          {
+            error:
+              'Google Places error (403 PERMISSION_DENIED): The Places API is not enabled for this project.',
+          },
+          { status: 502 }
+        )
+      )
+    )
+    renderSelector()
+
+    await userEvent.type(screen.getByLabelText('Places'), 'Cafe')
+
+    expect(
+      await screen.findByText(
+        'Google Places error (403 PERMISSION_DENIED): The Places API is not enabled for this project.'
+      )
+    ).toBeInTheDocument()
+  })
 })

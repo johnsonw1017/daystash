@@ -160,9 +160,17 @@ describe('POST /api/places/autocomplete', () => {
 
   it('returns a gateway error when Google fails', async () => {
     server.use(
-      http.post(
-        'https://places.googleapis.com/v1/places:autocomplete',
-        () => new HttpResponse(null, { status: 500 })
+      http.post('https://places.googleapis.com/v1/places:autocomplete', () =>
+        HttpResponse.json(
+          {
+            error: {
+              code: 403,
+              message: 'The Places API is not enabled for this project.',
+              status: 'PERMISSION_DENIED',
+            },
+          },
+          { status: 403, statusText: 'Forbidden' }
+        )
       )
     )
 
@@ -170,7 +178,23 @@ describe('POST /api/places/autocomplete', () => {
 
     expect(response.status).toBe(502)
     await expect(response.json()).resolves.toEqual({
-      error: 'Could not search places',
+      error:
+        'Google Places error (403 PERMISSION_DENIED): The Places API is not enabled for this project.',
+    })
+  })
+
+  it('returns a gateway error when the Google request cannot be made', async () => {
+    server.use(
+      http.post('https://places.googleapis.com/v1/places:autocomplete', () =>
+        HttpResponse.error()
+      )
+    )
+
+    const response = await POST(createRequest({ input: 'Kyoto' }))
+
+    expect(response.status).toBe(502)
+    await expect(response.json()).resolves.toMatchObject({
+      error: expect.stringMatching(/^Google Places request failed: /),
     })
   })
 })
