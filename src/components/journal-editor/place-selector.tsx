@@ -46,8 +46,6 @@ const getPlaceSearchErrorMessage = (
   error: PlaceSearchErrorResponse
 ) => {
   if (status === 401) return 'Your session has expired. Please sign in again.'
-  if (status === 502)
-    return 'Place search is temporarily unavailable. Please try again.'
 
   return error.error || 'Could not search places. Please try again.'
 }

@@ -20,6 +20,25 @@ type GoogleAutocompleteResponse = {
   }>
 }
 
+type GoogleAutocompleteErrorResponse = {
+  error?: {
+    code?: number
+    message?: string
+    status?: string
+  }
+}
+
+const getGooglePlacesErrorMessage = async (response: Response) => {
+  const body = (await response
+    .json()
+    .catch(() => ({}))) as GoogleAutocompleteErrorResponse
+  const error = body.error
+  const status = error?.status || response.statusText || 'UNKNOWN'
+  const message = error?.message || 'Google Places did not provide a message.'
+
+  return `Google Places error (${response.status} ${status}): ${message}`
+}
+
 export const POST = async (request: Request) => {
   const supabase = await createServerSideClient()
   const {
@@ -86,20 +105,23 @@ export const POST = async (request: Request) => {
   } catch (error) {
     console.error('Google Places autocomplete request failed', error)
     return NextResponse.json(
-      { error: 'Place search is temporarily unavailable' },
+      {
+        error: `Google Places request failed: ${
+          error instanceof Error ? error.message : 'Unknown network error'
+        }`,
+      },
       { status: 502 }
     )
   }
 
   if (!response.ok) {
+    const error = await getGooglePlacesErrorMessage(response)
     console.error('Google Places autocomplete returned an error', {
       status: response.status,
       statusText: response.statusText,
+      error,
     })
-    return NextResponse.json(
-      { error: 'Place search is temporarily unavailable' },
-      { status: 502 }
-    )
+    return NextResponse.json({ error }, { status: 502 })
   }
 
   const data = (await response.json()) as GoogleAutocompleteResponse

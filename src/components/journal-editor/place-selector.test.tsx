@@ -186,11 +186,14 @@ describe('PlaceSelector', () => {
     ).toHaveAttribute('aria-pressed', 'false')
   })
 
-  it('shows an actionable message when place search fails', async () => {
+  it('shows the place-search diagnostic when the request fails', async () => {
     server.use(
       http.post('/api/places/autocomplete', () =>
         HttpResponse.json(
-          { error: 'Place search is temporarily unavailable' },
+          {
+            error:
+              'Google Places error (403 PERMISSION_DENIED): The Places API is not enabled for this project.',
+          },
           { status: 502 }
         )
       )
@@ -201,7 +204,7 @@ describe('PlaceSelector', () => {
 
     expect(
       await screen.findByText(
-        'Place search is temporarily unavailable. Please try again.'
+        'Google Places error (403 PERMISSION_DENIED): The Places API is not enabled for this project.'
       )
     ).toBeInTheDocument()
   })
