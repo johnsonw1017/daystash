@@ -56,35 +56,48 @@ export const POST = async (request: Request) => {
 
   if (input.length < 2) return NextResponse.json({ suggestions: [] })
 
-  const response = await fetch(
-    'https://places.googleapis.com/v1/places:autocomplete',
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Goog-Api-Key': getGoogleMapsApiKey(),
-        'X-Goog-FieldMask':
-          'suggestions.placePrediction.placeId,suggestions.placePrediction.text.text,suggestions.placePrediction.structuredFormat.mainText.text,suggestions.placePrediction.structuredFormat.secondaryText.text',
-      },
-      body: JSON.stringify({
-        input,
-        sessionToken: sessionToken || undefined,
-        locationBias: hasValidLocationBias
-          ? {
-              circle: {
-                center: { latitude, longitude },
-                radius: GOOGLE_PLACE_BIAS_RADIUS_METERS,
-              },
-            }
-          : undefined,
-      }),
-      cache: 'no-store',
-    }
-  )
+  let response: Response
+  try {
+    response = await fetch(
+      'https://places.googleapis.com/v1/places:autocomplete',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': getGoogleMapsApiKey(),
+          'X-Goog-FieldMask':
+            'suggestions.placePrediction.placeId,suggestions.placePrediction.text.text,suggestions.placePrediction.structuredFormat.mainText.text,suggestions.placePrediction.structuredFormat.secondaryText.text',
+        },
+        body: JSON.stringify({
+          input,
+          sessionToken: sessionToken || undefined,
+          locationBias: hasValidLocationBias
+            ? {
+                circle: {
+                  center: { latitude, longitude },
+                  radius: GOOGLE_PLACE_BIAS_RADIUS_METERS,
+                },
+              }
+            : undefined,
+        }),
+        cache: 'no-store',
+      }
+    )
+  } catch (error) {
+    console.error('Google Places autocomplete request failed', error)
+    return NextResponse.json(
+      { error: 'Place search is temporarily unavailable' },
+      { status: 502 }
+    )
+  }
 
   if (!response.ok) {
+    console.error('Google Places autocomplete returned an error', {
+      status: response.status,
+      statusText: response.statusText,
+    })
     return NextResponse.json(
-      { error: 'Could not search places' },
+      { error: 'Place search is temporarily unavailable' },
       { status: 502 }
     )
   }

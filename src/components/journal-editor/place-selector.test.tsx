@@ -185,4 +185,24 @@ describe('PlaceSelector', () => {
       screen.getByRole('button', { name: 'Use nearby place suggestions' })
     ).toHaveAttribute('aria-pressed', 'false')
   })
+
+  it('shows an actionable message when place search fails', async () => {
+    server.use(
+      http.post('/api/places/autocomplete', () =>
+        HttpResponse.json(
+          { error: 'Place search is temporarily unavailable' },
+          { status: 502 }
+        )
+      )
+    )
+    renderSelector()
+
+    await userEvent.type(screen.getByLabelText('Places'), 'Cafe')
+
+    expect(
+      await screen.findByText(
+        'Place search is temporarily unavailable. Please try again.'
+      )
+    ).toBeInTheDocument()
+  })
 })

@@ -37,6 +37,21 @@ import {
 import type { GooglePlaceSuggestion } from '@/lib/google-places'
 import type { JournalPlace } from '@/lib/journals'
 
+type PlaceSearchErrorResponse = {
+  error?: string
+}
+
+const getPlaceSearchErrorMessage = (
+  status: number,
+  error: PlaceSearchErrorResponse
+) => {
+  if (status === 401) return 'Your session has expired. Please sign in again.'
+  if (status === 502)
+    return 'Place search is temporarily unavailable. Please try again.'
+
+  return error.error || 'Could not search places. Please try again.'
+}
+
 const roundLocationForBias = (coordinate: number) =>
   Math.round(coordinate * 1000) / 1000
 
@@ -132,7 +147,13 @@ const PlaceSelector = () => {
         }),
         signal,
       })
-      if (!response.ok) throw new Error('Could not search places')
+      if (!response.ok) {
+        const error = (await response
+          .json()
+          .catch(() => ({}))) as PlaceSearchErrorResponse
+        console.error('Place search failed', { status: response.status, error })
+        throw new Error(getPlaceSearchErrorMessage(response.status, error))
+      }
 
       const data = (await response.json()) as {
         suggestions?: GooglePlaceSuggestion[]
@@ -281,7 +302,11 @@ const PlaceSelector = () => {
               </ComboboxItem>
             ))}
             <ComboboxEmpty>
-              {autocompleteQuery.isFetching ? 'Searching…' : 'No places found'}
+              {autocompleteQuery.isFetching
+                ? 'Searching…'
+                : autocompleteQuery.isError
+                  ? autocompleteQuery.error.message
+                  : 'No places found'}
             </ComboboxEmpty>
           </ComboboxList>
           {suggestions.length > 0 && (

@@ -170,7 +170,22 @@ describe('POST /api/places/autocomplete', () => {
 
     expect(response.status).toBe(502)
     await expect(response.json()).resolves.toEqual({
-      error: 'Could not search places',
+      error: 'Place search is temporarily unavailable',
+    })
+  })
+
+  it('returns a gateway error when the Google request cannot be made', async () => {
+    server.use(
+      http.post('https://places.googleapis.com/v1/places:autocomplete', () =>
+        HttpResponse.error()
+      )
+    )
+
+    const response = await POST(createRequest({ input: 'Kyoto' }))
+
+    expect(response.status).toBe(502)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Place search is temporarily unavailable',
     })
   })
 })
