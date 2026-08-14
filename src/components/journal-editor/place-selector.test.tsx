@@ -82,6 +82,12 @@ describe('PlaceSelector', () => {
     expect(setPlaces).toHaveBeenCalledWith([])
   })
 
+  it('does not show an empty state before a place search', () => {
+    renderSelector()
+
+    expect(screen.queryByText('No places found')).not.toBeInTheDocument()
+  })
+
   it('adds selected Google Place details with the keyboard', async () => {
     server.use(
       http.post('/api/places/autocomplete', () =>
