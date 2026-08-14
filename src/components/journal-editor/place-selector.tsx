@@ -299,13 +299,15 @@ const PlaceSelector = () => {
                 </span>
               </ComboboxItem>
             ))}
-            <ComboboxEmpty>
-              {autocompleteQuery.isFetching
-                ? 'Searching…'
-                : autocompleteQuery.isError
-                  ? autocompleteQuery.error.message
-                  : 'No places found'}
-            </ComboboxEmpty>
+            {cleanedInput && (
+              <ComboboxEmpty>
+                {autocompleteQuery.isFetching
+                  ? 'Searching…'
+                  : autocompleteQuery.isError
+                    ? autocompleteQuery.error.message
+                    : 'No places found'}
+              </ComboboxEmpty>
+            )}
           </ComboboxList>
           {suggestions.length > 0 && (
             <>
