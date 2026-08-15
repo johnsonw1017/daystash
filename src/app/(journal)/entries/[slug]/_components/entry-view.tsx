@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { parseISO } from 'date-fns'
-import { ExternalLink, MapPin } from 'lucide-react'
+import { ChevronLeft, ExternalLink, MapPin } from 'lucide-react'
 import {
   Carousel,
   CarouselContent,
@@ -64,6 +64,17 @@ const EntryView = ({ slug }: EntryViewProps) => {
     <section className="mx-auto flex w-full max-w-200 flex-col gap-6">
       <div className="flex items-start justify-between gap-4">
         <div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mb-2 -ml-2 hidden lg:inline-flex"
+            asChild
+          >
+            <Link href="/dashboard">
+              <ChevronLeft />
+              Stash
+            </Link>
+          </Button>
           <h1 className="font-serif text-3xl font-semibold md:text-4xl">
             {journal.title?.trim() || 'Untitled Journal'}
           </h1>
