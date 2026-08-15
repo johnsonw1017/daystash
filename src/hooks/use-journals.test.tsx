@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { describe, expect, it } from 'vitest'
@@ -109,6 +109,64 @@ describe('journal hooks', () => {
         },
         placeCount: 2,
       })
+    )
+  })
+
+  it('refreshes an invalidated journal list when returning to the dashboard', async () => {
+    let journalTitle = 'Previous entry'
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: {
+          refetchOnMount: false,
+          retry: false,
+          staleTime: Infinity,
+        },
+      },
+    })
+    const QueryWrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    )
+
+    server.use(
+      http.get('http://supabase.test/rest/v1/journals', () =>
+        HttpResponse.json([
+          {
+            id: 'journal-1',
+            title: journalTitle,
+            slug: 'previous-entry',
+            date: '2026-07-17',
+            thumbnail: [],
+            places: [{ count: 0 }],
+          },
+        ])
+      )
+    )
+
+    const initialDashboard = renderHook(() => useJournals('user-id'), {
+      wrapper: QueryWrapper,
+    })
+
+    await waitFor(() =>
+      expect(initialDashboard.result.current.data?.pages[0]?.journals[0]?.title).toBe(
+        'Previous entry'
+      )
+    )
+
+    initialDashboard.unmount()
+    journalTitle = 'Saved entry'
+
+    await act(async () => {
+      await queryClient.invalidateQueries({ queryKey: journalQueryKeys.all })
+    })
+
+    const returningDashboard = renderHook(() => useJournals('user-id'), {
+      wrapper: QueryWrapper,
+    })
+
+    await waitFor(() =>
+      expect(returningDashboard.result.current.data?.pages[0]?.journals[0]?.title).toBe(
+        'Saved entry'
+      )
     )
   })
 

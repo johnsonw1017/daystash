@@ -244,6 +244,7 @@ export const useJournals = (userId?: string) =>
     initialPageParam: null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
     enabled: Boolean(userId),
+    refetchOnMount: true,
   })
 
 export const useJournalYears = (userId?: string) =>
@@ -251,6 +252,7 @@ export const useJournalYears = (userId?: string) =>
     queryKey: journalQueryKeys.years(userId),
     queryFn: () => fetchJournalYears(userId!),
     enabled: Boolean(userId),
+    refetchOnMount: true,
   })
 
 export const useJournalBySlug = (slug?: string) =>

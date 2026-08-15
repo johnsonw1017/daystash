@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react'
 import { usePathname } from 'next/navigation'
-import { BookOpen, Pencil, Plus, SquarePen } from 'lucide-react'
+import { BookOpen, Pencil, SquarePen } from 'lucide-react'
 import {
   MobileToolbar,
   MobileToolbarAction,
@@ -44,7 +44,6 @@ const JournalMobileNavigation = ({ pathname }: { pathname: string }) => {
           label="Edit entry"
           variant="accent"
         />
-        <MobileToolbarAction href="/write" icon={Plus} label="New" />
       </MobileToolbar>
     )
   }

@@ -18,6 +18,7 @@ import useJournalEditor from '@/components/journal-editor/hooks/use-journal-edit
 import { FocusRegistryProvider } from '@/components/journal-editor/hooks/use-focus-registry'
 import useJournalSessionCleanup from '@/components/journal-editor/hooks/use-journal-session-cleanup'
 import JournalHeader from '@/components/journal-editor/journal-header'
+import DesktopSaveControl from '@/components/journal-editor/desktop-save-control'
 import MobileEditorToolbar from '@/components/journal-editor/mobile-editor-toolbar'
 import PlaceSelector from '@/components/journal-editor/place-selector'
 import type { JournalEditorProps } from '@/components/journal-editor/types'
@@ -195,6 +196,7 @@ const JournalEditorContent = () => {
         onAddBlockOpenChange={setIsAddBlockOpen}
         onReorderingChange={setIsReordering}
       />
+      <DesktopSaveControl />
     </>
   )
 }

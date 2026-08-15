@@ -32,7 +32,7 @@ describe('JournalMobileShell', () => {
     )
   })
 
-  it('centres the slug-specific edit action between Stash and New', () => {
+  it('shows Stash and the slug-specific edit action', () => {
     pathname = '/entries/sunday-walk'
 
     render(<JournalMobileShell>Entry content</JournalMobileShell>)
@@ -48,7 +48,7 @@ describe('JournalMobileShell', () => {
       within(navigation)
         .getAllByRole('link')
         .map((link) => link.textContent)
-    ).toEqual(['Stash', 'Edit entry', 'New'])
+    ).toEqual(['Stash', 'Edit entry'])
   })
 
   it('reserves toolbar space without duplicating navigation in the editor', () => {
