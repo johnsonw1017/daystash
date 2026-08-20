@@ -5,7 +5,7 @@ import {
   useQuery,
   type InfiniteData,
 } from '@tanstack/react-query'
-import { parseISO } from 'date-fns'
+import { endOfMonth, format, parseISO, startOfMonth } from 'date-fns'
 import type { JournalDetail, JournalListItem } from '@/lib/journals'
 import { parseJournalBlocks, type JournalPlace } from '@/lib/journals'
 import supabase from '@/lib/supabase/client'
@@ -19,6 +19,10 @@ export const journalQueryKeys = {
     [...journalQueryKeys.lists(), userId ?? ''] as const,
   years: (userId?: string) =>
     [...journalQueryKeys.all, 'years', userId ?? ''] as const,
+  month: (userId: string | undefined, month: string) =>
+    [...journalQueryKeys.all, 'month', userId ?? '', month] as const,
+  timelineMonths: (userId?: string) =>
+    [...journalQueryKeys.all, 'timeline-months', userId ?? ''] as const,
   bySlug: (slug: string) => [...journalQueryKeys.all, 'slug', slug] as const,
 }
 
@@ -83,6 +87,11 @@ type JournalCursor = {
 type JournalPage = {
   journals: JournalListItem[]
   nextCursor: JournalCursor | null
+}
+
+export type JournalTimelineMonth = {
+  month: string
+  journalCount: number
 }
 
 const mapJournalListRow = (journal: JournalListRow): JournalListItem => {
@@ -199,6 +208,49 @@ const fetchJournalYears = async (userId: string) => {
   ]
 }
 
+const fetchJournalMonth = async (userId: string, month: string) => {
+  const start = format(startOfMonth(parseISO(month)), 'yyyy-MM-dd')
+  const end = format(endOfMonth(parseISO(month)), 'yyyy-MM-dd')
+  const { data, error } = await supabase
+    .from('journals')
+    .select(
+      `
+        id,
+        title,
+        slug,
+        date,
+        thumbnail:journal_assets!journals_thumbnail_asset_id_fkey(
+          cloudinary_public_id,
+          width,
+          height
+        ),
+        places(count)
+      `
+    )
+    .eq('user_id', userId)
+    .gte('date', start)
+    .lte('date', end)
+    .order('date', { ascending: false })
+    .order('id', { ascending: false })
+
+  if (error) throw new Error(error.message)
+
+  return (data ?? []).map((journal) =>
+    mapJournalListRow(journal as JournalListRow)
+  )
+}
+
+const fetchJournalTimelineMonths = async (): Promise<JournalTimelineMonth[]> => {
+  const { data, error } = await supabase.rpc('get_journal_timeline_months')
+
+  if (error) throw new Error(error.message)
+
+  return (data ?? []).map((month: { month: string; journal_count: number | string }) => ({
+    month: month.month as string,
+    journalCount: Number(month.journal_count),
+  }))
+}
+
 const fetchJournalBySlug = async (
   slug: string
 ): Promise<JournalDetail | null> => {
@@ -251,6 +303,22 @@ export const useJournalYears = (userId?: string) =>
   useQuery({
     queryKey: journalQueryKeys.years(userId),
     queryFn: () => fetchJournalYears(userId!),
+    enabled: Boolean(userId),
+    refetchOnMount: true,
+  })
+
+export const useJournalMonth = (userId: string | undefined, month: string) =>
+  useQuery({
+    queryKey: journalQueryKeys.month(userId, month),
+    queryFn: () => fetchJournalMonth(userId!, month),
+    enabled: Boolean(userId && month),
+    refetchOnMount: true,
+  })
+
+export const useJournalTimelineMonths = (userId?: string) =>
+  useQuery({
+    queryKey: journalQueryKeys.timelineMonths(userId),
+    queryFn: fetchJournalTimelineMonths,
     enabled: Boolean(userId),
     refetchOnMount: true,
   })

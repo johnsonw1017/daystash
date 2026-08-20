@@ -1,200 +1,61 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import Link from 'next/link'
-import { parseISO } from 'date-fns'
 import { SquarePen } from 'lucide-react'
+import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuthUser } from '@/hooks/use-auth-user'
-import { useJournals, useJournalYears } from '@/hooks/use-journals'
-import type { JournalListItem } from '@/lib/journals'
-import JournalMonthSection, { type JournalMonth } from './journal-month-section'
-import {
-  InitialJournalSkeletons,
-  JournalCardSkeleton,
-} from './journal-skeletons'
-import YearTimeline from './year-timeline'
-
-const monthFormatter = new Intl.DateTimeFormat('en-AU', {
-  month: 'long',
-})
-
-const groupJournalsByMonth = (journals: JournalListItem[]) => {
-  const months = new Map<string, JournalMonth>()
-
-  journals.forEach((journal) => {
-    const date = parseISO(journal.date)
-    const key = `${date.getFullYear()}-${date.getMonth()}`
-    const existingMonth = months.get(key)
-
-    if (existingMonth) {
-      existingMonth.journals.push(journal)
-      return
-    }
-
-    months.set(key, {
-      key,
-      label: monthFormatter.format(date),
-      year: date.getFullYear(),
-      journals: [journal],
-    })
-  })
-
-  return [...months.values()]
-}
+import { useJournalTimelineMonths } from '@/hooks/use-journals'
+import { InitialJournalSkeletons } from './journal-skeletons'
+import JournalTimelineScrubber from './journal-timeline-scrubber'
+import VirtualizedJournalMonth from './virtualized-journal-month'
 
 const DashboardJournals = () => {
   const authUser = useAuthUser()
-  const loadMoreRef = useRef<HTMLDivElement>(null)
-  const pendingYearRef = useRef<number | null>(null)
-  const [activeYear, setActiveYear] = useState<number | null>(null)
-  const [yearNavigationRequest, setYearNavigationRequest] = useState(0)
+  const virtuosoRef = useRef<VirtuosoHandle>(null)
+  const [activeIndex, setActiveIndex] = useState(0)
   const {
-    data,
+    data: months = [],
     error,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
     isLoading,
     refetch,
-  } = useJournals(authUser.user?.id)
-  const { data: journalYears = [], isLoading: areYearsLoading } =
-    useJournalYears(authUser.user?.id)
-
-  const journals = useMemo(
-    () => data?.pages.flatMap((page) => page.journals) ?? [],
-    [data]
-  )
-  const journalMonths = useMemo(
-    () => groupJournalsByMonth(journals),
-    [journals]
-  )
-  const loadedYears = useMemo(
-    () => [...new Set(journalMonths.map((month) => month.year))],
-    [journalMonths]
-  )
-  const years = journalYears.length ? journalYears : loadedYears
+  } = useJournalTimelineMonths(authUser.user?.id)
   const isInitialLoading = authUser.isLoading || isLoading
-  const displayedActiveYear = activeYear ?? years[0] ?? null
 
-  useEffect(() => {
-    const target = loadMoreRef.current
-
-    if (!target || !hasNextPage) {
-      return
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !isFetchingNextPage) {
-          void fetchNextPage()
-        }
-      },
-      { rootMargin: '400px 0px' }
-    )
-
-    observer.observe(target)
-
-    return () => observer.disconnect()
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage])
-
-  useEffect(() => {
-    const pendingYear = pendingYearRef.current
-
-    if (pendingYear === null) return
-
-    const yearSection = document.getElementById(`journal-year-${pendingYear}`)
-
-    if (yearSection) {
-      yearSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      pendingYearRef.current = null
-      return
-    }
-
-    if (hasNextPage && !isFetchingNextPage) {
-      void fetchNextPage()
-      return
-    }
-
-    if (!hasNextPage) {
-      pendingYearRef.current = null
-    }
-  }, [
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    journalMonths,
-    yearNavigationRequest,
-  ])
-
-  useEffect(() => {
-    const monthSections = document.querySelectorAll<HTMLElement>(
-      '[data-journal-year]'
-    )
-
-    if (!monthSections.length) return
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visibleEntry = entries.find((entry) => entry.isIntersecting)
-        const year = Number(
-          (visibleEntry?.target as HTMLElement | undefined)?.dataset.journalYear
-        )
-
-        if (Number.isFinite(year)) {
-          setActiveYear(year)
-        }
-      },
-      { rootMargin: '-15% 0px -70% 0px' }
-    )
-
-    monthSections.forEach((section) => observer.observe(section))
-
-    return () => observer.disconnect()
-  }, [journalMonths])
-
-  const selectYear = (year: number) => {
-    pendingYearRef.current = year
-    setActiveYear(year)
-    setYearNavigationRequest((request) => request + 1)
-  }
+  const selectMonth = useCallback(
+    (index: number, behavior: ScrollBehavior = 'smooth') => {
+      virtuosoRef.current?.scrollToIndex({
+        index,
+        align: 'start',
+        behavior: behavior === 'instant' ? 'auto' : behavior,
+      })
+    },
+    []
+  )
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+    <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">
-            Your Stash
-          </h1>
+          <h1 className="text-3xl font-semibold tracking-tight">Your Stash</h1>
           <p className="text-muted-foreground mt-1 text-sm">
             Browse your journals by month and year.
           </p>
         </div>
-        <Button variant="accent" className="hidden lg:inline-flex" asChild>
-          <Link href="/write">
-            <SquarePen />
-            Write
-          </Link>
-        </Button>
+        <div className="hidden lg:block">
+          <Button variant="accent" asChild>
+            <Link href="/write">
+              <SquarePen />
+              Write
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {isInitialLoading ? (
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_4rem]">
-          <YearTimeline
-            activeYear={null}
-            isLoading
-            onSelectYear={() => undefined}
-            years={[]}
-          />
-          <InitialJournalSkeletons />
-        </div>
+        <InitialJournalSkeletons />
       ) : error ? (
         <Card>
           <CardHeader>
@@ -208,56 +69,37 @@ const DashboardJournals = () => {
             </Button>
           </CardContent>
         </Card>
-      ) : journalMonths.length ? (
-        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_4rem] lg:gap-6">
-          <YearTimeline
-            activeYear={displayedActiveYear}
-            isLoading={areYearsLoading}
-            onSelectYear={selectYear}
-            years={years}
-          />
-
-          <div className="space-y-10">
-            {journalMonths.map((month, index) => {
-              const isFirstMonthOfYear =
-                journalMonths[index - 1]?.year !== month.year
-
-              return (
-                <JournalMonthSection
-                  key={month.key}
-                  isFirstMonthOfYear={isFirstMonthOfYear}
+      ) : months.length ? (
+        <>
+          <Virtuoso
+            ref={virtuosoRef}
+            useWindowScroll
+            data={months}
+            computeItemKey={(_, month) => month.month}
+            overscan={480}
+            rangeChanged={({ startIndex }) => setActiveIndex(startIndex)}
+            itemContent={(_, month) => (
+              <div className="pb-10">
+                <VirtualizedJournalMonth
                   month={month}
+                  userId={authUser.user?.id}
                 />
-              )
-            })}
-
-            <div ref={loadMoreRef} className="min-h-1" aria-hidden="true" />
-
-            {isFetchingNextPage ? (
-              <div
-                className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3"
-                aria-label="Loading more journals"
-                aria-live="polite"
-              >
-                {Array.from({ length: 3 }, (_, index) => (
-                  <JournalCardSkeleton key={index} />
-                ))}
               </div>
-            ) : null}
-          </div>
-        </div>
+            )}
+          />
+          <JournalTimelineScrubber
+            activeIndex={activeIndex}
+            months={months}
+            onSelectIndex={selectMonth}
+          />
+        </>
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base font-medium">
-              No journals yet
-            </CardTitle>
+            <CardTitle className="text-base font-medium">No journals yet</CardTitle>
           </CardHeader>
           <CardContent className="pb-6">
-            <CardDescription>
-              Start writing from the Write page and your entries will appear
-              here.
-            </CardDescription>
+            Start writing from the Write page and your entries will appear here.
           </CardContent>
         </Card>
       )}
