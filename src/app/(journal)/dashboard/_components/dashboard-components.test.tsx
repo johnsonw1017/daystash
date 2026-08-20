@@ -1,5 +1,4 @@
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import JournalCard from '@/app/(journal)/dashboard/_components/journal-card'
 import JournalMonthSection, {
@@ -9,7 +8,7 @@ import {
   InitialJournalSkeletons,
   JournalCardSkeleton,
 } from '@/app/(journal)/dashboard/_components/journal-skeletons'
-import YearTimeline from '@/app/(journal)/dashboard/_components/year-timeline'
+import JournalTimelineScrubber from '@/app/(journal)/dashboard/_components/journal-timeline-scrubber'
 import type { JournalListItem } from '@/lib/journals'
 
 vi.mock('next/image', () => ({
@@ -60,54 +59,22 @@ describe('dashboard journal components', () => {
     expect(screen.getByText('Untitled Journal')).toBeInTheDocument()
   })
 
-  it('renders journal month sections with a year anchor for first months', () => {
+  it('renders journal month sections', () => {
     const month: JournalMonth = {
       key: '2026-6',
       label: 'July',
-      year: 2026,
       journals: [journal],
     }
 
-    const { container } = render(
-      <JournalMonthSection isFirstMonthOfYear month={month} />
-    )
+    render(<JournalMonthSection month={month} />)
 
-    expect(container.querySelector('#journal-year-2026')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'July' })).toBeInTheDocument()
     expect(screen.getByText('Summer trip')).toBeInTheDocument()
-  })
-
-  it('renders year buttons and reports selected years', async () => {
-    const onSelectYear = vi.fn()
-
-    render(
-      <YearTimeline
-        activeYear={2026}
-        isLoading={false}
-        onSelectYear={onSelectYear}
-        years={[2026, 2025]}
-      />
-    )
-
-    expect(screen.getByRole('button', { name: '2026' })).toHaveAttribute(
-      'aria-current',
-      'true'
-    )
-
-    await userEvent.click(screen.getByRole('button', { name: '2025' }))
-
-    expect(onSelectYear).toHaveBeenCalledWith(2025)
   })
 
   it('renders loading states for timeline and journal grids', () => {
     const { container } = render(
       <>
-        <YearTimeline
-          activeYear={null}
-          isLoading
-          onSelectYear={vi.fn()}
-          years={[]}
-        />
         <JournalCardSkeleton />
         <InitialJournalSkeletons />
       </>
@@ -116,6 +83,76 @@ describe('dashboard journal components', () => {
     expect(screen.getByLabelText('Loading journals')).toBeInTheDocument()
     expect(
       container.querySelectorAll('[data-slot="skeleton"]').length
-    ).toBeGreaterThan(4)
+    ).toBeGreaterThan(3)
+  })
+
+  it('supports keyboard navigation in the journal timeline scrubber', async () => {
+    const onSelectIndex = vi.fn()
+
+    render(
+      <JournalTimelineScrubber
+        activeIndex={0}
+        months={[
+          { month: '2026-07-01', journalCount: 2 },
+          { month: '2026-06-01', journalCount: 1 },
+        ]}
+        onSelectIndex={onSelectIndex}
+      />
+    )
+
+    const slider = screen.getByRole('slider', { name: 'Journal timeline' })
+    expect(slider.parentElement).toHaveClass(
+      'top-8',
+      'right-0',
+      'bottom-16',
+      'w-12',
+      'lg:right-3'
+    )
+    slider.focus()
+    expect(fireEvent.keyDown(slider, { key: 'ArrowDown' })).toBe(false)
+
+    expect(onSelectIndex).toHaveBeenCalledWith(1)
+  })
+
+  it('coalesces scrub movement into one timeline jump per frame', () => {
+    vi.useFakeTimers()
+    const onSelectIndex = vi.fn()
+
+    render(
+      <JournalTimelineScrubber
+        activeIndex={0}
+        months={[
+          { month: '2026-07-01', journalCount: 2 },
+          { month: '2026-06-01', journalCount: 1 },
+          { month: '2026-05-01', journalCount: 1 },
+        ]}
+        onSelectIndex={onSelectIndex}
+      />
+    )
+
+    const slider = screen.getByRole('slider', { name: 'Journal timeline' })
+    const scrubber = slider.parentElement!
+    scrubber.setPointerCapture = vi.fn()
+    vi.spyOn(scrubber, 'getBoundingClientRect').mockReturnValue({
+      bottom: 1000,
+      height: 1000,
+      left: 0,
+      right: 40,
+      top: 0,
+      width: 40,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    })
+
+    fireEvent.pointerDown(scrubber, { clientY: 50, pointerId: 1 })
+    fireEvent.pointerMove(scrubber, { clientY: 500, pointerId: 1 })
+    fireEvent.pointerMove(scrubber, { clientY: 950, pointerId: 1 })
+
+    act(() => vi.advanceTimersByTime(20))
+
+    expect(onSelectIndex).toHaveBeenCalledOnce()
+    expect(onSelectIndex).toHaveBeenCalledWith(2, 'auto')
+    vi.useRealTimers()
   })
 })

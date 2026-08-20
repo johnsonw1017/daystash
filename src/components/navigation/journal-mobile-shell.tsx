@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react'
 import { usePathname } from 'next/navigation'
 import { BookOpen, Pencil, SquarePen } from 'lucide-react'
+import MobileCalendarAction from '@/components/navigation/mobile-calendar-action'
 import {
   MobileToolbar,
   MobileToolbarAction,
@@ -23,6 +24,7 @@ const JournalMobileNavigation = ({ pathname }: { pathname: string }) => {
   if (pathname === '/dashboard') {
     return (
       <MobileToolbar label="Journal navigation">
+        <MobileCalendarAction />
         <MobileToolbarAction
           className="w-full max-w-sm justify-self-center"
           href="/write"

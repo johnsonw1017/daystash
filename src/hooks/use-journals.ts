@@ -1,24 +1,17 @@
 'use client'
 
-import {
-  useInfiniteQuery,
-  useQuery,
-  type InfiniteData,
-} from '@tanstack/react-query'
-import { parseISO } from 'date-fns'
+import { useQuery } from '@tanstack/react-query'
+import { endOfMonth, format, parseISO, startOfMonth } from 'date-fns'
 import type { JournalDetail, JournalListItem } from '@/lib/journals'
 import { parseJournalBlocks, type JournalPlace } from '@/lib/journals'
 import supabase from '@/lib/supabase/client'
 
-const JOURNALS_PAGE_SIZE = 12
-
 export const journalQueryKeys = {
   all: ['journals'] as const,
-  lists: () => [...journalQueryKeys.all, 'list'] as const,
-  list: (userId?: string) =>
-    [...journalQueryKeys.lists(), userId ?? ''] as const,
-  years: (userId?: string) =>
-    [...journalQueryKeys.all, 'years', userId ?? ''] as const,
+  month: (userId: string | undefined, month: string) =>
+    [...journalQueryKeys.all, 'month', userId ?? '', month] as const,
+  timelineMonths: (userId?: string) =>
+    [...journalQueryKeys.all, 'timeline-months', userId ?? ''] as const,
   bySlug: (slug: string) => [...journalQueryKeys.all, 'slug', slug] as const,
 }
 
@@ -75,14 +68,9 @@ type JournalDetailRow = {
   places: JournalPlaceRow[]
 }
 
-type JournalCursor = {
-  date: string
-  id: string
-}
-
-type JournalPage = {
-  journals: JournalListItem[]
-  nextCursor: JournalCursor | null
+export type JournalTimelineMonth = {
+  month: string
+  journalCount: number
 }
 
 const mapJournalListRow = (journal: JournalListRow): JournalListItem => {
@@ -131,11 +119,10 @@ const mapJournalDetailRow = (journal: JournalDetailRow): JournalDetail => {
   }
 }
 
-const fetchJournalsPage = async (
-  userId: string,
-  cursor: JournalCursor | null
-): Promise<JournalPage> => {
-  let query = supabase
+const fetchJournalMonth = async (userId: string, month: string) => {
+  const start = format(startOfMonth(parseISO(month)), 'yyyy-MM-dd')
+  const end = format(endOfMonth(parseISO(month)), 'yyyy-MM-dd')
+  const { data, error } = await supabase
     .from('journals')
     .select(
       `
@@ -152,51 +139,31 @@ const fetchJournalsPage = async (
       `
     )
     .eq('user_id', userId)
+    .gte('date', start)
+    .lte('date', end)
     .order('date', { ascending: false })
     .order('id', { ascending: false })
-    .limit(JOURNALS_PAGE_SIZE + 1)
 
-  if (cursor) {
-    query = query.or(
-      `date.lt.${cursor.date},and(date.eq.${cursor.date},id.lt.${cursor.id})`
-    )
-  }
+  if (error) throw new Error(error.message)
 
-  const { data, error } = await query
-
-  if (error) {
-    throw new Error(error.message)
-  }
-
-  const rows = (data ?? []) as JournalListRow[]
-  const pageRows = rows.slice(0, JOURNALS_PAGE_SIZE)
-  const lastJournal = pageRows.at(-1)
-
-  return {
-    journals: pageRows.map(mapJournalListRow),
-    nextCursor:
-      rows.length > JOURNALS_PAGE_SIZE && lastJournal
-        ? { date: lastJournal.date, id: lastJournal.id }
-        : null,
-  }
+  return (data ?? []).map((journal) =>
+    mapJournalListRow(journal as JournalListRow)
+  )
 }
 
-const fetchJournalYears = async (userId: string) => {
-  const { data, error } = await supabase
-    .from('journals')
-    .select('date')
-    .eq('user_id', userId)
-    .order('date', { ascending: false })
+const fetchJournalTimelineMonths = async (): Promise<
+  JournalTimelineMonth[]
+> => {
+  const { data, error } = await supabase.rpc('get_journal_timeline_months')
 
-  if (error) {
-    throw new Error(error.message)
-  }
+  if (error) throw new Error(error.message)
 
-  return [
-    ...new Set(
-      (data ?? []).map((journal) => parseISO(journal.date).getFullYear())
-    ),
-  ]
+  return (data ?? []).map(
+    (month: { month: string; journal_count: number | string }) => ({
+      month: month.month as string,
+      journalCount: Number(month.journal_count),
+    })
+  )
 }
 
 const fetchJournalBySlug = async (
@@ -231,26 +198,18 @@ const fetchJournalBySlug = async (
   return mapJournalDetailRow(journal as JournalDetailRow)
 }
 
-export const useJournals = (userId?: string) =>
-  useInfiniteQuery<
-    JournalPage,
-    Error,
-    InfiniteData<JournalPage>,
-    ReturnType<typeof journalQueryKeys.list>,
-    JournalCursor | null
-  >({
-    queryKey: journalQueryKeys.list(userId),
-    queryFn: ({ pageParam }) => fetchJournalsPage(userId!, pageParam),
-    initialPageParam: null,
-    getNextPageParam: (lastPage) => lastPage.nextCursor,
-    enabled: Boolean(userId),
+export const useJournalMonth = (userId: string | undefined, month: string) =>
+  useQuery({
+    queryKey: journalQueryKeys.month(userId, month),
+    queryFn: () => fetchJournalMonth(userId!, month),
+    enabled: Boolean(userId && month),
     refetchOnMount: true,
   })
 
-export const useJournalYears = (userId?: string) =>
+export const useJournalTimelineMonths = (userId?: string) =>
   useQuery({
-    queryKey: journalQueryKeys.years(userId),
-    queryFn: () => fetchJournalYears(userId!),
+    queryKey: journalQueryKeys.timelineMonths(userId),
+    queryFn: fetchJournalTimelineMonths,
     enabled: Boolean(userId),
     refetchOnMount: true,
   })
