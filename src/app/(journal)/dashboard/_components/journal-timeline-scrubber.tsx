@@ -119,7 +119,7 @@ const JournalTimelineScrubber = ({
   return (
     <div
       ref={scrubberRef}
-      className="fixed inset-y-0 right-0 z-20 w-12 touch-none lg:w-10"
+      className="fixed top-4 right-0 bottom-16 z-20 w-12 touch-none lg:w-10"
       onPointerEnter={(event) => {
         setIsHovered(true)
         updateScrubY(event.clientY)
