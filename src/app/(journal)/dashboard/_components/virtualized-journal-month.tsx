@@ -18,6 +18,15 @@ type VirtualizedJournalMonthProps = {
 }
 
 const monthFormatter = new Intl.DateTimeFormat('en-AU', { month: 'long' })
+const historicalMonthFormatter = new Intl.DateTimeFormat('en-AU', {
+  month: 'long',
+  year: 'numeric',
+})
+
+const getMonthLabel = (date: Date) =>
+  date.getFullYear() === new Date().getFullYear()
+    ? monthFormatter.format(date)
+    : historicalMonthFormatter.format(date)
 
 const VirtualizedJournalMonth = ({
   month,
@@ -32,6 +41,7 @@ const VirtualizedJournalMonth = ({
     refetch,
   } = useJournalMonth(userId, month.month)
   const monthDate = parseISO(month.month)
+  const monthLabel = getMonthLabel(monthDate)
 
   useEffect(() => {
     if (
@@ -53,7 +63,7 @@ const VirtualizedJournalMonth = ({
 
   if (isLoading) {
     return (
-      <section aria-label={`Loading ${monthFormatter.format(monthDate)}`}>
+      <section aria-label={`Loading ${monthLabel}`}>
         <div className="bg-muted mb-4 h-8 w-32 animate-pulse rounded-md" />
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: month.journalCount }, (_, index) => (
@@ -67,7 +77,7 @@ const VirtualizedJournalMonth = ({
   if (error || !journals) {
     return (
       <JournalLoadError
-        title={`${monthFormatter.format(monthDate)} journals could not be loaded`}
+        title={`${monthLabel} journals could not be loaded`}
         onRetry={() => void refetch()}
       />
     )
@@ -77,7 +87,7 @@ const VirtualizedJournalMonth = ({
     <JournalMonthSection
       month={{
         key: month.month,
-        label: monthFormatter.format(monthDate),
+        label: monthLabel,
         journals,
       }}
       selectedDate={selectedDate}

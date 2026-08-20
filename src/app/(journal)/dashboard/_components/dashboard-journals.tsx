@@ -81,30 +81,31 @@ const DashboardJournals = () => {
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+      <div className="mb-8">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">Your Stash</h1>
           <p className="text-muted-foreground mt-1 text-sm">
             Browse your journals by month and year.
           </p>
         </div>
-        <div className="hidden gap-2 lg:flex">
-          <JournalCalendarDrawer
-            direction="right"
-            trigger={
-              <Button variant="outline">
-                <CalendarDays />
-                Calendar
-              </Button>
-            }
-          />
-          <Button variant="accent" asChild>
-            <Link href="/write">
-              <SquarePen />
-              Write
-            </Link>
-          </Button>
-        </div>
+      </div>
+
+      <div className="fixed right-6 bottom-6 z-40 hidden items-center gap-2 lg:flex">
+        <JournalCalendarDrawer
+          direction="right"
+          trigger={
+            <Button variant="outline" className="shadow-lg">
+              <CalendarDays />
+              Calendar
+            </Button>
+          }
+        />
+        <Button variant="accent" className="shadow-lg" asChild>
+          <Link href="/write">
+            <SquarePen />
+            Write
+          </Link>
+        </Button>
       </div>
 
       {isInitialLoading ? (

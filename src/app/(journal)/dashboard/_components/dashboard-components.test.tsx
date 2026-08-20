@@ -101,7 +101,7 @@ describe('dashboard journal components', () => {
     )
 
     const slider = screen.getByRole('slider', { name: 'Journal timeline' })
-    expect(slider.parentElement).toHaveClass('top-4', 'bottom-16', 'w-12')
+    expect(slider.parentElement).toHaveClass('top-6', 'bottom-16', 'w-12')
     slider.focus()
     expect(fireEvent.keyDown(slider, { key: 'ArrowDown' })).toBe(false)
 

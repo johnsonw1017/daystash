@@ -41,8 +41,13 @@ export const JournalCalendarDrawer = ({
   } = useJournalTimelineMonths(authUser.user?.id)
   const [month, setMonth] = useState<Date | undefined>()
   const latestMonth = timelineMonths[0]?.month
+  const oldestMonth = timelineMonths.at(-1)?.month
   const displayedMonth =
     month ?? (latestMonth ? parseISO(latestMonth) : undefined)
+  const calendarStartMonth = oldestMonth ? parseISO(oldestMonth) : undefined
+  const calendarEndMonth = latestMonth ? parseISO(latestMonth) : undefined
+  const hasMultipleYears =
+    calendarStartMonth?.getFullYear() !== calendarEndMonth?.getFullYear()
   const {
     data: journals = [],
     error: journalError,
@@ -97,6 +102,9 @@ export const JournalCalendarDrawer = ({
               mode="single"
               month={displayedMonth}
               onMonthChange={setMonth}
+              captionLayout={hasMultipleYears ? 'dropdown-years' : 'label'}
+              startMonth={calendarStartMonth}
+              endMonth={calendarEndMonth}
               disabled={(date) => !journalDates.has(format(date, 'yyyy-MM-dd'))}
               modifiers={{
                 hasJournal: (date) =>
