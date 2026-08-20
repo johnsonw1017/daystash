@@ -8,12 +8,16 @@ vi.mock('next/navigation', () => ({
   usePathname: () => pathname,
 }))
 
+vi.mock('@/components/navigation/mobile-calendar-action', () => ({
+  default: () => <button type="button">Calendar</button>,
+}))
+
 describe('JournalMobileShell', () => {
   beforeEach(() => {
     pathname = '/dashboard'
   })
 
-  it('shows Write as the only Stash toolbar action', () => {
+  it('shows Calendar and Write actions in the Stash toolbar', () => {
     render(
       <JournalMobileShell>
         <main>Journal content</main>
@@ -24,6 +28,9 @@ describe('JournalMobileShell', () => {
       name: 'Journal navigation',
     })
     const writeAction = within(navigation).getByRole('link', { name: 'Write' })
+    expect(
+      within(navigation).getByRole('button', { name: 'Calendar' })
+    ).toBeInTheDocument()
     expect(writeAction).toHaveAttribute('href', '/write')
     expect(writeAction).toHaveClass('max-w-sm', 'justify-self-center')
     expect(within(navigation).getAllByRole('link')).toHaveLength(1)

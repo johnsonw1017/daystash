@@ -11,11 +11,13 @@ export type JournalMonth = {
 type JournalMonthSectionProps = {
   isFirstMonthOfYear: boolean
   month: JournalMonth
+  selectedDate?: string | null
 }
 
 const JournalMonthSection = ({
   isFirstMonthOfYear,
   month,
+  selectedDate,
 }: JournalMonthSectionProps) => (
   <section
     id={isFirstMonthOfYear ? `journal-year-${month.year}` : undefined}
@@ -28,7 +30,17 @@ const JournalMonthSection = ({
     </h2>
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
       {month.journals.map((journal) => (
-        <JournalCard key={journal.id} journal={journal} />
+        <div
+          key={journal.id}
+          data-journal-date={journal.date}
+          className={
+            selectedDate === journal.date
+              ? 'ring-primary rounded-xl ring-2 ring-offset-2'
+              : undefined
+          }
+        >
+          <JournalCard journal={journal} />
+        </div>
       ))}
     </div>
   </section>

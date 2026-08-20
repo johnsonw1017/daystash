@@ -1,21 +1,29 @@
 'use client'
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { SquarePen } from 'lucide-react'
+import { CalendarDays, SquarePen } from 'lucide-react'
+import { useAtomValue, useSetAtom } from 'jotai'
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuthUser } from '@/hooks/use-auth-user'
 import { useJournalTimelineMonths } from '@/hooks/use-journals'
+import { dashboardCalendarDateAtom } from '@/lib/atoms/dashboard-navigation'
+import { JournalCalendarDrawer } from '@/components/navigation/mobile-calendar-action'
 import { InitialJournalSkeletons } from './journal-skeletons'
 import JournalTimelineScrubber from './journal-timeline-scrubber'
 import VirtualizedJournalMonth from './virtualized-journal-month'
 
 const DashboardJournals = () => {
   const authUser = useAuthUser()
+  const calendarSelection = useAtomValue(dashboardCalendarDateAtom)
+  const setCalendarSelection = useSetAtom(dashboardCalendarDateAtom)
   const virtuosoRef = useRef<VirtuosoHandle>(null)
   const [activeIndex, setActiveIndex] = useState(0)
+  const [readyCalendarRequestId, setReadyCalendarRequestId] = useState<
+    number | null
+  >(null)
   const {
     data: months = [],
     error,
@@ -23,6 +31,36 @@ const DashboardJournals = () => {
     refetch,
   } = useJournalTimelineMonths(authUser.user?.id)
   const isInitialLoading = authUser.isLoading || isLoading
+
+  useEffect(() => {
+    if (!calendarSelection) return
+
+    const { date, requestId } = calendarSelection
+    const monthIndex = months.findIndex((month) =>
+      date.startsWith(month.month.slice(0, 7))
+    )
+    if (monthIndex < 0) return
+
+    let cancelled = false
+
+    virtuosoRef.current?.scrollIntoView({
+      index: monthIndex,
+      align: 'start',
+      behavior: 'auto',
+      done: () => {
+        if (!cancelled) setReadyCalendarRequestId(requestId)
+      },
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [calendarSelection, months])
+
+  const focusedCalendarDate =
+    calendarSelection?.requestId === readyCalendarRequestId
+      ? calendarSelection.date
+      : null
 
   const selectMonth = useCallback(
     (index: number, behavior: ScrollBehavior = 'smooth') => {
@@ -35,6 +73,11 @@ const DashboardJournals = () => {
     []
   )
 
+  const clearCalendarSelection = useCallback(
+    () => setCalendarSelection(null),
+    [setCalendarSelection]
+  )
+
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
@@ -44,7 +87,16 @@ const DashboardJournals = () => {
             Browse your journals by month and year.
           </p>
         </div>
-        <div className="hidden lg:block">
+        <div className="hidden gap-2 lg:flex">
+          <JournalCalendarDrawer
+            direction="right"
+            trigger={
+              <Button variant="outline">
+                <CalendarDays />
+                Calendar
+              </Button>
+            }
+          />
           <Button variant="accent" asChild>
             <Link href="/write">
               <SquarePen />
@@ -82,6 +134,8 @@ const DashboardJournals = () => {
               <div className="pb-10">
                 <VirtualizedJournalMonth
                   month={month}
+                  selectedDate={focusedCalendarDate}
+                  onSelectedDateFocused={clearCalendarSelection}
                   userId={authUser.user?.id}
                 />
               </div>
@@ -96,7 +150,9 @@ const DashboardJournals = () => {
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base font-medium">No journals yet</CardTitle>
+            <CardTitle className="text-base font-medium">
+              No journals yet
+            </CardTitle>
           </CardHeader>
           <CardContent className="pb-6">
             Start writing from the Write page and your entries will appear here.

@@ -1,12 +1,18 @@
 'use client'
 
+import { useEffect } from 'react'
 import { format, parseISO } from 'date-fns'
-import { useJournalMonth, type JournalTimelineMonth } from '@/hooks/use-journals'
+import {
+  useJournalMonth,
+  type JournalTimelineMonth,
+} from '@/hooks/use-journals'
 import { JournalCardSkeleton } from './journal-skeletons'
 import JournalMonthSection from './journal-month-section'
 
 type VirtualizedJournalMonthProps = {
   month: JournalTimelineMonth
+  onSelectedDateFocused: () => void
+  selectedDate: string | null
   userId?: string
 }
 
@@ -14,10 +20,30 @@ const monthFormatter = new Intl.DateTimeFormat('en-AU', { month: 'long' })
 
 const VirtualizedJournalMonth = ({
   month,
+  onSelectedDateFocused,
+  selectedDate,
   userId,
 }: VirtualizedJournalMonthProps) => {
   const { data: journals, isLoading } = useJournalMonth(userId, month.month)
   const monthDate = parseISO(month.month)
+
+  useEffect(() => {
+    if (
+      !selectedDate ||
+      !journals?.some((journal) => journal.date === selectedDate)
+    ) {
+      return
+    }
+
+    const target = document.querySelector<HTMLElement>(
+      `[data-journal-date="${selectedDate}"]`
+    )
+
+    if (!target) return
+
+    target.scrollIntoView({ behavior: 'auto', block: 'center' })
+    onSelectedDateFocused()
+  }, [journals, onSelectedDateFocused, selectedDate])
 
   if (isLoading || !journals) {
     return (
@@ -41,6 +67,7 @@ const VirtualizedJournalMonth = ({
         year: monthDate.getFullYear(),
         journals,
       }}
+      selectedDate={selectedDate}
     />
   )
 }
