@@ -119,12 +119,7 @@ const JournalTimelineScrubber = ({
   return (
     <div
       ref={scrubberRef}
-      className={cn(
-        'fixed inset-y-0 right-0 z-20 touch-none transition-[width,background-color] duration-150',
-        isScrubbing
-          ? 'bg-background/20 w-28 lg:w-24 lg:bg-transparent'
-          : 'w-3 lg:w-10'
-      )}
+      className="fixed inset-y-0 right-0 z-20 w-12 touch-none lg:w-10"
       onPointerEnter={(event) => {
         setIsHovered(true)
         updateScrubY(event.clientY)
@@ -151,9 +146,12 @@ const JournalTimelineScrubber = ({
         tabIndex={0}
         className="absolute inset-y-0 right-0 w-full outline-none"
         onKeyDown={(event) => {
-          if (event.key === 'ArrowUp')
+          if (event.key === 'ArrowUp') {
+            event.preventDefault()
             onSelectIndex(Math.max(0, activeIndex - 1))
+          }
           if (event.key === 'ArrowDown') {
+            event.preventDefault()
             onSelectIndex(Math.min(months.length - 1, activeIndex + 1))
           }
         }}
@@ -172,14 +170,12 @@ const JournalTimelineScrubber = ({
         ) : null}
 
         {isScrubbing ? (
-          <>
-            <output
-              className="bg-background absolute right-14 -translate-y-1/2 rounded-full border px-2 py-0.5 text-xs font-semibold whitespace-nowrap shadow-lg lg:right-12"
-              style={{ top: scrubY }}
-            >
-              {label}
-            </output>
-          </>
+          <output
+            className="bg-background absolute right-14 -translate-y-1/2 rounded-full border px-2 py-0.5 text-xs font-semibold whitespace-nowrap shadow-lg lg:right-12"
+            style={{ top: scrubY }}
+          >
+            {label}
+          </output>
         ) : null}
 
         {isScrubbing

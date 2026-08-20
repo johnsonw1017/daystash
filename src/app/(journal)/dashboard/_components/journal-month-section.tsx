@@ -4,27 +4,19 @@ import JournalCard from './journal-card'
 export type JournalMonth = {
   key: string
   label: string
-  year: number
   journals: JournalListItem[]
 }
 
 type JournalMonthSectionProps = {
-  isFirstMonthOfYear: boolean
   month: JournalMonth
   selectedDate?: string | null
 }
 
 const JournalMonthSection = ({
-  isFirstMonthOfYear,
   month,
   selectedDate,
 }: JournalMonthSectionProps) => (
-  <section
-    id={isFirstMonthOfYear ? `journal-year-${month.year}` : undefined}
-    data-journal-year={month.year}
-    aria-labelledby={`month-${month.key}`}
-    className="scroll-mt-24"
-  >
+  <section aria-labelledby={`month-${month.key}`} className="scroll-mt-24">
     <h2 id={`month-${month.key}`} className="mb-4 text-2xl font-semibold">
       {month.label}
     </h2>

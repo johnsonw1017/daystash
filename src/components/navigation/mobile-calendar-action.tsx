@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, type ReactElement } from 'react'
+import { useRef, useState, type ReactElement } from 'react'
 import { format, parseISO } from 'date-fns'
 import { CalendarDays } from 'lucide-react'
 import { useSetAtom } from 'jotai'
@@ -17,6 +17,7 @@ import { useAuthUser } from '@/hooks/use-auth-user'
 import { useJournalMonth, useJournalTimelineMonths } from '@/hooks/use-journals'
 import { dashboardCalendarDateAtom } from '@/lib/atoms/dashboard-navigation'
 import { MobileToolbarAction } from '@/components/navigation/mobile-toolbar'
+import JournalLoadError from '@/components/journal-load-error'
 import { cn } from '@/lib/utils'
 
 type JournalCalendarDrawerProps = {
@@ -31,14 +32,23 @@ export const JournalCalendarDrawer = ({
   const authUser = useAuthUser()
   const setCalendarDate = useSetAtom(dashboardCalendarDateAtom)
   const [open, setOpen] = useState(false)
-  const { data: timelineMonths = [] } = useJournalTimelineMonths(
-    authUser.user?.id
-  )
+  const navigationCloseRef = useRef(false)
+  const {
+    data: timelineMonths = [],
+    error: timelineError,
+    isLoading: isTimelineLoading,
+    refetch: refetchTimeline,
+  } = useJournalTimelineMonths(authUser.user?.id)
   const [month, setMonth] = useState<Date | undefined>()
   const latestMonth = timelineMonths[0]?.month
   const displayedMonth =
     month ?? (latestMonth ? parseISO(latestMonth) : undefined)
-  const { data: journals = [] } = useJournalMonth(
+  const {
+    data: journals = [],
+    error: journalError,
+    isLoading: isMonthLoading,
+    refetch: refetchJournals,
+  } = useJournalMonth(
     authUser.user?.id,
     displayedMonth ? format(displayedMonth, 'yyyy-MM-dd') : ''
   )
@@ -48,7 +58,12 @@ export const JournalCalendarDrawer = ({
     <Drawer direction={direction} open={open} onOpenChange={setOpen}>
       <DrawerTrigger asChild>{trigger}</DrawerTrigger>
       <DrawerContent
-        onCloseAutoFocus={(event) => event.preventDefault()}
+        onCloseAutoFocus={(event) => {
+          if (!navigationCloseRef.current) return
+
+          event.preventDefault()
+          navigationCloseRef.current = false
+        }}
         className={cn(
           direction === 'right' && 'w-128 max-w-none sm:max-w-none'
         )}
@@ -60,7 +75,24 @@ export const JournalCalendarDrawer = ({
           </DrawerDescription>
         </DrawerHeader>
         <div className="flex-1 overflow-y-auto px-4 pb-6">
-          {displayedMonth ? (
+          {timelineError ? (
+            <JournalLoadError
+              title="Journal calendar could not be loaded"
+              onRetry={() => void refetchTimeline()}
+            />
+          ) : journalError ? (
+            <JournalLoadError
+              title="Journals for this month could not be loaded"
+              onRetry={() => void refetchJournals()}
+            />
+          ) : isTimelineLoading || isMonthLoading || !displayedMonth ? (
+            <p
+              role="status"
+              className="text-muted-foreground py-8 text-center text-sm"
+            >
+              Loading calendar…
+            </p>
+          ) : (
             <Calendar
               mode="single"
               month={displayedMonth}
@@ -73,6 +105,7 @@ export const JournalCalendarDrawer = ({
               modifiersClassNames={{ hasJournal: 'font-semibold text-primary' }}
               onSelect={(date) => {
                 if (!date) return
+                navigationCloseRef.current = true
                 setCalendarDate({
                   date: format(date, 'yyyy-MM-dd'),
                   requestId: Date.now(),
@@ -84,7 +117,7 @@ export const JournalCalendarDrawer = ({
                 direction === 'right' && 'w-full [--cell-size:--spacing(12)]'
               )}
             />
-          ) : null}
+          )}
         </div>
       </DrawerContent>
     </Drawer>

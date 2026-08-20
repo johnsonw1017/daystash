@@ -1,5 +1,4 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import JournalCard from '@/app/(journal)/dashboard/_components/journal-card'
 import JournalMonthSection, {
@@ -60,19 +59,15 @@ describe('dashboard journal components', () => {
     expect(screen.getByText('Untitled Journal')).toBeInTheDocument()
   })
 
-  it('renders journal month sections with a year anchor for first months', () => {
+  it('renders journal month sections', () => {
     const month: JournalMonth = {
       key: '2026-6',
       label: 'July',
-      year: 2026,
       journals: [journal],
     }
 
-    const { container } = render(
-      <JournalMonthSection isFirstMonthOfYear month={month} />
-    )
+    render(<JournalMonthSection month={month} />)
 
-    expect(container.querySelector('#journal-year-2026')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'July' })).toBeInTheDocument()
     expect(screen.getByText('Summer trip')).toBeInTheDocument()
   })
@@ -106,8 +101,9 @@ describe('dashboard journal components', () => {
     )
 
     const slider = screen.getByRole('slider', { name: 'Journal timeline' })
+    expect(slider.parentElement).toHaveClass('w-12')
     slider.focus()
-    await userEvent.keyboard('{ArrowDown}')
+    expect(fireEvent.keyDown(slider, { key: 'ArrowDown' })).toBe(false)
 
     expect(onSelectIndex).toHaveBeenCalledWith(1)
   })

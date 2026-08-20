@@ -1,11 +1,12 @@
 'use client'
 
 import { useEffect } from 'react'
-import { format, parseISO } from 'date-fns'
+import { parseISO } from 'date-fns'
 import {
   useJournalMonth,
   type JournalTimelineMonth,
 } from '@/hooks/use-journals'
+import JournalLoadError from '@/components/journal-load-error'
 import { JournalCardSkeleton } from './journal-skeletons'
 import JournalMonthSection from './journal-month-section'
 
@@ -24,7 +25,12 @@ const VirtualizedJournalMonth = ({
   selectedDate,
   userId,
 }: VirtualizedJournalMonthProps) => {
-  const { data: journals, isLoading } = useJournalMonth(userId, month.month)
+  const {
+    data: journals,
+    error,
+    isLoading,
+    refetch,
+  } = useJournalMonth(userId, month.month)
   const monthDate = parseISO(month.month)
 
   useEffect(() => {
@@ -45,7 +51,7 @@ const VirtualizedJournalMonth = ({
     onSelectedDateFocused()
   }, [journals, onSelectedDateFocused, selectedDate])
 
-  if (isLoading || !journals) {
+  if (isLoading) {
     return (
       <section aria-label={`Loading ${monthFormatter.format(monthDate)}`}>
         <div className="bg-muted mb-4 h-8 w-32 animate-pulse rounded-md" />
@@ -58,13 +64,20 @@ const VirtualizedJournalMonth = ({
     )
   }
 
+  if (error || !journals) {
+    return (
+      <JournalLoadError
+        title={`${monthFormatter.format(monthDate)} journals could not be loaded`}
+        onRetry={() => void refetch()}
+      />
+    )
+  }
+
   return (
     <JournalMonthSection
-      isFirstMonthOfYear
       month={{
-        key: format(monthDate, 'yyyy-M'),
+        key: month.month,
         label: monthFormatter.format(monthDate),
-        year: monthDate.getFullYear(),
         journals,
       }}
       selectedDate={selectedDate}

@@ -7,6 +7,7 @@ import { useAtomValue, useSetAtom } from 'jotai'
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import JournalLoadError from '@/components/journal-load-error'
 import { useAuthUser } from '@/hooks/use-auth-user'
 import { useJournalTimelineMonths } from '@/hooks/use-journals'
 import { dashboardCalendarDateAtom } from '@/lib/atoms/dashboard-navigation'
@@ -109,18 +110,10 @@ const DashboardJournals = () => {
       {isInitialLoading ? (
         <InitialJournalSkeletons />
       ) : error ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base font-medium">
-              Journals could not be loaded
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pb-6">
-            <Button variant="outline" onClick={() => void refetch()}>
-              Try again
-            </Button>
-          </CardContent>
-        </Card>
+        <JournalLoadError
+          title="Journals could not be loaded"
+          onRetry={() => void refetch()}
+        />
       ) : months.length ? (
         <>
           <Virtuoso
