@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/sidebar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAuth } from '@/hooks/use-auth'
+import { getLoginHref } from '@/lib/auth/redirect'
 
 type AppShellProps = {
   children: ReactNode
@@ -29,7 +30,7 @@ const MobileHeader = ({
   isLoggedIn,
   pathname,
 }: MobileHeaderProps) => {
-  const loginHref = `/login?redirectTo=${encodeURIComponent(pathname || '/')}`
+  const loginHref = getLoginHref(pathname)
 
   return (
     <header className="bg-background/95 sticky top-0 z-60 h-16 border-b backdrop-blur md:hidden">

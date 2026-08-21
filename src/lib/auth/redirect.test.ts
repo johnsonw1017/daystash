@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_POST_LOGIN_REDIRECT,
+  getLoginHref,
   getPostLoginRedirectPath,
   getSafeRedirectPath,
   isAuthPath,
@@ -37,5 +38,14 @@ describe('auth redirect helpers', () => {
     expect(getPostLoginRedirectPath('/login')).toBe(DEFAULT_POST_LOGIN_REDIRECT)
     expect(getPostLoginRedirectPath('/update-password')).toBe(DEFAULT_POST_LOGIN_REDIRECT)
     expect(getPostLoginRedirectPath('/dashboard')).toBe('/dashboard')
+  })
+
+  it('only adds a redirect query for non-auth destinations', () => {
+    expect(getLoginHref('/')).toBe('/login')
+    expect(getLoginHref('/login')).toBe('/login')
+    expect(getLoginHref('/register')).toBe('/login')
+    expect(getLoginHref('/dashboard')).toBe(
+      '/login?redirectTo=%2Fdashboard'
+    )
   })
 })

@@ -39,3 +39,11 @@ export const getPostLoginRedirectPath = (
     ? DEFAULT_POST_LOGIN_REDIRECT
     : safeRedirectTo
 }
+
+export const getLoginHref = (redirectTo: string | null | undefined): string => {
+  const postLoginRedirect = getPostLoginRedirectPath(redirectTo)
+
+  return postLoginRedirect === DEFAULT_POST_LOGIN_REDIRECT
+    ? '/login'
+    : `/login?redirectTo=${encodeURIComponent(postLoginRedirect)}`
+}

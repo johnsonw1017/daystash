@@ -20,6 +20,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { useRefreshAuth } from '@/hooks/use-auth'
 import type { AuthProfile } from '@/lib/atoms/auth'
+import { getLoginHref } from '@/lib/auth/redirect'
 
 type UserMenuProps = {
   profile: AuthProfile | null
@@ -93,7 +94,7 @@ export const UserMenu = ({ profile }: UserMenuProps) => {
 
 export const LoginMenu = () => {
   const pathname = usePathname() ?? '/'
-  const loginHref = `/login?redirectTo=${encodeURIComponent(pathname)}`
+  const loginHref = getLoginHref(pathname)
 
   return (
     <SidebarMenu>
