@@ -47,6 +47,11 @@ describe('JournalCalendarDrawer', () => {
     const yearSelector = await screen.findByRole('combobox')
     expect(yearSelector).toHaveValue('2026')
     expect(yearSelector).toContainHTML('<option value="2016">2016</option>')
+    expect(document.querySelector('[data-slot="calendar"]')).toHaveClass(
+      'mx-auto',
+      'w-full',
+      'max-w-md'
+    )
   })
 
   it('shows a retry action when the timeline query fails', async () => {

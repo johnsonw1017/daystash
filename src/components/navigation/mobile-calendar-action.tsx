@@ -121,8 +121,10 @@ export const JournalCalendarDrawer = ({
                 setOpen(false)
               }}
               className={cn(
-                'mx-auto',
-                direction === 'right' && 'w-full [--cell-size:--spacing(12)]'
+                'mx-auto w-full',
+                direction === 'right'
+                  ? '[--cell-size:--spacing(12)]'
+                  : 'max-w-md'
               )}
             />
           )}
