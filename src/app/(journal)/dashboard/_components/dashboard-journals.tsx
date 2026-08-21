@@ -8,7 +8,7 @@ import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import JournalLoadError from '@/components/journal-load-error'
-import { useAuthUser } from '@/hooks/use-auth-user'
+import { useAuth } from '@/hooks/use-auth'
 import { useJournalTimelineMonths } from '@/hooks/use-journals'
 import { dashboardCalendarDateAtom } from '@/lib/atoms/dashboard-navigation'
 import { JournalCalendarDrawer } from '@/components/navigation/mobile-calendar-action'
@@ -17,7 +17,7 @@ import JournalTimelineScrubber from './journal-timeline-scrubber'
 import VirtualizedJournalMonth from './virtualized-journal-month'
 
 const DashboardJournals = () => {
-  const authUser = useAuthUser()
+  const auth = useAuth()
   const calendarSelection = useAtomValue(dashboardCalendarDateAtom)
   const setCalendarSelection = useSetAtom(dashboardCalendarDateAtom)
   const virtuosoRef = useRef<VirtuosoHandle>(null)
@@ -30,8 +30,8 @@ const DashboardJournals = () => {
     error,
     isLoading,
     refetch,
-  } = useJournalTimelineMonths(authUser.user?.id)
-  const isInitialLoading = authUser.isLoading || isLoading
+  } = useJournalTimelineMonths(auth.userId ?? undefined)
+  const isInitialLoading = auth.isLoading || isLoading
 
   useEffect(() => {
     if (!calendarSelection) return
@@ -130,7 +130,7 @@ const DashboardJournals = () => {
                   month={month}
                   selectedDate={focusedCalendarDate}
                   onSelectedDateFocused={clearCalendarSelection}
-                  userId={authUser.user?.id}
+                  userId={auth.userId ?? undefined}
                 />
               </div>
             )}

@@ -4,8 +4,13 @@ import { describe, expect, it, vi } from 'vitest'
 import { useJournalMonth, useJournalTimelineMonths } from '@/hooks/use-journals'
 import { JournalCalendarDrawer } from './mobile-calendar-action'
 
-vi.mock('@/hooks/use-auth-user', () => ({
-  useAuthUser: () => ({ isLoading: false, user: { id: 'user-id' } }),
+vi.mock('@/hooks/use-auth', () => ({
+  useAuth: () => ({
+    isLoading: false,
+    isLoggedIn: true,
+    userId: 'user-id',
+    profile: null,
+  }),
 }))
 
 vi.mock('@/hooks/use-journals', () => ({

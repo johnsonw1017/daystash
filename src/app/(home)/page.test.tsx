@@ -1,14 +1,15 @@
 import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import Home from '@/app/(home)/page'
-import { useAuthUser } from '@/hooks/use-auth-user'
-import { createTestUser } from '@/test/mocks/types'
+import { useAuth } from '@/hooks/use-auth'
+import { createAuthState } from '@/lib/atoms/auth'
+import { createTestProfile } from '@/test/mocks/types'
 
-vi.mock('@/hooks/use-auth-user', () => ({
-  useAuthUser: vi.fn(),
+vi.mock('@/hooks/use-auth', () => ({
+  useAuth: vi.fn(),
 }))
 
-const mockedUseAuthUser = vi.mocked(useAuthUser)
+const mockedUseAuth = vi.mocked(useAuth)
 
 describe('Home', () => {
   beforeEach(() => {
@@ -16,45 +17,37 @@ describe('Home', () => {
   })
 
   it('always links users to start writing', () => {
-    mockedUseAuthUser.mockReturnValue({
-      user: null,
-      isLoggedIn: false,
-      isLoading: false,
-    })
+    mockedUseAuth.mockReturnValue(createAuthState(null))
 
     render(<Home />)
 
     expect(
-      screen.getByRole('heading', { name: /every day leaves something behind/i })
+      screen.getByRole('heading', {
+        name: /every day leaves something behind/i,
+      })
     ).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /start writing/i })).toHaveAttribute(
-      'href',
-      '/write'
-    )
-    expect(screen.queryByRole('link', { name: /view dashboard/i })).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: /start writing/i })
+    ).toHaveAttribute('href', '/write')
+    expect(
+      screen.queryByRole('link', { name: /view dashboard/i })
+    ).not.toBeInTheDocument()
   })
 
   it('shows a dashboard link for logged-in users', () => {
-    mockedUseAuthUser.mockReturnValue({
-      user: createTestUser(),
-      isLoggedIn: true,
-      isLoading: false,
-    })
+    mockedUseAuth.mockReturnValue(
+      createAuthState('user-id', createTestProfile())
+    )
 
     render(<Home />)
 
-    expect(screen.getByRole('link', { name: /view dashboard/i })).toHaveAttribute(
-      'href',
-      '/dashboard'
-    )
+    expect(
+      screen.getByRole('link', { name: /view dashboard/i })
+    ).toHaveAttribute('href', '/dashboard')
   })
 
   it('shows a dashboard loading skeleton while auth state is loading', () => {
-    mockedUseAuthUser.mockReturnValue({
-      user: null,
-      isLoggedIn: false,
-      isLoading: true,
-    })
+    mockedUseAuth.mockReturnValue(createAuthState(null, null, true))
 
     render(<Home />)
 

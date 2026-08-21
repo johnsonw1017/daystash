@@ -2,25 +2,25 @@
 
 import { useEffect } from 'react'
 import { useSetAtom } from 'jotai'
-import { setAuthUserAtom } from '@/lib/atoms/auth'
+import { refreshAuthStateAtom } from '@/lib/atoms/auth'
 import supabase from '@/lib/supabase/client'
 
 const AuthStateSync = () => {
-  const refreshAuthUser = useSetAtom(setAuthUserAtom)
+  const refreshAuth = useSetAtom(refreshAuthStateAtom)
 
   useEffect(() => {
-    void refreshAuthUser()
+    void refreshAuth()
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(() => {
-      void refreshAuthUser()
+      void refreshAuth()
     })
 
     return () => {
       subscription.unsubscribe()
     }
-  }, [refreshAuthUser])
+  }, [refreshAuth])
 
   return null
 }

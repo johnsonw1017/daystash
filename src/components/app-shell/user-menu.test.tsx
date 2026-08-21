@@ -4,9 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { logout } from '@/actions/auth'
 import UserMenu from '@/components/app-shell/user-menu'
 import { SidebarProvider } from '@/components/ui/sidebar'
-import { createTestUser } from '@/test/mocks/types'
+import { createTestProfile } from '@/test/mocks/types'
 
-const refreshAuthUser = vi.fn()
+const refreshAuth = vi.fn()
 const replace = vi.fn()
 
 vi.mock('next/navigation', () => ({
@@ -17,16 +17,12 @@ vi.mock('@/actions/auth', () => ({
   logout: vi.fn(),
 }))
 
-vi.mock('@/hooks/use-auth-user', () => ({
-  useRefreshAuthUser: () => refreshAuthUser,
+vi.mock('@/hooks/use-auth', () => ({
+  useRefreshAuth: () => refreshAuth,
 }))
 
 const mockedLogout = vi.mocked(logout)
-const user = {
-  ...createTestUser(),
-  email: 'jamie@example.com',
-  user_metadata: { full_name: 'Jamie Doe' },
-}
+const profile = createTestProfile()
 
 describe('UserMenu', () => {
   beforeEach(() => {
@@ -39,7 +35,7 @@ describe('UserMenu', () => {
 
     render(
       <SidebarProvider defaultOpen>
-        <UserMenu user={user} />
+        <UserMenu profile={profile} />
       </SidebarProvider>
     )
 
@@ -60,7 +56,7 @@ describe('UserMenu', () => {
 
     render(
       <SidebarProvider defaultOpen>
-        <UserMenu user={user} />
+        <UserMenu profile={profile} />
       </SidebarProvider>
     )
 
@@ -68,7 +64,7 @@ describe('UserMenu', () => {
     await actor.click(screen.getByRole('menuitem', { name: 'Sign out' }))
 
     expect(mockedLogout).toHaveBeenCalledOnce()
-    expect(refreshAuthUser).toHaveBeenCalledOnce()
+    expect(refreshAuth).toHaveBeenCalledOnce()
     expect(replace).toHaveBeenCalledWith('/login')
   })
 })

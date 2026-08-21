@@ -1,33 +1,53 @@
 'use client'
 
 import { atom } from 'jotai'
-import type { User } from '@supabase/supabase-js'
 import supabase from '@/lib/supabase/client'
 
-export type AuthUserState = {
-  user: User | null
+export type AuthProfile = {
+  id: string
+  full_name: string
+  email: string
+  avatar_url: string | null
+}
+
+export type AuthState = {
+  userId: string | null
+  profile: AuthProfile | null
   isLoggedIn: boolean
   isLoading: boolean
 }
 
-export const createAuthUserState = (
-  user: User | null,
+export const createAuthState = (
+  userId: string | null,
+  profile: AuthProfile | null = null,
   isLoading = false
-): AuthUserState => ({
-  user,
-  isLoggedIn: Boolean(user),
+): AuthState => ({
+  userId,
+  profile,
+  isLoggedIn: Boolean(userId),
   isLoading,
 })
 
-export const authUserAtom = atom<AuthUserState>(createAuthUserState(null, true))
+export const authStateAtom = atom<AuthState>(createAuthState(null, null, true))
 
-export const setAuthUserAtom = atom(
-  null,
-  async (_get, set) => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+export const refreshAuthStateAtom = atom(null, async (_get, set) => {
+  const { data: claimsData, error: claimsError } =
+    await supabase.auth.getClaims()
+  const userId = claimsData?.claims?.sub
 
-    set(authUserAtom, createAuthUserState(user))
+  if (claimsError || typeof userId !== 'string') {
+    set(authStateAtom, createAuthState(null))
+    return
   }
-)
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id, full_name, email, avatar_url')
+    .eq('id', userId)
+    .maybeSingle()
+
+  set(
+    authStateAtom,
+    createAuthState(userId, (profile as AuthProfile | null) ?? null)
+  )
+})

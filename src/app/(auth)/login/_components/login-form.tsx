@@ -21,7 +21,7 @@ import {
   FieldGroup,
   FieldLabel,
 } from '@/components/ui/field'
-import { useRefreshAuthUser } from '@/hooks/use-auth-user'
+import { useRefreshAuth } from '@/hooks/use-auth'
 import { Input } from '@/components/ui/input'
 import { DEFAULT_POST_LOGIN_REDIRECT } from '@/lib/auth/redirect'
 
@@ -35,7 +35,7 @@ type LoginSchema = z.infer<typeof loginSchema>
 
 const LoginForm = () => {
   const [isPending, startTransition] = useTransition()
-  const refreshAuthUser = useRefreshAuthUser()
+  const refreshAuth = useRefreshAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get('redirectTo') ?? ''
@@ -60,7 +60,7 @@ const LoginForm = () => {
         return
       }
 
-      await refreshAuthUser()
+      await refreshAuth()
       router.replace(result?.redirectTo ?? DEFAULT_POST_LOGIN_REDIRECT)
     })
   }

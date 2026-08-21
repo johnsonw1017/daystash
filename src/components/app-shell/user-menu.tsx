@@ -1,10 +1,11 @@
 'use client'
 
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { useRouter } from 'next/navigation'
-import type { User } from '@supabase/supabase-js'
-import { ChevronsUpDown, LogOut } from 'lucide-react'
+import { ChevronsUpDown, LogIn, LogOut } from 'lucide-react'
 import { logout } from '@/actions/auth'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,20 +17,12 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
-import { useRefreshAuthUser } from '@/hooks/use-auth-user'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useRefreshAuth } from '@/hooks/use-auth'
+import type { AuthProfile } from '@/lib/atoms/auth'
 
 type UserMenuProps = {
-  user: User
-}
-
-const getUserName = (user: User) => {
-  const fullName = user.user_metadata.full_name
-
-  if (typeof fullName === 'string' && fullName.trim()) {
-    return fullName.trim()
-  }
-
-  return user.email?.split('@')[0] || 'Account'
+  profile: AuthProfile | null
 }
 
 const getInitials = (name: string) =>
@@ -40,17 +33,17 @@ const getInitials = (name: string) =>
     .join('')
     .toUpperCase()
 
-const UserMenu = ({ user }: UserMenuProps) => {
-  const refreshAuthUser = useRefreshAuthUser()
+export const UserMenu = ({ profile }: UserMenuProps) => {
+  const refreshAuth = useRefreshAuth()
   const router = useRouter()
-  const name = getUserName(user)
+  const name = profile?.full_name.trim() || 'Account'
   const initials = getInitials(name)
 
   const handleLogout = async () => {
     const result = await logout()
     if (result?.error) return
 
-    await refreshAuthUser()
+    await refreshAuth()
     router.replace('/login')
   }
 
@@ -62,18 +55,21 @@ const UserMenu = ({ user }: UserMenuProps) => {
             <SidebarMenuButton
               size="lg"
               aria-label="Open user menu"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground h-14 rounded-xl px-3 md:h-12 md:rounded-md md:px-2 [&>svg]:size-5 md:[&>svg]:size-4"
+              className="hover:bg-muted active:bg-muted data-[state=open]:bg-muted h-14 rounded-xl px-3 md:h-12 md:rounded-md md:px-2 [&>svg]:size-5 md:[&>svg]:size-4"
             >
               <Avatar className="size-10 rounded-lg md:size-8">
+                {profile?.avatar_url && (
+                  <AvatarImage src={profile.avatar_url} alt="" />
+                )}
                 <AvatarFallback className="bg-primary text-primary-foreground rounded-lg">
                   {initials}
                 </AvatarFallback>
               </Avatar>
               <span className="grid min-w-0 flex-1 text-left text-base leading-tight md:text-sm">
                 <span className="truncate font-medium">{name}</span>
-                {user.email && (
+                {profile?.email && (
                   <span className="text-muted-foreground truncate text-sm md:text-xs">
-                    {user.email}
+                    {profile.email}
                   </span>
                 )}
               </span>
@@ -94,5 +90,43 @@ const UserMenu = ({ user }: UserMenuProps) => {
     </SidebarMenu>
   )
 }
+
+export const LoginMenu = () => {
+  const pathname = usePathname() ?? '/'
+  const loginHref = `/login?redirectTo=${encodeURIComponent(pathname)}`
+
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          size="lg"
+          tooltip="Login"
+          className="hover:bg-muted active:bg-muted h-14 rounded-xl px-3 md:h-12 md:rounded-md md:px-2 [&>svg]:size-5 md:[&>svg]:size-4"
+          asChild
+        >
+          <Link href={loginHref}>
+            <LogIn />
+            <span className="text-base font-medium md:text-sm">Login</span>
+          </Link>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    </SidebarMenu>
+  )
+}
+
+export const UserMenuSkeleton = () => (
+  <SidebarMenu aria-label="Loading account">
+    <SidebarMenuItem>
+      <div className="flex h-14 items-center gap-2 rounded-xl px-3 group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:p-0 md:h-12 md:rounded-md md:px-2">
+        <Skeleton className="size-10 shrink-0 rounded-lg md:size-8" />
+        <span className="grid min-w-0 flex-1 gap-1 group-data-[collapsible=icon]:hidden">
+          <Skeleton className="h-4 w-28" />
+          <Skeleton className="h-3 w-36 max-w-full" />
+        </span>
+        <Skeleton className="size-4 group-data-[collapsible=icon]:hidden" />
+      </div>
+    </SidebarMenuItem>
+  </SidebarMenu>
+)
 
 export default UserMenu
