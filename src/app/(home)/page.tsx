@@ -8,7 +8,6 @@ import { useAuth } from '@/hooks/use-auth'
 
 const Home = () => {
   const auth = useAuth()
-  const isLoggedIn = auth.isLoggedIn
 
   return (
     <div className="bg-background flex min-h-[calc(100svh-4rem)] flex-col items-center overflow-x-hidden md:min-h-svh">
@@ -28,11 +27,6 @@ const Home = () => {
               aria-label="Loading dashboard"
               className="mb-3 h-11 w-40 rounded-md"
             />
-          )}
-          {isLoggedIn && (
-            <Button variant="secondary" size="lg" className="mb-3" asChild>
-              <Link href="/dashboard">View Dashboard</Link>
-            </Button>
           )}
         </div>
       </div>

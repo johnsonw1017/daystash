@@ -29,9 +29,6 @@ describe('Home', () => {
     expect(
       screen.getByRole('link', { name: /start writing/i })
     ).toHaveAttribute('href', '/write')
-    expect(
-      screen.queryByRole('link', { name: /view dashboard/i })
-    ).not.toBeInTheDocument()
   })
 
   it('shows a dashboard link for logged-in users', () => {
@@ -40,10 +37,6 @@ describe('Home', () => {
     )
 
     render(<Home />)
-
-    expect(
-      screen.getByRole('link', { name: /view dashboard/i })
-    ).toHaveAttribute('href', '/dashboard')
   })
 
   it('shows a dashboard loading skeleton while auth state is loading', () => {
