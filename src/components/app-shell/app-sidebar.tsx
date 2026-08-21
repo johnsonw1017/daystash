@@ -62,30 +62,23 @@ const AppSidebar = ({ user }: AppSidebarProps) => {
       <SidebarHeader className="hidden md:flex">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              size="lg"
-              tooltip="Daystash"
-              className="hover:bg-muted hover:text-sidebar-foreground active:bg-muted active:text-sidebar-foreground h-14"
-              asChild
-            >
-              <Link href="/" aria-label="Go to Daystash home">
-                <span className="border-sidebar-border bg-background flex aspect-square size-10 shrink-0 items-center justify-center rounded-xl border group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:rounded-lg">
-                  <Image
-                    src="/daystash-leaf.svg"
-                    alt=""
-                    width={14}
-                    height={24}
-                    className="h-7 w-auto object-contain group-data-[collapsible=icon]:h-6"
-                    aria-hidden="true"
-                  />
+            <div className="flex h-14 w-full items-center gap-2 overflow-hidden rounded-md p-2 group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:p-0">
+              <span className="border-sidebar-border bg-background flex aspect-square size-10 shrink-0 items-center justify-center rounded-xl border group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:rounded-lg">
+                <Image
+                  src="/daystash-leaf.svg"
+                  alt=""
+                  width={14}
+                  height={24}
+                  className="h-7 w-auto object-contain group-data-[collapsible=icon]:h-6"
+                  aria-hidden="true"
+                />
+              </span>
+              <span className="grid min-w-0 flex-1 text-left leading-tight">
+                <span className="truncate font-serif text-2xl font-bold">
+                  Daystash
                 </span>
-                <span className="grid min-w-0 flex-1 text-left leading-tight">
-                  <span className="truncate font-serif text-2xl font-bold">
-                    Daystash
-                  </span>
-                </span>
-              </Link>
-            </SidebarMenuButton>
+              </span>
+            </div>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
@@ -99,7 +92,7 @@ const AppSidebar = ({ user }: AppSidebarProps) => {
                   <SidebarMenuButton
                     tooltip={label}
                     isActive={isActive(pathname)}
-                    className="hover:bg-muted hover:text-sidebar-foreground active:bg-muted active:text-sidebar-foreground data-[active=true]:bg-muted data-[active=true]:text-sidebar-foreground h-12 rounded-xl px-3 text-base md:h-8 md:rounded-md md:px-2 md:text-sm [&>svg]:size-5 md:[&>svg]:size-4"
+                    className="h-12 rounded-xl px-3 text-base md:h-8 md:rounded-md md:px-2 md:text-sm [&>svg]:size-5 md:[&>svg]:size-4"
                     asChild
                   >
                     <Link href={href} onClick={closeMobileSidebar}>

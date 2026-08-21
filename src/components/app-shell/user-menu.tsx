@@ -62,7 +62,7 @@ const UserMenu = ({ user }: UserMenuProps) => {
             <SidebarMenuButton
               size="lg"
               aria-label="Open user menu"
-              className="hover:bg-muted hover:text-sidebar-foreground active:bg-muted active:text-sidebar-foreground data-[state=open]:bg-muted data-[state=open]:text-sidebar-foreground data-[state=open]:hover:bg-muted data-[state=open]:hover:text-sidebar-foreground h-14 rounded-xl px-3 md:h-12 md:rounded-md md:px-2 [&>svg]:size-5 md:[&>svg]:size-4"
+              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground h-14 rounded-xl px-3 md:h-12 md:rounded-md md:px-2 [&>svg]:size-5 md:[&>svg]:size-4"
             >
               <Avatar className="size-10 rounded-lg md:size-8">
                 <AvatarFallback className="bg-primary text-primary-foreground rounded-lg">

@@ -5,13 +5,19 @@ import { Skeleton } from '@/components/ui/skeleton'
 import Tree from './_components/Tree'
 import Link from 'next/link'
 import { useAuthUser } from '@/hooks/use-auth-user'
+import { cn } from '@/lib/utils'
 
 const Home = () => {
   const authUser = useAuthUser()
   const isLoggedIn = authUser.isLoggedIn
 
   return (
-    <div className="bg-background flex min-h-[calc(100svh-4rem)] flex-col items-center overflow-x-hidden md:min-h-svh">
+    <div
+      className={cn(
+        'bg-background flex min-h-[calc(100svh-4rem)] flex-col items-center overflow-x-hidden',
+        isLoggedIn && 'md:min-h-svh'
+      )}
+    >
       <div className="mt-16 flex flex-col items-center px-4">
         <Tree src="/tree.svg" />
       </div>
