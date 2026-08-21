@@ -69,7 +69,7 @@ const AppShell = ({ children }: AppShellProps) => {
           pathname={pathname}
         />
         <div className="sticky top-0 z-40 hidden h-0 md:block">
-          <SidebarTrigger className="bg-background/90 absolute top-3 left-3 size-10 rounded-xl border shadow-sm backdrop-blur" />
+          <SidebarTrigger className="bg-background/90 absolute top-1 left-1 size-10 rounded-xl border shadow-sm backdrop-blur" />
         </div>
         <div className="min-w-0 flex-1">{children}</div>
       </SidebarInset>
