@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { parseISO } from 'date-fns'
-import { ChevronLeft, ExternalLink, MapPin } from 'lucide-react'
+import { ExternalLink, MapPin, Pencil } from 'lucide-react'
 import {
   Carousel,
   CarouselContent,
@@ -62,28 +62,18 @@ const EntryView = ({ slug }: EntryViewProps) => {
 
   return (
     <section className="mx-auto flex w-full max-w-200 flex-col gap-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="mb-2 -ml-2 hidden lg:inline-flex"
-            asChild
-          >
-            <Link href="/dashboard">
-              <ChevronLeft />
-              Stash
-            </Link>
-          </Button>
-          <h1 className="font-serif text-3xl font-semibold md:text-4xl">
-            {journal.title?.trim() || 'Untitled Journal'}
-          </h1>
-          <p className="text-muted-foreground mt-2 text-sm">
-            {dateFormatter.format(parseISO(journal.date))}
-          </p>
-        </div>
-        <Button className="hidden lg:inline-flex" asChild>
-          <Link href={`/entries/${journal.slug}/edit`}>Edit</Link>
+      <div className="mt-4 flex items-start justify-between gap-4">
+        <h1 className="font-serif text-3xl font-semibold md:text-4xl">
+          {journal.title?.trim() || 'Untitled Journal'}
+        </h1>
+        <p className="text-muted-foreground mt-2 text-sm">
+          {dateFormatter.format(parseISO(journal.date))}
+        </p>
+      </div>
+      <div className="fixed right-6 bottom-6 z-40 hidden items-center gap-2 lg:flex">
+        <Button className="hidden lg:inline-flex">
+          <Pencil />
+          <Link href={`/entries/${journal.slug}/edit`}>Edit Entry</Link>
         </Button>
       </div>
 
