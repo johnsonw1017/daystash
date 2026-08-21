@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #dad5cd;
+  --background: #e3d9ca;
   --foreground: #0d0b09;
   --primary: #134b34;
   --primary-foreground: #f8f5ef;
@@ -28,13 +28,13 @@
   --chart-3: #5c7e61;
   --chart-4: #c19f61;
   --chart-5: #834e38;
-  --sidebar: #d6d0c7;
+  --sidebar: #d8c9b8;
   --sidebar-foreground: #0d0b09;
   --sidebar-primary: #134b34;
   --sidebar-primary-foreground: #f8f5ef;
-  --sidebar-accent: #c9c3ba;
+  --sidebar-accent: #e7dccd;
   --sidebar-accent-foreground: #0d0b09;
-  --sidebar-border: #bcb7ac;
+  --sidebar-border: #c7b7a5;
   --sidebar-ring: #b15c3a;
   --radius: 0.625rem;
   --tree: #1e2a24;

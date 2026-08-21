@@ -109,7 +109,7 @@ const AppSidebar = ({ isLoading, isLoggedIn, profile }: AppSidebarProps) => {
                         <SidebarMenuButton
                           tooltip={label}
                           isActive={isActive(pathname)}
-                          className="hover:bg-muted active:bg-muted data-[active=true]:bg-muted h-12 rounded-xl px-3 text-base md:h-8 md:rounded-md md:px-2 md:text-sm [&>svg]:size-5 md:[&>svg]:size-4"
+                          className="hover:bg-sidebar-accent active:bg-sidebar-accent data-[active=true]:bg-sidebar-accent h-12 rounded-xl px-3 text-base md:h-8 md:rounded-md md:px-2 md:text-sm [&>svg]:size-5 md:[&>svg]:size-4"
                           asChild
                         >
                           <Link href={href} onClick={closeMobileSidebar}>
