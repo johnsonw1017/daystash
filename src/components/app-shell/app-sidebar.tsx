@@ -22,7 +22,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSkeleton,
-  SidebarRail,
   useSidebar,
 } from '@/components/ui/sidebar'
 
@@ -148,7 +147,6 @@ const AppSidebar = ({ isLoading, isLoggedIn, profile }: AppSidebarProps) => {
           <LoginMenu />
         )}
       </SidebarFooter>
-      <SidebarRail />
     </Sidebar>
   )
 }
