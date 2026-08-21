@@ -8,7 +8,7 @@ const manifest = (): MetadataRoute.Manifest => ({
   start_url: '/dashboard',
   scope: '/',
   display: 'standalone',
-  background_color: '#dad5cd',
+  background_color: '#e3d9ca',
   theme_color: '#134b34',
   orientation: 'portrait-primary',
   categories: ['lifestyle', 'productivity'],
