@@ -56,7 +56,7 @@ export const UserMenu = ({ profile }: UserMenuProps) => {
             <SidebarMenuButton
               size="lg"
               aria-label="Open user menu"
-              className="hover:bg-muted active:bg-muted data-[state=open]:bg-muted h-14 rounded-xl px-3 md:h-12 md:rounded-md md:px-2 [&>svg]:size-5 md:[&>svg]:size-4"
+              className="hover:bg-sidebar-accent active:bg-sidebar-accent data-[state=open]:bg-sidebar-accent h-14 rounded-xl px-3 md:h-12 md:rounded-md md:px-2 [&>svg]:size-5 md:[&>svg]:size-4"
             >
               <Avatar className="size-10 rounded-lg md:size-8">
                 {profile?.avatar_url && (
@@ -102,7 +102,7 @@ export const LoginMenu = () => {
         <SidebarMenuButton
           size="lg"
           tooltip="Login"
-          className="hover:bg-muted active:bg-muted h-14 rounded-xl px-3 md:h-12 md:rounded-md md:px-2 [&>svg]:size-5 md:[&>svg]:size-4"
+          className="hover:bg-sidebar-accent active:bg-sidebar-accent h-14 rounded-xl px-3 md:h-12 md:rounded-md md:px-2 [&>svg]:size-5 md:[&>svg]:size-4"
           asChild
         >
           <Link href={loginHref}>
