@@ -39,6 +39,7 @@ describe('AppSidebar', () => {
     )
     expect(screen.getByText('Daystash').closest('a')).toBeNull()
     expect(screen.getByText('Daystash').closest('button')).toBeNull()
+    expect(document.querySelector('[data-slot="sidebar-rail"]')).toBeNull()
   })
 
   it('renders matched sidebar skeletons while auth is loading', () => {
