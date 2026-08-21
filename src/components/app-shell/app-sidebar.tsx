@@ -40,19 +40,19 @@ const navigationItems = [
     isActive: (pathname: string) => pathname === '/',
   },
   {
-    href: '/write',
-    icon: SquarePen,
-    label: 'Write',
-    isActive: (pathname: string) =>
-      pathname === '/write' || pathname.endsWith('/edit'),
-  },
-  {
     href: '/dashboard',
     icon: BookOpen,
     label: 'Stash',
     isActive: (pathname: string) =>
       pathname === '/dashboard' ||
       (pathname.startsWith('/entries/') && !pathname.endsWith('/edit')),
+  },
+  {
+    href: '/write',
+    icon: SquarePen,
+    label: 'Write',
+    isActive: (pathname: string) =>
+      pathname === '/write' || pathname.endsWith('/edit'),
   },
 ]
 
