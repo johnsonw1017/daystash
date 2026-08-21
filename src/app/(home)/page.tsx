@@ -4,14 +4,13 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import Tree from './_components/Tree'
 import Link from 'next/link'
-import { useAuthUser } from '@/hooks/use-auth-user'
+import { useAuth } from '@/hooks/use-auth'
 
 const Home = () => {
-  const authUser = useAuthUser()
-  const isLoggedIn = authUser.isLoggedIn
+  const auth = useAuth()
 
   return (
-    <div className="bg-background flex min-h-[calc(100svh-4rem)] flex-col items-center overflow-x-hidden">
+    <div className="bg-background flex min-h-[calc(100svh-4rem)] flex-col items-center overflow-x-hidden md:min-h-svh">
       <div className="mt-16 flex flex-col items-center px-4">
         <Tree src="/tree.svg" />
       </div>
@@ -23,16 +22,11 @@ const Home = () => {
           <Button variant="accent" size="lg" className="mb-3" asChild>
             <Link href="/write">Start Writing</Link>
           </Button>
-          {authUser.isLoading && (
+          {auth.isLoading && (
             <Skeleton
               aria-label="Loading dashboard"
               className="mb-3 h-11 w-40 rounded-md"
             />
-          )}
-          {isLoggedIn && (
-            <Button variant="secondary" size="lg" className="mb-3" asChild>
-              <Link href="/dashboard">View Dashboard</Link>
-            </Button>
           )}
         </div>
       </div>

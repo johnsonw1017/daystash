@@ -11,7 +11,7 @@ import ForgotPasswordPage from '@/app/(auth)/forgot-password/page'
 import LoginForm from '@/app/(auth)/login/_components/login-form'
 import RegisterForm from '@/app/(auth)/register/_components/register-form'
 import UpdatePasswordPage from '@/app/(auth)/update-password/page'
-import { useRefreshAuthUser } from '@/hooks/use-auth-user'
+import { useRefreshAuth } from '@/hooks/use-auth'
 
 const replace = vi.fn()
 
@@ -29,20 +29,20 @@ vi.mock('@/actions/auth', () => ({
   updatePassword: vi.fn(),
 }))
 
-vi.mock('@/hooks/use-auth-user', () => ({
-  useRefreshAuthUser: vi.fn(),
+vi.mock('@/hooks/use-auth', () => ({
+  useRefreshAuth: vi.fn(),
 }))
 
 const mockedForgotPassword = vi.mocked(forgotPassword)
 const mockedLogin = vi.mocked(login)
 const mockedRegister = vi.mocked(register)
 const mockedUpdatePassword = vi.mocked(updatePassword)
-const mockedUseRefreshAuthUser = vi.mocked(useRefreshAuthUser)
+const mockedUseRefreshAuth = vi.mocked(useRefreshAuth)
 
 describe('auth forms', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockedUseRefreshAuthUser.mockReturnValue(vi.fn().mockResolvedValue(undefined))
+    mockedUseRefreshAuth.mockReturnValue(vi.fn().mockResolvedValue(undefined))
   })
 
   it('logs in and redirects to the returned destination', async () => {

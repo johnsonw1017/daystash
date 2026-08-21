@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import Logo from '@/components/header/logo'
+import Logo from '@/components/app-shell/logo'
 
 describe('Logo', () => {
   it('links to the home page with the Daystash brand', () => {

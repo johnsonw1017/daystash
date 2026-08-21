@@ -13,7 +13,7 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from '@/components/ui/drawer'
-import { useAuthUser } from '@/hooks/use-auth-user'
+import { useAuth } from '@/hooks/use-auth'
 import { useJournalMonth, useJournalTimelineMonths } from '@/hooks/use-journals'
 import { dashboardCalendarDateAtom } from '@/lib/atoms/dashboard-navigation'
 import { MobileToolbarAction } from '@/components/navigation/mobile-toolbar'
@@ -29,7 +29,7 @@ export const JournalCalendarDrawer = ({
   direction = 'bottom',
   trigger,
 }: JournalCalendarDrawerProps) => {
-  const authUser = useAuthUser()
+  const auth = useAuth()
   const setCalendarDate = useSetAtom(dashboardCalendarDateAtom)
   const [open, setOpen] = useState(false)
   const navigationCloseRef = useRef(false)
@@ -38,7 +38,7 @@ export const JournalCalendarDrawer = ({
     error: timelineError,
     isLoading: isTimelineLoading,
     refetch: refetchTimeline,
-  } = useJournalTimelineMonths(authUser.user?.id)
+  } = useJournalTimelineMonths(auth.userId ?? undefined)
   const [month, setMonth] = useState<Date | undefined>()
   const latestMonth = timelineMonths[0]?.month
   const oldestMonth = timelineMonths.at(-1)?.month
@@ -54,7 +54,7 @@ export const JournalCalendarDrawer = ({
     isLoading: isMonthLoading,
     refetch: refetchJournals,
   } = useJournalMonth(
-    authUser.user?.id,
+    auth.userId ?? undefined,
     displayedMonth ? format(displayedMonth, 'yyyy-MM-dd') : ''
   )
   const journalDates = new Set(journals.map((journal) => journal.date))
@@ -121,8 +121,10 @@ export const JournalCalendarDrawer = ({
                 setOpen(false)
               }}
               className={cn(
-                'mx-auto',
-                direction === 'right' && 'w-full [--cell-size:--spacing(12)]'
+                'mx-auto w-full',
+                direction === 'right'
+                  ? '[--cell-size:--spacing(12)]'
+                  : 'max-w-md'
               )}
             />
           )}

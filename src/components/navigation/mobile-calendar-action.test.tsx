@@ -4,8 +4,13 @@ import { describe, expect, it, vi } from 'vitest'
 import { useJournalMonth, useJournalTimelineMonths } from '@/hooks/use-journals'
 import { JournalCalendarDrawer } from './mobile-calendar-action'
 
-vi.mock('@/hooks/use-auth-user', () => ({
-  useAuthUser: () => ({ isLoading: false, user: { id: 'user-id' } }),
+vi.mock('@/hooks/use-auth', () => ({
+  useAuth: () => ({
+    isLoading: false,
+    isLoggedIn: true,
+    userId: 'user-id',
+    profile: null,
+  }),
 }))
 
 vi.mock('@/hooks/use-journals', () => ({
@@ -42,6 +47,11 @@ describe('JournalCalendarDrawer', () => {
     const yearSelector = await screen.findByRole('combobox')
     expect(yearSelector).toHaveValue('2026')
     expect(yearSelector).toContainHTML('<option value="2016">2016</option>')
+    expect(document.querySelector('[data-slot="calendar"]')).toHaveClass(
+      'mx-auto',
+      'w-full',
+      'max-w-md'
+    )
   })
 
   it('shows a retry action when the timeline query fails', async () => {
