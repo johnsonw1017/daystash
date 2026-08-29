@@ -2,7 +2,11 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { endOfMonth, format, parseISO, startOfMonth } from 'date-fns'
-import type { JournalDetail, JournalListItem } from '@/lib/journals'
+import type {
+  JournalDetail,
+  JournalListItem,
+  JournalSearchResult,
+} from '@/lib/journals'
 import { parseJournalBlocks, type JournalPlace } from '@/lib/journals'
 import supabase from '@/lib/supabase/client'
 
@@ -13,6 +17,8 @@ export const journalQueryKeys = {
   timelineMonths: (userId?: string) =>
     [...journalQueryKeys.all, 'timeline-months', userId ?? ''] as const,
   bySlug: (slug: string) => [...journalQueryKeys.all, 'slug', slug] as const,
+  search: (userId: string | undefined, query: string) =>
+    [...journalQueryKeys.all, 'search', userId ?? '', query] as const,
 }
 
 const getCurrentUserId = async () => {
@@ -66,6 +72,19 @@ type JournalDetailRow = {
   blocks: unknown
   thumbnail_asset_id: string | null
   places: JournalPlaceRow[]
+}
+
+type JournalSearchRow = {
+  id: string
+  slug: string
+  title: string | null
+  date: string
+  excerpt: string
+  rank: number
+  total_count: number | string
+  thumbnail_public_id: string | null
+  thumbnail_width: number | null
+  thumbnail_height: number | null
 }
 
 export type JournalTimelineMonth = {
@@ -198,6 +217,37 @@ const fetchJournalBySlug = async (
   return mapJournalDetailRow(journal as JournalDetailRow)
 }
 
+const fetchJournalSearch = async (
+  query: string
+): Promise<JournalSearchResult[]> => {
+  const { data, error } = await supabase.rpc('search_journals', {
+    p_query: query,
+    p_limit: 50,
+  })
+
+  if (error) throw new Error(error.message)
+
+  return ((data ?? []) as JournalSearchRow[]).map((journal) => ({
+    id: journal.id,
+    slug: journal.slug,
+    title: journal.title,
+    date: journal.date,
+    excerpt: journal.excerpt,
+    rank: journal.rank,
+    totalCount: Number(journal.total_count),
+    thumbnail:
+      journal.thumbnail_public_id &&
+      journal.thumbnail_width &&
+      journal.thumbnail_height
+        ? {
+            publicId: journal.thumbnail_public_id,
+            width: journal.thumbnail_width,
+            height: journal.thumbnail_height,
+          }
+        : null,
+  }))
+}
+
 export const useJournalMonth = (userId: string | undefined, month: string) =>
   useQuery({
     queryKey: journalQueryKeys.month(userId, month),
@@ -220,3 +270,16 @@ export const useJournalBySlug = (slug?: string) =>
     queryFn: async () => fetchJournalBySlug(slug ?? ''),
     enabled: Boolean(slug),
   })
+
+export const useJournalSearch = (userId: string | undefined, query: string) => {
+  const normalizedQuery = query.trim()
+  const isValidQuery =
+    normalizedQuery.length >= 2 && normalizedQuery.length <= 200
+
+  return useQuery({
+    queryKey: journalQueryKeys.search(userId, normalizedQuery),
+    queryFn: () => fetchJournalSearch(normalizedQuery),
+    enabled: Boolean(userId && isValidQuery),
+    placeholderData: (previousData) => previousData,
+  })
+}

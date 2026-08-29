@@ -12,6 +12,7 @@ import { useAuth } from '@/hooks/use-auth'
 import { useJournalTimelineMonths } from '@/hooks/use-journals'
 import { dashboardCalendarDateAtom } from '@/lib/atoms/dashboard-navigation'
 import { JournalCalendarDrawer } from '@/components/navigation/mobile-calendar-action'
+import DesktopSearchAction from '@/components/navigation/desktop-search-action'
 import { InitialJournalSkeletons } from './journal-skeletons'
 import JournalTimelineScrubber from './journal-timeline-scrubber'
 import VirtualizedJournalMonth from './virtualized-journal-month'
@@ -91,6 +92,7 @@ const DashboardJournals = () => {
       </div>
 
       <div className="fixed right-6 bottom-6 z-40 hidden items-center gap-2 lg:flex">
+        <DesktopSearchAction />
         <JournalCalendarDrawer
           direction="right"
           trigger={

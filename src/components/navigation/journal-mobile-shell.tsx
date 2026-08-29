@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react'
 import { usePathname } from 'next/navigation'
-import { BookOpen, Pencil, SquarePen } from 'lucide-react'
+import { BookOpen, Pencil, Search, SquarePen } from 'lucide-react'
 import MobileCalendarAction from '@/components/navigation/mobile-calendar-action'
 import {
   MobileToolbar,
@@ -15,6 +15,7 @@ const isEditorPath = (pathname: string) =>
 
 const hasMobileToolbar = (pathname: string) =>
   pathname === '/dashboard' ||
+  pathname === '/search' ||
   pathname.startsWith('/entries/') ||
   isEditorPath(pathname)
 
@@ -25,8 +26,29 @@ const JournalMobileNavigation = ({ pathname }: { pathname: string }) => {
     return (
       <MobileToolbar label="Journal navigation">
         <MobileCalendarAction />
+        <MobileToolbarAction href="/search" icon={Search} label="Search" />
         <MobileToolbarAction
-          className="w-full max-w-sm justify-self-center"
+          className="w-full justify-self-center"
+          href="/write"
+          icon={SquarePen}
+          label="Write"
+          variant="accent"
+        />
+      </MobileToolbar>
+    )
+  }
+
+  if (pathname === '/search') {
+    return (
+      <MobileToolbar label="Search navigation">
+        <MobileToolbarAction href="/dashboard" icon={BookOpen} label="Stash" />
+        <MobileToolbarAction
+          active
+          href="/search"
+          icon={Search}
+          label="Search"
+        />
+        <MobileToolbarAction
           href="/write"
           icon={SquarePen}
           label="Write"

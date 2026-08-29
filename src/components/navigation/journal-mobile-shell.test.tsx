@@ -17,7 +17,7 @@ describe('JournalMobileShell', () => {
     pathname = '/dashboard'
   })
 
-  it('shows Calendar and Write actions in the Stash toolbar', () => {
+  it('shows Calendar, Search, and Write actions in the Stash toolbar', () => {
     render(
       <JournalMobileShell>
         <main>Journal content</main>
@@ -31,12 +31,34 @@ describe('JournalMobileShell', () => {
     expect(
       within(navigation).getByRole('button', { name: 'Calendar' })
     ).toBeInTheDocument()
+    expect(
+      within(navigation).getByRole('link', { name: 'Search' })
+    ).toHaveAttribute('href', '/search')
     expect(writeAction).toHaveAttribute('href', '/write')
-    expect(writeAction).toHaveClass('max-w-sm', 'justify-self-center')
-    expect(within(navigation).getAllByRole('link')).toHaveLength(1)
+    expect(writeAction).toHaveClass('justify-self-center')
+    expect(within(navigation).getAllByRole('link')).toHaveLength(2)
     expect(screen.getByText('Journal content').parentElement).toHaveClass(
       'pb-24'
     )
+  })
+
+  it('shows Stash, active Search, and Write actions on the search page', () => {
+    pathname = '/search'
+
+    render(<JournalMobileShell>Search content</JournalMobileShell>)
+
+    const navigation = screen.getByRole('navigation', {
+      name: 'Search navigation',
+    })
+    expect(
+      within(navigation).getByRole('link', { name: 'Stash' })
+    ).toHaveAttribute('href', '/dashboard')
+    expect(
+      within(navigation).getByRole('link', { name: 'Search' })
+    ).toHaveAttribute('aria-current', 'page')
+    expect(
+      within(navigation).getByRole('link', { name: 'Write' })
+    ).toHaveAttribute('href', '/write')
   })
 
   it('shows Stash and the slug-specific edit action', () => {
