@@ -1,14 +1,10 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
 import Tree from './_components/Tree'
 import Link from 'next/link'
-import { useAuth } from '@/hooks/use-auth'
 
 const Home = () => {
-  const auth = useAuth()
-
   return (
     <div className="bg-background flex min-h-[calc(100svh-4rem)] flex-col items-center overflow-x-hidden md:min-h-svh">
       <div className="mt-16 flex flex-col items-center px-4">
@@ -22,12 +18,6 @@ const Home = () => {
           <Button variant="accent" size="lg" className="mb-3" asChild>
             <Link href="/write">Start Writing</Link>
           </Button>
-          {auth.isLoading && (
-            <Skeleton
-              aria-label="Loading dashboard"
-              className="mb-3 h-11 w-40 rounded-md"
-            />
-          )}
         </div>
       </div>
     </div>

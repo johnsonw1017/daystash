@@ -6,7 +6,7 @@ import { CalendarDays, SquarePen } from 'lucide-react'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import JournalLoadError from '@/components/journal-load-error'
 import { useAuth } from '@/hooks/use-auth'
 import { useJournalTimelineMonths } from '@/hooks/use-journals'
@@ -145,9 +145,6 @@ const DashboardJournals = () => {
               No journals yet
             </CardTitle>
           </CardHeader>
-          <CardContent className="pb-6">
-            Start writing from the Write page and your entries will appear here.
-          </CardContent>
         </Card>
       )}
     </div>
