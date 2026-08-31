@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { BookOpen, Home, SquarePen } from 'lucide-react'
+import { BookOpen, Home, Search, SquarePen } from 'lucide-react'
 import ThemeToggle from '@/components/app-shell/theme-toggle'
 import UserMenu, {
   LoginMenu,
@@ -45,6 +45,12 @@ const navigationItems = [
     isActive: (pathname: string) =>
       pathname === '/dashboard' ||
       (pathname.startsWith('/entries/') && !pathname.endsWith('/edit')),
+  },
+  {
+    href: '/search',
+    icon: Search,
+    label: 'Search',
+    isActive: (pathname: string) => pathname === '/search',
   },
   {
     href: '/write',
