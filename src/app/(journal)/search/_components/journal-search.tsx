@@ -43,10 +43,12 @@ const JournalSearch = ({ initialQuery }: { initialQuery: string }) => {
   const [debouncedQuery, setDebouncedQuery] = useState(initialValue.trim())
   const normalizedQuery = debouncedQuery.trim()
   const isValidQuery = normalizedQuery.length >= 2
-  const { data = [], error, isFetching, refetch } = useJournalSearch(
-    auth.userId ?? undefined,
-    normalizedQuery
-  )
+  const {
+    data = [],
+    error,
+    isFetching,
+    refetch,
+  } = useJournalSearch(auth.userId ?? undefined, normalizedQuery)
 
   useEffect(() => {
     inputRef.current?.focus()
@@ -80,9 +82,6 @@ const JournalSearch = ({ initialQuery }: { initialQuery: string }) => {
     <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
       <header>
         <h1 className="text-3xl font-semibold tracking-tight">Search</h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Find something from your journals.
-        </p>
       </header>
 
       <form role="search" className="mt-6" onSubmit={submitSearch}>
