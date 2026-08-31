@@ -60,11 +60,13 @@ describe('journal search', () => {
     } as unknown as ReturnType<typeof useJournalSearch>)
   })
 
-  it('focuses the field and shows the initial search state', () => {
+  it('focuses the field without rendering an empty results state', () => {
     render(<JournalSearch initialQuery="" />)
 
     expect(screen.getByRole('searchbox', { name: 'Search journals' })).toHaveFocus()
-    expect(screen.getByText('Search your stash')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('region', { name: 'Journal search results' })
+    ).not.toBeInTheDocument()
   })
 
   it('renders results and their total count', () => {
@@ -91,7 +93,9 @@ describe('journal search', () => {
     await user.click(screen.getByRole('button', { name: 'Clear search' }))
 
     expect(screen.getByRole('searchbox')).toHaveValue('')
-    expect(screen.getByText('Search your stash')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('region', { name: 'Journal search results' })
+    ).not.toBeInTheDocument()
   })
 })
 

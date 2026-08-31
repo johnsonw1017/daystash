@@ -119,55 +119,46 @@ const JournalSearch = ({ initialQuery }: { initialQuery: string }) => {
         </InputGroup>
       </form>
 
-      <section aria-label="Journal search results" className="mt-8">
-        {!normalizedQuery ? (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base font-medium">
-                Search your stash
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-muted-foreground pb-6 text-sm">
-              Search for words from journal titles, notes, lists, captions, or
-              image descriptions.
-            </CardContent>
-          </Card>
-        ) : !isValidQuery ? (
-          <p className="text-muted-foreground text-sm" role="status">
-            Enter at least two characters to search.
-          </p>
-        ) : auth.isLoading || (isFetching && !data.length) ? (
-          <SearchResultSkeletons />
-        ) : error ? (
-          <JournalLoadError
-            title="Search results could not be loaded"
-            onRetry={() => void refetch()}
-          />
-        ) : data.length ? (
-          <>
-            <p className="text-muted-foreground mb-3 text-sm" role="status">
-              {totalCount === 1 ? '1 journal' : `${totalCount} journals`}
-              {totalCount > data.length && ` · Showing the best ${data.length}`}
+      {normalizedQuery && (
+        <section aria-label="Journal search results" className="mt-8">
+          {!isValidQuery ? (
+            <p className="text-muted-foreground text-sm" role="status">
+              Enter at least two characters to search.
             </p>
-            <ul className="divide-y border-y">
-              {data.map((journal) => (
-                <JournalSearchResult key={journal.id} journal={journal} />
-              ))}
-            </ul>
-          </>
-        ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base font-medium">
-                No journals found
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-muted-foreground pb-6 text-sm">
-              Try fewer words or a different phrase.
-            </CardContent>
-          </Card>
-        )}
-      </section>
+          ) : auth.isLoading || (isFetching && !data.length) ? (
+            <SearchResultSkeletons />
+          ) : error ? (
+            <JournalLoadError
+              title="Search results could not be loaded"
+              onRetry={() => void refetch()}
+            />
+          ) : data.length ? (
+            <>
+              <p className="text-muted-foreground mb-3 text-sm" role="status">
+                {totalCount === 1 ? '1 journal' : `${totalCount} journals`}
+                {totalCount > data.length &&
+                  ` · Showing the best ${data.length}`}
+              </p>
+              <ul className="divide-y border-y">
+                {data.map((journal) => (
+                  <JournalSearchResult key={journal.id} journal={journal} />
+                ))}
+              </ul>
+            </>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base font-medium">
+                  No journals found
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-muted-foreground pb-6 text-sm">
+                Try fewer words or a different phrase.
+              </CardContent>
+            </Card>
+          )}
+        </section>
+      )}
     </main>
   )
 }
