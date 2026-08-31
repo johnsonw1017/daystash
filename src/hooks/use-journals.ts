@@ -280,6 +280,5 @@ export const useJournalSearch = (userId: string | undefined, query: string) => {
     queryKey: journalQueryKeys.search(userId, normalizedQuery),
     queryFn: () => fetchJournalSearch(normalizedQuery),
     enabled: Boolean(userId && isValidQuery),
-    placeholderData: (previousData) => previousData,
   })
 }
