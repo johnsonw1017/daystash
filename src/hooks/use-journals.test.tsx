@@ -217,12 +217,9 @@ describe('journal hooks', () => {
   it('searches journals and maps result metadata', async () => {
     server.use(
       http.post(
-        'http://supabase.test/rest/v1/rpc/search_journals',
+        'http://supabase.test/functions/v1/journal-search',
         async ({ request }) => {
-          expect(await request.json()).toEqual({
-            p_limit: 50,
-            p_query: 'morning hike',
-          })
+          expect(await request.json()).toEqual({ query: 'morning hike' })
 
           return HttpResponse.json([
             {
@@ -273,10 +270,10 @@ describe('journal hooks', () => {
 
     server.use(
       http.post(
-        'http://supabase.test/rest/v1/rpc/search_journals',
+        'http://supabase.test/functions/v1/journal-search',
         async ({ request }) => {
-          const { p_query: query } = (await request.json()) as {
-            p_query: string
+          const { query } = (await request.json()) as {
+            query: string
           }
 
           if (query === 'beach') {
@@ -327,5 +324,47 @@ describe('journal hooks', () => {
     }
 
     await waitFor(() => expect(result.current.data).toEqual([]))
+  })
+
+  it('falls back to keyword search when semantic search is unavailable', async () => {
+    server.use(
+      http.post('http://supabase.test/functions/v1/journal-search', () =>
+        HttpResponse.json({ error: 'Search unavailable' }, { status: 503 })
+      ),
+      http.post(
+        'http://supabase.test/rest/v1/rpc/search_journals',
+        async ({ request }) => {
+          expect(await request.json()).toEqual({
+            p_limit: 50,
+            p_query: 'crocodile',
+          })
+
+          return HttpResponse.json([
+            {
+              id: 'journal-1',
+              slug: 'friends-of-crocodile',
+              title: 'Friends of Crocodile',
+              date: '2026-08-10',
+              excerpt:
+                '[[HIGHLIGHT]]Crocodile[[/HIGHLIGHT]] Adventures',
+              rank: 0.75,
+              total_count: 1,
+              thumbnail_public_id: null,
+              thumbnail_width: null,
+              thumbnail_height: null,
+            },
+          ])
+        }
+      )
+    )
+
+    const { result } = renderHook(
+      () => useJournalSearch('user-id', 'crocodile'),
+      { wrapper: createQueryWrapper() }
+    )
+
+    await waitFor(() =>
+      expect(result.current.data?.[0]?.slug).toBe('friends-of-crocodile')
+    )
   })
 })

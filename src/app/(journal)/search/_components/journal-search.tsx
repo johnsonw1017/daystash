@@ -14,7 +14,7 @@ import { useAuth } from '@/hooks/use-auth'
 import { useJournalSearch } from '@/hooks/use-journals'
 import JournalSearchResult from './journal-search-result'
 
-const SEARCH_DELAY_MS = 250
+const SEARCH_DELAY_MS = 500
 
 const SearchResultSkeletons = () => (
   <div aria-label="Loading search results" className="divide-y border-y">
