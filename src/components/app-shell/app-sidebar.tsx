@@ -47,17 +47,17 @@ const navigationItems = [
       (pathname.startsWith('/entries/') && !pathname.endsWith('/edit')),
   },
   {
-    href: '/search',
-    icon: Search,
-    label: 'Search',
-    isActive: (pathname: string) => pathname === '/search',
-  },
-  {
     href: '/write',
     icon: SquarePen,
     label: 'Write',
     isActive: (pathname: string) =>
       pathname === '/write' || pathname.endsWith('/edit'),
+  },
+  {
+    href: '/search',
+    icon: Search,
+    label: 'Search',
+    isActive: (pathname: string) => pathname === '/search',
   },
 ]
 

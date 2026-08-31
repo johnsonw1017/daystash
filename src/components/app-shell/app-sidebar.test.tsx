@@ -49,6 +49,9 @@ describe('AppSidebar', () => {
       'data-active',
       'true'
     )
+    expect(
+      screen.getAllByRole('link').map((link) => link.textContent)
+    ).toEqual(['Home', 'Stash', 'Write', 'Search'])
     expect(screen.getByText('Daystash').closest('a')).toBeNull()
     expect(screen.getByText('Daystash').closest('button')).toBeNull()
     expect(document.querySelector('[data-slot="sidebar-rail"]')).toBeNull()
