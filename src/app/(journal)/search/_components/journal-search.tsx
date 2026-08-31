@@ -1,12 +1,11 @@
 'use client'
 
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { Search, X } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   InputGroup,
   InputGroupAddon,
-  InputGroupButton,
   InputGroupInput,
 } from '@/components/ui/input-group'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -99,22 +98,6 @@ const JournalSearch = ({ initialQuery }: { initialQuery: string }) => {
             enterKeyHint="search"
             onChange={(event) => setQuery(event.target.value)}
           />
-          {query && (
-            <InputGroupAddon align="inline-end">
-              <InputGroupButton
-                type="button"
-                size="icon-sm"
-                aria-label="Clear search"
-                onClick={() => {
-                  setQuery('')
-                  setDebouncedQuery('')
-                  inputRef.current?.focus()
-                }}
-              >
-                <X />
-              </InputGroupButton>
-            </InputGroupAddon>
-          )}
         </InputGroup>
       </form>
 

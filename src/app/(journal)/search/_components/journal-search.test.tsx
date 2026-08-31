@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import JournalSearch from '@/app/(journal)/search/_components/journal-search'
 import JournalSearchResult, {
@@ -63,7 +62,9 @@ describe('journal search', () => {
   it('focuses the field without rendering an empty results state', () => {
     render(<JournalSearch initialQuery="" />)
 
-    expect(screen.getByRole('searchbox', { name: 'Search journals' })).toHaveFocus()
+    expect(
+      screen.getByRole('searchbox', { name: 'Search journals' })
+    ).toHaveFocus()
     expect(
       screen.queryByRole('region', { name: 'Journal search results' })
     ).not.toBeInTheDocument()
@@ -86,15 +87,12 @@ describe('journal search', () => {
     )
   })
 
-  it('clears the current query', async () => {
-    const user = userEvent.setup()
+  it('uses the native search control without a duplicate clear button', () => {
     render(<JournalSearch initialQuery="hike" />)
 
-    await user.click(screen.getByRole('button', { name: 'Clear search' }))
-
-    expect(screen.getByRole('searchbox')).toHaveValue('')
+    expect(screen.getByRole('searchbox')).toHaveAttribute('type', 'search')
     expect(
-      screen.queryByRole('region', { name: 'Journal search results' })
+      screen.queryByRole('button', { name: 'Clear search' })
     ).not.toBeInTheDocument()
   })
 })
@@ -113,7 +111,9 @@ describe('JournalSearchResult', () => {
   it('leaves malformed highlight markers as text', () => {
     render(<SearchExcerpt excerpt="Before [[HIGHLIGHT]]unfinished" />)
 
-    expect(screen.getByText('Before [[HIGHLIGHT]]unfinished')).toBeInTheDocument()
+    expect(
+      screen.getByText('Before [[HIGHLIGHT]]unfinished')
+    ).toBeInTheDocument()
     expect(document.querySelector('mark')).not.toBeInTheDocument()
   })
 })
