@@ -92,7 +92,7 @@ const JournalSearch = ({ initialQuery }: { initialQuery: string }) => {
             ref={inputRef}
             type="search"
             aria-label="Search journals"
-            placeholder="Search titles and journal content…"
+            placeholder="Search..."
             value={query}
             maxLength={200}
             enterKeyHint="search"
