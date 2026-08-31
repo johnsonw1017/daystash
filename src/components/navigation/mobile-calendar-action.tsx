@@ -8,7 +8,6 @@ import { Calendar } from '@/components/ui/calendar'
 import {
   Drawer,
   DrawerContent,
-  DrawerDescription,
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
@@ -74,15 +73,12 @@ export const JournalCalendarDrawer = ({
         )}
       >
         <DrawerHeader>
-          <DrawerTitle>Journal calendar</DrawerTitle>
-          <DrawerDescription>
-            Choose a day with a journal to view it in your stash.
-          </DrawerDescription>
+          <DrawerTitle>Calendar</DrawerTitle>
         </DrawerHeader>
         <div className="flex-1 overflow-y-auto px-4 pb-6">
           {timelineError ? (
             <JournalLoadError
-              title="Journal calendar could not be loaded"
+              title="Calendar could not be loaded"
               onRetry={() => void refetchTimeline()}
             />
           ) : journalError ? (

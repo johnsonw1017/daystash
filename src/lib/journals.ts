@@ -84,6 +84,17 @@ export type JournalListItem = Pick<
   placeCount: number
 }
 
+export type JournalSearchResult = Pick<
+  JournalSummary,
+  'id' | 'title' | 'date'
+> & {
+  slug: string
+  excerpt: string
+  rank: number
+  totalCount: number
+  thumbnail: JournalThumbnail | null
+}
+
 export type JournalDetail = JournalSummary & {
   blocks: JournalBlock[]
   places: JournalPlace[]

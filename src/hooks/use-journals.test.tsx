@@ -7,6 +7,7 @@ import {
   journalQueryKeys,
   useJournalBySlug,
   useJournalMonth,
+  useJournalSearch,
   useJournalTimelineMonths,
 } from '@/hooks/use-journals'
 import supabase from '@/lib/supabase/client'
@@ -54,6 +55,12 @@ describe('journal hooks', () => {
       'journals',
       'slug',
       'summer-trip',
+    ])
+    expect(journalQueryKeys.search('user-id', 'hike')).toEqual([
+      'journals',
+      'search',
+      'user-id',
+      'hike',
     ])
   })
 
@@ -193,5 +200,132 @@ describe('journal hooks', () => {
     })
 
     await waitFor(() => expect(result.current.data).toBeNull())
+  })
+
+  it('does not search without a user or a valid query', () => {
+    const withoutUser = renderHook(() => useJournalSearch(undefined, 'hike'), {
+      wrapper: createQueryWrapper(),
+    })
+    const shortQuery = renderHook(() => useJournalSearch('user-id', 'h'), {
+      wrapper: createQueryWrapper(),
+    })
+
+    expect(withoutUser.result.current.fetchStatus).toBe('idle')
+    expect(shortQuery.result.current.fetchStatus).toBe('idle')
+  })
+
+  it('searches journals and maps result metadata', async () => {
+    server.use(
+      http.post(
+        'http://supabase.test/rest/v1/rpc/search_journals',
+        async ({ request }) => {
+          expect(await request.json()).toEqual({
+            p_limit: 50,
+            p_query: 'morning hike',
+          })
+
+          return HttpResponse.json([
+            {
+              id: 'journal-1',
+              slug: 'sunrise-hike',
+              title: 'Sunrise hike',
+              date: '2026-08-24',
+              excerpt: 'A [[HIGHLIGHT]]hike[[/HIGHLIGHT]] before dawn',
+              rank: 0.75,
+              total_count: '1',
+              thumbnail_public_id: 'journal/sunrise',
+              thumbnail_width: 1200,
+              thumbnail_height: 900,
+            },
+          ])
+        }
+      )
+    )
+
+    const { result } = renderHook(
+      () => useJournalSearch('user-id', ' morning hike '),
+      { wrapper: createQueryWrapper() }
+    )
+
+    await waitFor(() =>
+      expect(result.current.data?.[0]).toEqual({
+        id: 'journal-1',
+        slug: 'sunrise-hike',
+        title: 'Sunrise hike',
+        date: '2026-08-24',
+        excerpt: 'A [[HIGHLIGHT]]hike[[/HIGHLIGHT]] before dawn',
+        rank: 0.75,
+        totalCount: 1,
+        thumbnail: {
+          publicId: 'journal/sunrise',
+          width: 1200,
+          height: 900,
+        },
+      })
+    )
+  })
+
+  it('does not show results from a previous query while a new search loads', async () => {
+    let finishNextSearch = () => {}
+    const nextSearchPending = new Promise<void>((resolve) => {
+      finishNextSearch = resolve
+    })
+
+    server.use(
+      http.post(
+        'http://supabase.test/rest/v1/rpc/search_journals',
+        async ({ request }) => {
+          const { p_query: query } = (await request.json()) as {
+            p_query: string
+          }
+
+          if (query === 'beach') {
+            await nextSearchPending
+          }
+
+          return HttpResponse.json(
+            query === 'hike'
+              ? [
+                  {
+                    id: 'journal-1',
+                    slug: 'sunrise-hike',
+                    title: 'Sunrise hike',
+                    date: '2026-08-24',
+                    excerpt: 'A hike before dawn',
+                    rank: 0.75,
+                    total_count: 1,
+                    thumbnail_public_id: null,
+                    thumbnail_width: null,
+                    thumbnail_height: null,
+                  },
+                ]
+              : []
+          )
+        }
+      )
+    )
+
+    const { result, rerender } = renderHook(
+      ({ query }) => useJournalSearch('user-id', query),
+      {
+        initialProps: { query: 'hike' },
+        wrapper: createQueryWrapper(),
+      }
+    )
+
+    await waitFor(() =>
+      expect(result.current.data?.[0]?.slug).toBe('sunrise-hike')
+    )
+
+    rerender({ query: 'beach' })
+    await waitFor(() => expect(result.current.fetchStatus).toBe('fetching'))
+
+    try {
+      expect(result.current.data).toBeUndefined()
+    } finally {
+      finishNextSearch()
+    }
+
+    await waitFor(() => expect(result.current.data).toEqual([]))
   })
 })

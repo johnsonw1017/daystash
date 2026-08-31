@@ -44,6 +44,15 @@ describe('JournalCalendarDrawer', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Calendar' }))
 
+    expect(
+      await screen.findByRole('heading', { name: 'Calendar' })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText(
+        'Choose a day with a journal to view it in your stash.'
+      )
+    ).not.toBeInTheDocument()
+
     const yearSelector = await screen.findByRole('combobox')
     expect(yearSelector).toHaveValue('2026')
     expect(yearSelector).toContainHTML('<option value="2016">2016</option>')
@@ -75,7 +84,7 @@ describe('JournalCalendarDrawer', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Calendar' }))
     expect(
-      await screen.findByText('Journal calendar could not be loaded')
+      await screen.findByText('Calendar could not be loaded')
     ).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }))

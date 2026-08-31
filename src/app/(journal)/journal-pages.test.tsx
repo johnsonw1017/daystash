@@ -4,6 +4,7 @@ import DashboardPage from '@/app/(journal)/dashboard/page'
 import EntryPage from '@/app/(journal)/entries/[slug]/page'
 import EntryEditPage from '@/app/(journal)/entries/[slug]/edit/page'
 import JournalLayout from '@/app/(journal)/layout'
+import SearchPage from '@/app/(journal)/search/page'
 import WritePage from '@/app/(journal)/write/page'
 import { requireAuth } from '@/lib/auth/require-auth'
 import { createTestUser } from '@/test/mocks/types'
@@ -18,6 +19,12 @@ vi.mock('@/app/(journal)/dashboard/_components/dashboard-journals', () => ({
 
 vi.mock('@/components/journal-editor', () => ({
   default: () => <div>Journal editor</div>,
+}))
+
+vi.mock('@/app/(journal)/search/_components/journal-search', () => ({
+  default: ({ initialQuery }: { initialQuery: string }) => (
+    <div>Journal search: {initialQuery}</div>
+  ),
 }))
 
 vi.mock('@/app/(journal)/entries/[slug]/_components/entry-view', () => ({
@@ -59,14 +66,28 @@ describe('journal pages', () => {
     expect(screen.getByText('Journal editor')).toBeInTheDocument()
   })
 
+  it('passes the search query to the search client', async () => {
+    render(
+      await SearchPage({
+        searchParams: Promise.resolve({ q: 'morning hike' }),
+      })
+    )
+
+    expect(screen.getByText('Journal search: morning hike')).toBeInTheDocument()
+  })
+
   it('passes the route slug to the entry view', async () => {
-    render(await EntryPage({ params: Promise.resolve({ slug: 'summer-trip' }) }))
+    render(
+      await EntryPage({ params: Promise.resolve({ slug: 'summer-trip' }) })
+    )
 
     expect(screen.getByText('Entry view: summer-trip')).toBeInTheDocument()
   })
 
   it('passes the route slug to the entry editor', async () => {
-    render(await EntryEditPage({ params: Promise.resolve({ slug: 'summer-trip' }) }))
+    render(
+      await EntryEditPage({ params: Promise.resolve({ slug: 'summer-trip' }) })
+    )
 
     expect(screen.getByText('Entry edit: summer-trip')).toBeInTheDocument()
   })

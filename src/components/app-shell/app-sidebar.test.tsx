@@ -1,11 +1,15 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import AppSidebar from '@/components/app-shell/app-sidebar'
 import { SidebarProvider } from '@/components/ui/sidebar'
 import { createTestProfile } from '@/test/mocks/types'
 
+const { mockedPathname } = vi.hoisted(() => ({
+  mockedPathname: { value: '/dashboard' },
+}))
+
 vi.mock('next/navigation', () => ({
-  usePathname: () => '/dashboard',
+  usePathname: () => mockedPathname.value,
   useRouter: () => ({ replace: vi.fn() }),
 }))
 
@@ -14,6 +18,10 @@ vi.mock('@/hooks/use-auth', () => ({
 }))
 
 describe('AppSidebar', () => {
+  beforeEach(() => {
+    mockedPathname.value = '/dashboard'
+  })
+
   it('renders route-aware navigation and a static brand lockup', () => {
     render(
       <SidebarProvider defaultOpen>
@@ -33,13 +41,39 @@ describe('AppSidebar', () => {
       'href',
       '/write'
     )
+    expect(screen.getByRole('link', { name: 'Search' })).toHaveAttribute(
+      'href',
+      '/search'
+    )
     expect(screen.getByRole('link', { name: 'Stash' })).toHaveAttribute(
       'data-active',
       'true'
     )
+    expect(
+      screen.getAllByRole('link').map((link) => link.textContent)
+    ).toEqual(['Home', 'Stash', 'Write', 'Search'])
     expect(screen.getByText('Daystash').closest('a')).toBeNull()
     expect(screen.getByText('Daystash').closest('button')).toBeNull()
     expect(document.querySelector('[data-slot="sidebar-rail"]')).toBeNull()
+  })
+
+  it('marks Search active on the search page', () => {
+    mockedPathname.value = '/search'
+
+    render(
+      <SidebarProvider defaultOpen>
+        <AppSidebar
+          isLoading={false}
+          isLoggedIn
+          profile={createTestProfile()}
+        />
+      </SidebarProvider>
+    )
+
+    expect(screen.getByRole('link', { name: 'Search' })).toHaveAttribute(
+      'data-active',
+      'true'
+    )
   })
 
   it('renders matched sidebar skeletons while auth is loading', () => {
@@ -53,7 +87,7 @@ describe('AppSidebar', () => {
     expect(screen.getByLabelText('Loading appearance')).toBeInTheDocument()
     expect(
       document.querySelectorAll('[data-sidebar="menu-skeleton"]')
-    ).toHaveLength(3)
+    ).toHaveLength(4)
   })
 
   it('uses the sidebar footer as a login action when logged out', () => {
