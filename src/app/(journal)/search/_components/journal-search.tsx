@@ -14,7 +14,7 @@ import { useAuth } from '@/hooks/use-auth'
 import { useJournalSearch } from '@/hooks/use-journals'
 import JournalSearchResult from './journal-search-result'
 
-const SEARCH_DELAY_MS = 250
+const SEARCH_DELAY_MS = 500
 
 const SearchResultSkeletons = () => (
   <div aria-label="Loading search results" className="divide-y border-y">
@@ -92,7 +92,7 @@ const JournalSearch = ({ initialQuery }: { initialQuery: string }) => {
             ref={inputRef}
             type="search"
             aria-label="Search journals"
-            placeholder="Search titles and journal content…"
+            placeholder="Search..."
             value={query}
             maxLength={200}
             enterKeyHint="search"

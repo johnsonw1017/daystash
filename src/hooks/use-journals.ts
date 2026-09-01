@@ -217,17 +217,10 @@ const fetchJournalBySlug = async (
   return mapJournalDetailRow(journal as JournalDetailRow)
 }
 
-const fetchJournalSearch = async (
-  query: string
-): Promise<JournalSearchResult[]> => {
-  const { data, error } = await supabase.rpc('search_journals', {
-    p_query: query,
-    p_limit: 50,
-  })
-
-  if (error) throw new Error(error.message)
-
-  return ((data ?? []) as JournalSearchRow[]).map((journal) => ({
+const mapJournalSearchRows = (
+  journals: JournalSearchRow[]
+): JournalSearchResult[] =>
+  journals.map((journal) => ({
     id: journal.id,
     slug: journal.slug,
     title: journal.title,
@@ -246,6 +239,44 @@ const fetchJournalSearch = async (
           }
         : null,
   }))
+
+const fetchKeywordJournalSearch = async (query: string, signal: AbortSignal) => {
+  const { data, error } = await supabase
+    .rpc('search_journals', {
+      p_query: query,
+      p_limit: 50,
+    })
+    .abortSignal(signal)
+
+  if (error) throw new Error(error.message)
+
+  return (data ?? []) as JournalSearchRow[]
+}
+
+const fetchJournalSearch = async (
+  query: string,
+  signal: AbortSignal
+): Promise<JournalSearchResult[]> => {
+  const { data, error } = await supabase.functions.invoke<JournalSearchRow[]>(
+    'journal-search',
+    {
+      body: { query },
+      signal,
+    }
+  )
+
+  if (!error) {
+    return mapJournalSearchRows(data ?? [])
+  }
+
+  if (signal.aborted) {
+    throw (
+      signal.reason ?? new DOMException('Search request was cancelled', 'AbortError')
+    )
+  }
+
+  const keywordResults = await fetchKeywordJournalSearch(query, signal)
+  return mapJournalSearchRows(keywordResults)
 }
 
 export const useJournalMonth = (userId: string | undefined, month: string) =>
@@ -278,7 +309,7 @@ export const useJournalSearch = (userId: string | undefined, query: string) => {
 
   return useQuery({
     queryKey: journalQueryKeys.search(userId, normalizedQuery),
-    queryFn: () => fetchJournalSearch(normalizedQuery),
+    queryFn: ({ signal }) => fetchJournalSearch(normalizedQuery, signal),
     enabled: Boolean(userId && isValidQuery),
   })
 }
