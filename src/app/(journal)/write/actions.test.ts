@@ -4,6 +4,7 @@ import {
   discardJournalSessionChanges,
   registerJournalAssets,
   saveJournal,
+  saveJournalAndRegenerateSlug,
 } from '@/app/(journal)/write/actions'
 import { requireAuth } from '@/lib/auth/require-auth'
 import { createAdminClient } from '@/lib/supabase/server'
@@ -326,6 +327,65 @@ describe('journal write actions', () => {
       'save_journal_with_places',
       expect.objectContaining({ p_date: '2026-08-05' })
     )
+  })
+
+  it('atomically saves the journal and regenerates its slug', async () => {
+    const admin = createAdminClientMock(
+      [
+        { data: { id: 'journal-id' }, error: null },
+        {
+          data: [
+            {
+              id: 'orphaned-asset',
+              cloudinary_public_id: 'journal/old-photo',
+              width: 800,
+              height: 600,
+            },
+          ],
+          error: null,
+        },
+      ],
+      { data: 'kyoto', error: null }
+    )
+
+    await expect(
+      saveJournalAndRegenerateSlug({
+        journalId: 'journal-id',
+        title: '  Kyoto  ',
+        date: '2026-08-05',
+        blocks: [{ id: 'text-1', type: 'text', content: 'A morning walk' }],
+      })
+    ).resolves.toMatchObject({
+      journalId: 'journal-id',
+      slug: 'kyoto',
+    })
+
+    expect(admin.rpc).toHaveBeenCalledWith(
+      'save_journal_with_places_and_regenerate_slug',
+      {
+        p_journal_id: 'journal-id',
+        p_user_id: 'user-id',
+        p_title: 'Kyoto',
+        p_blocks: [{ id: 'text-1', type: 'text', content: 'A morning walk' }],
+        p_thumbnail_asset_id: null,
+        p_date: '2026-08-05',
+        p_updated_at: expect.any(String),
+        p_places: [],
+        p_orphaned_asset_ids: ['orphaned-asset'],
+      }
+    )
+    expect(admin.from).toHaveBeenCalledTimes(2)
+  })
+
+  it('requires an existing journal before regenerating a slug', async () => {
+    await expect(
+      saveJournalAndRegenerateSlug({
+        title: 'Kyoto',
+        blocks: [{ id: 'text-1', type: 'text', content: 'A morning walk' }],
+      })
+    ).rejects.toThrow('A saved journal is required')
+
+    expect(mockedCreateAdminClient).not.toHaveBeenCalled()
   })
 
   it('keeps orphaned assets when the atomic place replacement fails', async () => {

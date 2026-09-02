@@ -3,7 +3,10 @@
 import { useCallback } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAtom, useSetAtom } from 'jotai'
-import { saveJournal } from '@/app/(journal)/write/actions'
+import {
+  saveJournal,
+  saveJournalAndRegenerateSlug,
+} from '@/app/(journal)/write/actions'
 import {
   blocksAtom,
   placesAtom,
@@ -665,6 +668,42 @@ const useJournalEditor = () => {
       saveMutation.mutate()
     })
 
+  const regenerateSlugMutation = useMutation({
+    mutationFn: async () =>
+      saveJournalAndRegenerateSlug({
+        journalId,
+        title,
+        date: journalDate,
+        blocks: normalizedBlocks,
+        places,
+        thumbnailAssetId: activeThumbnailAssetId,
+      }),
+    onSuccess: (response) =>
+      applySavedState({
+        blocks: response.blocks,
+        thumbnailAssetId: response.thumbnailAssetId,
+        nextJournalId: response.journalId,
+        places: response.places,
+        successMessage: 'Journal saved and URL regenerated',
+      }),
+    onError: () => {
+      setIsJournalSaving(false)
+      handleMutationError({
+        message:
+          'Could not save the journal and regenerate its URL. Try again.',
+        toastMessage: 'Could not regenerate journal URL',
+      })
+    },
+  })
+
+  const regenerateSlug = () => {
+    setErrorMessage('')
+    setIsJournalSaving(true)
+    return regenerateSlugMutation.mutateAsync()
+  }
+
+  const isSaving = saveMutation.isPending || regenerateSlugMutation.isPending
+
   return {
     appendImagesToBlock,
     blocks,
@@ -683,11 +722,13 @@ const useJournalEditor = () => {
     isEditMode: editorConfig.isEditMode ?? false,
     journalDate,
     journalCreatedAt: editorConfig.initialCreatedAt,
-    isSaving: saveMutation.isPending,
+    isRegeneratingSlug: regenerateSlugMutation.isPending,
+    isSaving,
     mergeListItem,
     mergeTextBlock,
     moveImage,
     places,
+    regenerateSlug,
     setPlaces,
     setJournalDate,
     moveBlock,

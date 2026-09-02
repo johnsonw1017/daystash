@@ -19,6 +19,7 @@ import JournalEditor from '@/components/journal-editor'
 import { journalQueryKeys, useJournalBySlug } from '@/hooks/use-journals'
 import { toast } from 'sonner'
 import { EntryEditSkeleton } from '../../_components/entry-skeletons'
+import RegenerateSlugAction from './regenerate-slug-action'
 
 type EntryEditProps = {
   slug: string
@@ -62,45 +63,48 @@ const EntryEdit = ({ slug }: EntryEditProps) => {
       isEditMode
       viewHref={`/entries/${slug}`}
       headerActions={
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="text-destructive hover:bg-destructive/10 hover:text-destructive size-11 lg:size-9"
-              aria-label="Delete journal"
-            >
-              <Trash2 className="size-5 lg:size-4" />
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Delete this journal?</DialogTitle>
-              <DialogDescription>
-                Permanently delete will remove this journal from Supabase and
-                cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button type="button" variant="outline">
-                  Cancel
-                </Button>
-              </DialogClose>
+        <>
+          <RegenerateSlugAction slug={slug} />
+          <Dialog>
+            <DialogTrigger asChild>
               <Button
                 type="button"
-                variant="destructive"
-                disabled={deleteMutation.isPending}
-                onClick={() => deleteMutation.mutate()}
+                variant="ghost"
+                size="icon"
+                className="text-destructive hover:bg-destructive/10 hover:text-destructive size-11 lg:size-9"
+                aria-label="Delete journal"
               >
-                {deleteMutation.isPending
-                  ? 'Deleting...'
-                  : 'Permanently delete'}
+                <Trash2 className="size-5 lg:size-4" />
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Delete this journal?</DialogTitle>
+                <DialogDescription>
+                  Permanently delete will remove this journal from Supabase and
+                  cannot be undone.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button type="button" variant="outline">
+                    Cancel
+                  </Button>
+                </DialogClose>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  disabled={deleteMutation.isPending}
+                  onClick={() => deleteMutation.mutate()}
+                >
+                  {deleteMutation.isPending
+                    ? 'Deleting...'
+                    : 'Permanently delete'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </>
       }
     />
   )

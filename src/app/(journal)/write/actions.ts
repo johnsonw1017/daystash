@@ -222,7 +222,7 @@ export const registerJournalAssets = async ({
   }
 }
 
-export const saveJournal = async ({
+const prepareJournalSave = async ({
   journalId,
   title,
   date,
@@ -253,37 +253,92 @@ export const saveJournal = async ({
     .filter((asset) => !referencedAssetIds.has(asset.id))
     .map((asset) => asset.id)
 
+  return {
+    journalId: nextJournal.journalId,
+    userId: user.id,
+    title: nextJournal.title,
+    date: date ?? null,
+    blocks: normalizedBlocks,
+    places: normalizedPlaces,
+    thumbnailAssetId,
+    orphanedAssetIds,
+    updatedAt: new Date().toISOString(),
+  }
+}
+
+const mapPlacesForSave = (places: ReturnType<typeof normalizeJournalPlaces>) =>
+  places.map((place) => ({
+    name: place.name,
+    formatted_address: place.formattedAddress,
+    google_place_id: place.googlePlaceId,
+    google_maps_uri: place.googleMapsUri,
+    latitude: place.latitude,
+    longitude: place.longitude,
+  }))
+
+export const saveJournal = async (input: SaveJournalInput) => {
+  const prepared = await prepareJournalSave(input)
+
   const supabase = createAdminClient()
   const { error } = await supabase.rpc('save_journal_with_places', {
-    p_journal_id: nextJournal.journalId,
-    p_user_id: user.id,
-    p_title: nextJournal.title,
-    p_blocks: normalizedBlocks,
-    p_thumbnail_asset_id: thumbnailAssetId,
-    p_date: date ?? null,
-    p_updated_at: new Date().toISOString(),
-    p_places: normalizedPlaces.map((place) => ({
-      name: place.name,
-      formatted_address: place.formattedAddress,
-      google_place_id: place.googlePlaceId,
-      google_maps_uri: place.googleMapsUri,
-      latitude: place.latitude,
-      longitude: place.longitude,
-    })),
+    p_journal_id: prepared.journalId,
+    p_user_id: prepared.userId,
+    p_title: prepared.title,
+    p_blocks: prepared.blocks,
+    p_thumbnail_asset_id: prepared.thumbnailAssetId,
+    p_date: prepared.date,
+    p_updated_at: prepared.updatedAt,
+    p_places: mapPlacesForSave(prepared.places),
   })
 
   if (error) throw new Error(error.message)
 
   await deleteJournalAssets({
-    assetIds: orphanedAssetIds,
-    journalId: nextJournal.journalId,
+    assetIds: prepared.orphanedAssetIds,
+    journalId: prepared.journalId,
   })
 
   return {
-    journalId: nextJournal.journalId,
-    blocks: normalizedBlocks,
-    places: normalizedPlaces,
-    thumbnailAssetId,
+    journalId: prepared.journalId,
+    blocks: prepared.blocks,
+    places: prepared.places,
+    thumbnailAssetId: prepared.thumbnailAssetId,
+  }
+}
+
+export const saveJournalAndRegenerateSlug = async (input: SaveJournalInput) => {
+  if (!input.journalId) {
+    throw new Error('A saved journal is required to regenerate its slug')
+  }
+
+  const prepared = await prepareJournalSave(input)
+  const supabase = createAdminClient()
+  const { data, error } = await supabase.rpc(
+    'save_journal_with_places_and_regenerate_slug',
+    {
+      p_journal_id: prepared.journalId,
+      p_user_id: prepared.userId,
+      p_title: prepared.title,
+      p_blocks: prepared.blocks,
+      p_thumbnail_asset_id: prepared.thumbnailAssetId,
+      p_date: prepared.date,
+      p_updated_at: prepared.updatedAt,
+      p_places: mapPlacesForSave(prepared.places),
+      p_orphaned_asset_ids: prepared.orphanedAssetIds,
+    }
+  )
+
+  if (error) throw new Error(error.message)
+  if (typeof data !== 'string') {
+    throw new Error('Supabase did not return the regenerated journal slug')
+  }
+
+  return {
+    journalId: prepared.journalId,
+    blocks: prepared.blocks,
+    places: prepared.places,
+    thumbnailAssetId: prepared.thumbnailAssetId,
+    slug: data,
   }
 }
 
