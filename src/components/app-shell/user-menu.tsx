@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useRouter } from 'next/navigation'
-import { ChevronsUpDown, LogIn, LogOut } from 'lucide-react'
+import { ChevronsUpDown, LogIn, LogOut, Settings } from 'lucide-react'
 import { logout } from '@/actions/auth'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
@@ -23,6 +23,7 @@ import type { AuthProfile } from '@/lib/atoms/auth'
 import { getLoginHref } from '@/lib/auth/redirect'
 
 type UserMenuProps = {
+  onOpenSettings: () => void
   profile: AuthProfile | null
 }
 
@@ -34,7 +35,7 @@ const getInitials = (name: string) =>
     .join('')
     .toUpperCase()
 
-export const UserMenu = ({ profile }: UserMenuProps) => {
+export const UserMenu = ({ onOpenSettings, profile }: UserMenuProps) => {
   const refreshAuth = useRefreshAuth()
   const router = useRouter()
   const name = profile?.full_name.trim() || 'Account'
@@ -78,6 +79,10 @@ export const UserMenu = ({ profile }: UserMenuProps) => {
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent side="right" align="end" className="min-w-40">
+            <DropdownMenuItem disabled={!profile} onSelect={onOpenSettings}>
+              <Settings />
+              Settings
+            </DropdownMenuItem>
             <DropdownMenuItem
               variant="destructive"
               onSelect={() => void handleLogout()}

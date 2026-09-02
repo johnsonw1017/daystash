@@ -28,6 +28,7 @@ import {
 type AppSidebarProps = {
   isLoading: boolean
   isLoggedIn: boolean
+  onOpenSettings: () => void
   profile: AuthProfile | null
 }
 
@@ -61,12 +62,22 @@ const navigationItems = [
   },
 ]
 
-const AppSidebar = ({ isLoading, isLoggedIn, profile }: AppSidebarProps) => {
+const AppSidebar = ({
+  isLoading,
+  isLoggedIn,
+  onOpenSettings,
+  profile,
+}: AppSidebarProps) => {
   const pathname = usePathname() ?? ''
   const { isMobile, setOpenMobile } = useSidebar()
 
   const closeMobileSidebar = () => {
     if (isMobile) setOpenMobile(false)
+  }
+
+  const openSettings = () => {
+    closeMobileSidebar()
+    onOpenSettings()
   }
 
   return (
@@ -148,7 +159,7 @@ const AppSidebar = ({ isLoading, isLoggedIn, profile }: AppSidebarProps) => {
         {isLoading ? (
           <UserMenuSkeleton />
         ) : isLoggedIn ? (
-          <UserMenu profile={profile} />
+          <UserMenu onOpenSettings={openSettings} profile={profile} />
         ) : (
           <LoginMenu />
         )}

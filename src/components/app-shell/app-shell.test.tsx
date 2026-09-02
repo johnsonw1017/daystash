@@ -13,6 +13,7 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('@/hooks/use-auth', () => ({
   useAuth: vi.fn(),
+  useRefreshAuth: () => vi.fn(),
 }))
 
 vi.mock('@/components/app-shell/app-sidebar', () => ({
