@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { regenerateJournalSlug } from '@/app/(journal)/write/actions'
-import RegenerateSlugAction from '@/app/(journal)/entries/[slug]/edit/_components/regenerate-slug-action'
+import RegenerateSlugButton from '@/app/(journal)/entries/[slug]/edit/_components/regenerate-slug-button'
 import useJournalEditor from '@/components/journal-editor/hooks/use-journal-editor'
 
 const replace = vi.fn()
@@ -24,20 +24,20 @@ const mockedUseJournalEditor = vi.mocked(useJournalEditor)
 const mockedRegenerateJournalSlug = vi.mocked(regenerateJournalSlug)
 const save = vi.fn()
 
-const renderAction = (slug: string) => {
+const renderButton = (slug: string) => {
   const queryClient = new QueryClient()
   const removeQueries = vi.spyOn(queryClient, 'removeQueries')
 
   render(
     <QueryClientProvider client={queryClient}>
-      <RegenerateSlugAction journalId="journal-id" slug={slug} />
+      <RegenerateSlugButton journalId="journal-id" slug={slug} />
     </QueryClientProvider>
   )
 
   return { removeQueries }
 }
 
-describe('RegenerateSlugAction', () => {
+describe('RegenerateSlugButton', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockedRegenerateJournalSlug.mockResolvedValue({ slug: 'kyoto' })
@@ -50,7 +50,7 @@ describe('RegenerateSlugAction', () => {
   })
 
   it('is disabled when the slug already matches the current title', () => {
-    renderAction('kyoto')
+    renderButton('kyoto')
 
     expect(
       screen.getByRole('button', { name: 'Regenerate journal URL' })
@@ -58,7 +58,7 @@ describe('RegenerateSlugAction', () => {
   })
 
   it('regenerates, clears the old lookup, and replaces the route', async () => {
-    const { removeQueries } = renderAction('kyoto--5f52e64b')
+    const { removeQueries } = renderButton('kyoto--5f52e64b')
 
     await userEvent.click(
       screen.getByRole('button', { name: 'Regenerate journal URL' })
@@ -90,7 +90,7 @@ describe('RegenerateSlugAction', () => {
       title: 'Kyoto',
     } as unknown as ReturnType<typeof useJournalEditor>)
 
-    renderAction('kyoto--5f52e64b')
+    renderButton('kyoto--5f52e64b')
 
     await userEvent.click(
       screen.getByRole('button', { name: 'Regenerate journal URL' })

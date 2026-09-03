@@ -21,15 +21,15 @@ import { journalQueryKeys } from '@/hooks/use-journals'
 import { isJournalSlugCurrent } from '@/lib/journals'
 import { toast } from 'sonner'
 
-type RegenerateSlugActionProps = {
+type RegenerateSlugButtonProps = {
   journalId: string
   slug: string
 }
 
-const RegenerateSlugAction = ({
+const RegenerateSlugButton = ({
   journalId,
   slug,
-}: RegenerateSlugActionProps) => {
+}: RegenerateSlugButtonProps) => {
   const [isOpen, setIsOpen] = useState(false)
   const router = useRouter()
   const queryClient = useQueryClient()
@@ -129,7 +129,7 @@ const RegenerateSlugAction = ({
               </DialogClose>
               <Button
                 type="button"
-                disabled={regenerateMutation.isPending}
+                disabled={isPending}
                 onClick={() => regenerateMutation.mutate()}
               >
                 {regenerateMutation.isPending
@@ -144,4 +144,4 @@ const RegenerateSlugAction = ({
   )
 }
 
-export default RegenerateSlugAction
+export default RegenerateSlugButton
