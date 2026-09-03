@@ -64,7 +64,7 @@ const EntryEdit = ({ slug }: EntryEditProps) => {
       viewHref={`/entries/${slug}`}
       headerActions={
         <>
-          <RegenerateSlugAction slug={slug} />
+          <RegenerateSlugAction journalId={journal.id} slug={slug} />
           <Dialog>
             <DialogTrigger asChild>
               <Button

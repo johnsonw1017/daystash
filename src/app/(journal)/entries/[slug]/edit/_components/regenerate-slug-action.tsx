@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { RefreshCw } from 'lucide-react'
+import { regenerateJournalSlug } from '@/app/(journal)/write/actions'
 import useJournalEditor from '@/components/journal-editor/hooks/use-journal-editor'
 import { Button } from '@/components/ui/button'
 import {
@@ -18,39 +19,45 @@ import {
 } from '@/components/ui/dialog'
 import { journalQueryKeys } from '@/hooks/use-journals'
 import { isJournalSlugCurrent } from '@/lib/journals'
+import { toast } from 'sonner'
 
 type RegenerateSlugActionProps = {
+  journalId: string
   slug: string
 }
 
-const RegenerateSlugAction = ({ slug }: RegenerateSlugActionProps) => {
+const RegenerateSlugAction = ({
+  journalId,
+  slug,
+}: RegenerateSlugActionProps) => {
   const [isOpen, setIsOpen] = useState(false)
   const router = useRouter()
   const queryClient = useQueryClient()
-  const { isRegeneratingSlug, isSaving, regenerateSlug, title } =
-    useJournalEditor()
+  const { isDirty, isSaving, save, title } = useJournalEditor()
   const slugIsCurrent = isJournalSlugCurrent(title, slug)
-
-  const handleRegenerate = async () => {
-    try {
-      const result = await regenerateSlug()
-
+  const regenerateMutation = useMutation({
+    mutationFn: () => regenerateJournalSlug({ journalId }),
+    onSuccess: (result) => {
       setIsOpen(false)
       queryClient.removeQueries({
         queryKey: journalQueryKeys.bySlug(slug),
         exact: true,
       })
+      void queryClient.invalidateQueries({ queryKey: journalQueryKeys.all })
+      toast.success('Journal URL regenerated')
       router.replace(`/entries/${encodeURIComponent(result.slug)}/edit`)
-    } catch {
-      // The editor hook owns the visible error state and toast.
-    }
-  }
+    },
+    onError: () => {
+      toast.error('Could not regenerate journal URL')
+    },
+  })
+  const isPending = isSaving || regenerateMutation.isPending
 
   return (
     <Dialog
       open={isOpen}
       onOpenChange={(open) => {
-        if (!isRegeneratingSlug) setIsOpen(open)
+        if (!isPending) setIsOpen(open)
       }}
     >
       <DialogTrigger asChild>
@@ -65,33 +72,73 @@ const RegenerateSlugAction = ({ slug }: RegenerateSlugActionProps) => {
               ? 'The journal URL already matches its title'
               : 'Regenerate journal URL'
           }
-          disabled={slugIsCurrent || isSaving}
+          disabled={slugIsCurrent || isPending}
         >
           <RefreshCw className="size-5 lg:size-4" />
         </Button>
       </DialogTrigger>
       <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Regenerate this journal URL?</DialogTitle>
-          <DialogDescription>
-            Your current changes will be saved before the URL changes. The old
-            journal URL will no longer work.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button type="button" variant="outline">
-              Cancel
-            </Button>
-          </DialogClose>
-          <Button
-            type="button"
-            disabled={isRegeneratingSlug}
-            onClick={handleRegenerate}
-          >
-            {isRegeneratingSlug ? 'Saving and regenerating…' : 'Regenerate URL'}
-          </Button>
-        </DialogFooter>
+        {isDirty ? (
+          <>
+            <DialogHeader>
+              <DialogTitle>Save changes first</DialogTitle>
+              <DialogDescription>
+                This journal has unsaved changes. Save them before regenerating
+                the journal URL.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button type="button" variant="outline">
+                  Cancel
+                </Button>
+              </DialogClose>
+              <Button type="button" disabled={isSaving} onClick={save}>
+                {isSaving ? 'Saving…' : 'Save changes'}
+              </Button>
+            </DialogFooter>
+          </>
+        ) : slugIsCurrent ? (
+          <>
+            <DialogHeader>
+              <DialogTitle>Journal URL is already current</DialogTitle>
+              <DialogDescription>
+                The journal URL already matches the saved title and does not
+                need to be regenerated.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button type="button">Close</Button>
+              </DialogClose>
+            </DialogFooter>
+          </>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle>Regenerate this journal URL?</DialogTitle>
+              <DialogDescription>
+                The old journal URL will no longer work.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button type="button" variant="outline">
+                  Cancel
+                </Button>
+              </DialogClose>
+              <Button
+                type="button"
+                disabled={regenerateMutation.isPending}
+                onClick={() => regenerateMutation.mutate()}
+              >
+                {regenerateMutation.isPending
+                  ? 'Regenerating…'
+                  : 'Regenerate URL'}
+              </Button>
+            </DialogFooter>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   )

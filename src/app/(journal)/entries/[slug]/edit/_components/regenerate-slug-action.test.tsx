@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { regenerateJournalSlug } from '@/app/(journal)/write/actions'
 import RegenerateSlugAction from '@/app/(journal)/entries/[slug]/edit/_components/regenerate-slug-action'
 import useJournalEditor from '@/components/journal-editor/hooks/use-journal-editor'
 
@@ -15,8 +16,13 @@ vi.mock('@/components/journal-editor/hooks/use-journal-editor', () => ({
   default: vi.fn(),
 }))
 
+vi.mock('@/app/(journal)/write/actions', () => ({
+  regenerateJournalSlug: vi.fn(),
+}))
+
 const mockedUseJournalEditor = vi.mocked(useJournalEditor)
-const regenerateSlug = vi.fn()
+const mockedRegenerateJournalSlug = vi.mocked(regenerateJournalSlug)
+const save = vi.fn()
 
 const renderAction = (slug: string) => {
   const queryClient = new QueryClient()
@@ -24,7 +30,7 @@ const renderAction = (slug: string) => {
 
   render(
     <QueryClientProvider client={queryClient}>
-      <RegenerateSlugAction slug={slug} />
+      <RegenerateSlugAction journalId="journal-id" slug={slug} />
     </QueryClientProvider>
   )
 
@@ -34,11 +40,11 @@ const renderAction = (slug: string) => {
 describe('RegenerateSlugAction', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    regenerateSlug.mockResolvedValue({ slug: 'kyoto' })
+    mockedRegenerateJournalSlug.mockResolvedValue({ slug: 'kyoto' })
     mockedUseJournalEditor.mockReturnValue({
-      isRegeneratingSlug: false,
+      isDirty: false,
       isSaving: false,
-      regenerateSlug,
+      save,
       title: 'Kyoto',
     } as unknown as ReturnType<typeof useJournalEditor>)
   })
@@ -51,7 +57,7 @@ describe('RegenerateSlugAction', () => {
     ).toBeDisabled()
   })
 
-  it('saves, regenerates, clears the old lookup, and replaces the route', async () => {
+  it('regenerates, clears the old lookup, and replaces the route', async () => {
     const { removeQueries } = renderAction('kyoto--5f52e64b')
 
     await userEvent.click(
@@ -59,18 +65,41 @@ describe('RegenerateSlugAction', () => {
     )
 
     expect(
-      screen.getByText(/current changes will be saved/i)
+      screen.getByText(/old journal url will no longer work/i)
     ).toBeInTheDocument()
 
     await userEvent.click(
       screen.getByRole('button', { name: 'Regenerate URL' })
     )
 
-    expect(regenerateSlug).toHaveBeenCalledOnce()
+    expect(mockedRegenerateJournalSlug).toHaveBeenCalledWith({
+      journalId: 'journal-id',
+    })
     expect(removeQueries).toHaveBeenCalledWith({
       queryKey: ['journals', 'slug', 'kyoto--5f52e64b'],
       exact: true,
     })
     expect(replace).toHaveBeenCalledWith('/entries/kyoto/edit')
+  })
+
+  it('requires the user to save unsaved changes before regenerating', async () => {
+    mockedUseJournalEditor.mockReturnValue({
+      isDirty: true,
+      isSaving: false,
+      save,
+      title: 'Kyoto',
+    } as unknown as ReturnType<typeof useJournalEditor>)
+
+    renderAction('kyoto--5f52e64b')
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Regenerate journal URL' })
+    )
+    expect(screen.getByText('Save changes first')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+
+    expect(save).toHaveBeenCalledOnce()
+    expect(mockedRegenerateJournalSlug).not.toHaveBeenCalled()
   })
 })
