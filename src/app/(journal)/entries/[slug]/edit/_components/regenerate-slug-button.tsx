@@ -74,9 +74,9 @@ const RegenerateSlugButton = ({
           }
           disabled={slugIsCurrent || isPending}
         >
-          <span className="relative size-5 lg:size-4" aria-hidden="true">
-            <RefreshCw className="size-full" />
-            <Link2 className="absolute -right-1 -bottom-1 size-3 stroke-[2.5]" />
+          <span className="flex flex-col items-center" aria-hidden="true">
+            <Link2 className="size-3 stroke-[2.5]" />
+            <RefreshCw className="size-4" />
           </span>
         </Button>
       </DialogTrigger>
