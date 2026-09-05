@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { RefreshCw } from 'lucide-react'
+import { Link2, RefreshCw } from 'lucide-react'
 import { regenerateJournalSlug } from '@/app/(journal)/write/actions'
 import useJournalEditor from '@/components/journal-editor/hooks/use-journal-editor'
 import { Button } from '@/components/ui/button'
@@ -74,7 +74,10 @@ const RegenerateSlugButton = ({
           }
           disabled={slugIsCurrent || isPending}
         >
-          <RefreshCw className="size-5 lg:size-4" />
+          <span className="relative size-5 lg:size-4" aria-hidden="true">
+            <RefreshCw className="size-full" />
+            <Link2 className="absolute -right-1 -bottom-1 size-3 stroke-[2.5]" />
+          </span>
         </Button>
       </DialogTrigger>
       <DialogContent>
