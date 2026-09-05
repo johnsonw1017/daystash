@@ -287,6 +287,29 @@ export const saveJournal = async ({
   }
 }
 
+export const regenerateJournalSlug = async ({
+  journalId,
+}: {
+  journalId: string
+}) => {
+  const user = await requireAuth('/dashboard')
+  await ensureOwnedJournal({ journalId, userId: user.id })
+  const supabase = createAdminClient()
+  const { data, error } = await supabase.rpc('regenerate_journal_slug', {
+    p_journal_id: journalId,
+    p_user_id: user.id,
+  })
+
+  if (error) throw new Error(error.message)
+  if (typeof data !== 'string') {
+    throw new Error('Supabase did not return the regenerated journal slug')
+  }
+
+  return {
+    slug: data,
+  }
+}
+
 export const discardJournalSessionChanges = async ({
   journalId,
   sessionAssetIds,

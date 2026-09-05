@@ -26,7 +26,7 @@ describe('JournalHeader', () => {
       setTitle: vi.fn(),
       title: 'Kyoto',
       viewHref: '/entries/kyoto',
-    } as ReturnType<typeof useJournalEditor>)
+    } as unknown as ReturnType<typeof useJournalEditor>)
   })
 
   it('limits the journal date picker to the seven days before creation', async () => {

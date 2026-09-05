@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   deleteJournal,
   discardJournalSessionChanges,
+  regenerateJournalSlug,
   registerJournalAssets,
   saveJournal,
 } from '@/app/(journal)/write/actions'
@@ -326,6 +327,26 @@ describe('journal write actions', () => {
       'save_journal_with_places',
       expect.objectContaining({ p_date: '2026-08-05' })
     )
+  })
+
+  it('regenerates the slug without sending journal content', async () => {
+    const admin = createAdminClientMock(
+      [{ data: { id: 'journal-id' }, error: null }],
+      { data: 'kyoto', error: null }
+    )
+
+    await expect(
+      regenerateJournalSlug({
+        journalId: 'journal-id',
+      })
+    ).resolves.toEqual({ slug: 'kyoto' })
+
+    expect(mockedRequireAuth).toHaveBeenCalledWith('/dashboard')
+    expect(admin.rpc).toHaveBeenCalledWith('regenerate_journal_slug', {
+      p_journal_id: 'journal-id',
+      p_user_id: 'user-id',
+    })
+    expect(admin.from).toHaveBeenCalledOnce()
   })
 
   it('keeps orphaned assets when the atomic place replacement fails', async () => {

@@ -101,6 +101,28 @@ export type JournalDetail = JournalSummary & {
   thumbnailAssetId: string | null
 }
 
+const uuidPattern =
+  '[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}'
+
+export const slugifyJournalTitle = (title: string) => {
+  const cleanedTitle = title.trim() || 'Untitled Journal'
+  const slug = cleanedTitle
+    .replace(/[^a-zA-Z0-9\s-]/g, '')
+    .replace(/[\s-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase()
+
+  return slug || 'untitled'
+}
+
+export const isJournalSlugCurrent = (title: string, slug: string) => {
+  const titleSlug = slugifyJournalTitle(title)
+
+  return (
+    slug === titleSlug || new RegExp(`^${titleSlug}-${uuidPattern}$`).test(slug)
+  )
+}
+
 export const normalizeJournalPlaces = (places: JournalPlace[]) => {
   const uniquePlaces = new Map<string, JournalPlace>()
 

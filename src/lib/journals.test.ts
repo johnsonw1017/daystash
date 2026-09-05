@@ -2,10 +2,37 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   getJournalThumbnailAssetId,
   getReferencedAssetIds,
+  isJournalSlugCurrent,
   normalizeJournalBlocks,
   parseJournalBlocks,
+  slugifyJournalTitle,
   type JournalBlock,
 } from '@/lib/journals'
+
+describe('journal slugs', () => {
+  it('matches the database title normalization rules', () => {
+    expect(slugifyJournalTitle('  A Week -- in Kyoto!  ')).toBe(
+      'a-week-in-kyoto'
+    )
+    expect(slugifyJournalTitle('')).toBe('untitled-journal')
+    expect(slugifyJournalTitle('🌿')).toBe('untitled')
+  })
+
+  it('recognizes clean and single-dash UUID slugs as current', () => {
+    expect(isJournalSlugCurrent('Kyoto', 'kyoto')).toBe(true)
+    expect(
+      isJournalSlugCurrent(
+        'Kyoto',
+        'kyoto-5f52e64b-b3d6-4f17-b128-830c5f00dc49'
+      )
+    ).toBe(true)
+  })
+
+  it('allows legacy double-dash and stale-title slugs to regenerate', () => {
+    expect(isJournalSlugCurrent('Kyoto', 'kyoto--5f52e64b')).toBe(false)
+    expect(isJournalSlugCurrent('Kyoto', 'old-title')).toBe(false)
+  })
+})
 
 describe('parseJournalBlocks', () => {
   it('normalizes valid persisted block data and skips invalid blocks', () => {
@@ -129,9 +156,9 @@ describe('normalizeJournalBlocks', () => {
   it('creates a blank text block when all blocks are empty', () => {
     vi.spyOn(crypto, 'randomUUID').mockReturnValue('new-block-id')
 
-    expect(normalizeJournalBlocks([{ id: 'empty', type: 'text', content: '' }])).toEqual([
-      { id: 'new-block-id', type: 'text', content: '' },
-    ])
+    expect(
+      normalizeJournalBlocks([{ id: 'empty', type: 'text', content: '' }])
+    ).toEqual([{ id: 'new-block-id', type: 'text', content: '' }])
   })
 })
 
@@ -162,7 +189,9 @@ describe('journal asset helpers', () => {
   ]
 
   it('collects referenced asset ids', () => {
-    expect(getReferencedAssetIds(blocks)).toEqual(new Set(['asset-1', 'asset-2']))
+    expect(getReferencedAssetIds(blocks)).toEqual(
+      new Set(['asset-1', 'asset-2'])
+    )
   })
 
   it('returns the first image asset as the journal thumbnail', () => {
