@@ -12,7 +12,6 @@ import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -158,9 +157,6 @@ const UserSettingsDialog = ({
       <DialogContent showCloseButton={!isSaving}>
         <DialogHeader>
           <DialogTitle>Profile settings</DialogTitle>
-          <DialogDescription>
-            Update the name and avatar shown in Daystash.
-          </DialogDescription>
         </DialogHeader>
 
         <form
