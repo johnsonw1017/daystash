@@ -1,5 +1,10 @@
 import type { ReactNode } from 'react'
-import type { JournalBlock, JournalPlace } from '@/lib/journals'
+import type {
+  JournalBlock,
+  JournalPlace,
+  SaveJournalInput,
+  SaveJournalResult,
+} from '@/lib/journals'
 
 export type JournalEditorProps = {
   initialJournalId?: string
@@ -13,11 +18,23 @@ export type JournalEditorProps = {
   isEditMode?: boolean
   viewHref?: string
   headerActions?: ReactNode
+  isOfflineDraft?: boolean
+  onDraftChange?: (input: SaveJournalInput) => Promise<unknown> | void
+  onDraftSaveStart?: () => void
+  saveHandler?: (input: SaveJournalInput) => Promise<SaveJournalResult>
+  textOnly?: boolean
 }
 
 export type JournalEditorConfig = Pick<
   JournalEditorProps,
-  'headerActions' | 'initialCreatedAt' | 'isEditMode' | 'successMessage' | 'viewHref'
+  | 'headerActions'
+  | 'initialCreatedAt'
+  | 'isEditMode'
+  | 'isOfflineDraft'
+  | 'saveHandler'
+  | 'successMessage'
+  | 'textOnly'
+  | 'viewHref'
 > & {
   successMessage: string
 }

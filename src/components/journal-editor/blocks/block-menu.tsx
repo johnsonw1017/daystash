@@ -16,12 +16,14 @@ type BlockMenuProps = {
   blockId: string
   dragHandleRef?: RefCallback<HTMLButtonElement>
   isReordering?: boolean
+  textOnly?: boolean
 }
 
 const BlockMenu = ({
   blockId,
   dragHandleRef,
   isReordering = false,
+  textOnly = false,
 }: BlockMenuProps) => {
   const { insertImage, insertList, insertText } = useBlockInsertion(blockId)
 
@@ -66,12 +68,12 @@ const BlockMenu = ({
             <List />
             <span>List</span>
           </DropdownMenuItem>
-          <DropdownMenuItem
-            onSelect={insertImage}
-          >
-            <ImageIcon />
-            <span>Image</span>
-          </DropdownMenuItem>
+          {!textOnly && (
+            <DropdownMenuItem onSelect={insertImage}>
+              <ImageIcon />
+              <span>Image</span>
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

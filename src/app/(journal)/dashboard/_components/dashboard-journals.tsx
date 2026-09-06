@@ -13,6 +13,7 @@ import { useJournalTimelineMonths } from '@/hooks/use-journals'
 import { dashboardCalendarDateAtom } from '@/lib/atoms/dashboard-navigation'
 import { JournalCalendarDrawer } from '@/components/navigation/mobile-calendar-action'
 import DesktopSearchAction from '@/components/navigation/desktop-search-action'
+import OfflineJournalNotice from '@/components/offline/offline-journal-notice'
 import { InitialJournalSkeletons } from './journal-skeletons'
 import JournalTimelineScrubber from './journal-timeline-scrubber'
 import VirtualizedJournalMonth from './virtualized-journal-month'
@@ -85,6 +86,8 @@ const DashboardJournals = () => {
       <div className="mb-8">
         <h1 className="text-3xl font-semibold tracking-tight">Your Stash</h1>
       </div>
+
+      <OfflineJournalNotice />
 
       <div className="fixed right-6 bottom-6 z-40 hidden items-center gap-2 lg:flex">
         <DesktopSearchAction />

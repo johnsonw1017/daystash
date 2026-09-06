@@ -44,11 +44,19 @@ export type JournalPlace = {
 
 export type SaveJournalInput = {
   journalId?: string
+  clientJournalId?: string
   title: string
   date?: string
   blocks: JournalBlock[]
   places?: JournalPlace[]
   thumbnailAssetId?: string | null
+}
+
+export type SaveJournalResult = {
+  journalId: string
+  blocks: JournalBlock[]
+  places: JournalPlace[]
+  thumbnailAssetId: string | null
 }
 
 export type RegisterJournalAssetsInput = {

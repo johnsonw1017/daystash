@@ -7,6 +7,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { queryClientAtom } from 'jotai-tanstack-query'
 import { ThemeProvider } from 'next-themes'
 import AuthStateSync from '@/components/auth/auth-state-sync'
+import OfflineJournalSync from '@/components/offline/offline-journal-sync'
+import OfflineJournalAccess from '@/components/offline/offline-journal-access'
 
 type ProvidersProps = {
   children: React.ReactNode
@@ -52,6 +54,8 @@ const Providers = ({ children }: ProvidersProps) => {
         <JotaiProvider>
           <HydrateQueryClient queryClient={queryClient}>
             <AuthStateSync />
+            <OfflineJournalSync />
+            <OfflineJournalAccess />
             {children}
           </HydrateQueryClient>
         </JotaiProvider>

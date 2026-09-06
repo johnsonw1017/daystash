@@ -2,6 +2,7 @@
 
 import { atom } from 'jotai'
 import supabase from '@/lib/supabase/client'
+import { rememberOfflineUser } from '@/lib/offline-journals'
 
 export type AuthProfile = {
   id: string
@@ -39,6 +40,8 @@ export const refreshAuthStateAtom = atom(null, async (_get, set) => {
     set(authStateAtom, createAuthState(null))
     return
   }
+
+  rememberOfflineUser(userId)
 
   const { data: profile } = await supabase
     .from('profiles')

@@ -77,10 +77,12 @@ const getOwnedJournalBlocks = async ({
 }
 
 const ensureJournal = async ({
+  clientJournalId,
   journalId,
   title,
   userId,
 }: {
+  clientJournalId?: string
   journalId?: string
   title: string
   userId: string
@@ -92,11 +94,20 @@ const ensureJournal = async ({
     const { data, error } = await supabase
       .from('journals')
       .insert({
+        ...(clientJournalId ? { id: clientJournalId } : {}),
         user_id: userId,
         title: cleanedTitle,
       })
       .select('id')
       .single()
+
+    if (error?.code === '23505' && clientJournalId) {
+      await ensureOwnedJournal({ journalId: clientJournalId, userId })
+      return {
+        journalId: clientJournalId,
+        title: cleanedTitle,
+      }
+    }
 
     if (error || !data) {
       throw new Error(error?.message || 'Failed to create journal')
@@ -223,6 +234,7 @@ export const registerJournalAssets = async ({
 }
 
 export const saveJournal = async ({
+  clientJournalId,
   journalId,
   title,
   date,
@@ -232,6 +244,7 @@ export const saveJournal = async ({
 }: SaveJournalInput) => {
   const user = await requireAuth('/write')
   const nextJournal = await ensureJournal({
+    clientJournalId,
     journalId,
     title,
     userId: user.id,

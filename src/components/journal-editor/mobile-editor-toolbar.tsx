@@ -23,7 +23,7 @@ const MobileEditorToolbar = ({
   onAddBlockOpenChange,
   onReorderingChange,
 }: MobileEditorToolbarProps) => {
-  const { isEditMode, isSaving, save, viewHref } = useJournalEditor()
+  const { isEditMode, isSaving, save, textOnly, viewHref } = useJournalEditor()
 
   return (
     <>
@@ -56,6 +56,7 @@ const MobileEditorToolbar = ({
           blockId={activeBlockId}
           open={isAddBlockOpen}
           onOpenChange={onAddBlockOpenChange}
+          textOnly={textOnly}
         />
       ) : null}
     </>

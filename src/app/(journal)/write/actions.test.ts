@@ -123,6 +123,53 @@ describe('journal write actions', () => {
     ])
   })
 
+  it('uses a client journal id when syncing a new offline journal', async () => {
+    const admin = createAdminClientMock([
+      { data: { id: 'client-journal-id' }, error: null },
+      { data: [], error: null },
+    ])
+
+    await expect(
+      saveJournal({
+        clientJournalId: 'client-journal-id',
+        title: 'Offline notes',
+        date: '2026-09-06',
+        blocks: [{ id: 'text-1', type: 'text', content: 'Saved offline' }],
+      })
+    ).resolves.toMatchObject({ journalId: 'client-journal-id' })
+
+    expect(admin.from.mock.results[0].value.insert).toHaveBeenCalledWith({
+      id: 'client-journal-id',
+      user_id: 'user-id',
+      title: 'Offline notes',
+    })
+    expect(admin.rpc).toHaveBeenCalledWith(
+      'save_journal_with_places',
+      expect.objectContaining({ p_journal_id: 'client-journal-id' })
+    )
+  })
+
+  it('reuses an owned client journal id when an offline sync is retried', async () => {
+    const admin = createAdminClientMock([
+      { data: null, error: { code: '23505', message: 'Duplicate id' } },
+      { data: { id: 'client-journal-id' }, error: null },
+      { data: [], error: null },
+    ])
+
+    await expect(
+      saveJournal({
+        clientJournalId: 'client-journal-id',
+        title: 'Offline notes',
+        blocks: [{ id: 'text-1', type: 'text', content: 'Retry safely' }],
+      })
+    ).resolves.toMatchObject({ journalId: 'client-journal-id' })
+
+    expect(admin.from.mock.results[1].value.eq).toHaveBeenCalledWith(
+      'user_id',
+      'user-id'
+    )
+  })
+
   it('saves a journal, removes orphaned assets, and sets a valid thumbnail', async () => {
     const admin = createAdminClientMock([
       { data: { id: 'journal-id' }, error: null },
