@@ -72,7 +72,7 @@ self.addEventListener('fetch', (event) => {
           )
         }
 
-        return Response.redirect('/offline', 302)
+        return Response.redirect(new URL('/offline', self.location.origin), 302)
       })
     )
     return

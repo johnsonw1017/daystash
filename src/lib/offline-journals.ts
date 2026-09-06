@@ -133,19 +133,40 @@ export const saveOfflineJournal = async (
   })
 }
 
+const mutateMatchingRevision = (
+  id: string,
+  userId: string,
+  revision: number,
+  mutate: (journals: EntityTable<OfflineJournal, 'id'>) => Promise<void>
+) => {
+  const db = getDatabase()
+
+  return db.transaction('rw', db.offlineJournals, async () => {
+    const journal = await db.offlineJournals.get(id)
+    if (
+      !journal ||
+      journal.userId !== userId ||
+      journal.revision !== revision
+    ) {
+      return false
+    }
+
+    await mutate(db.offlineJournals)
+    return true
+  })
+}
+
 export const markOfflineJournalSyncing = async (
   id: string,
   userId: string,
   revision: number
 ) => {
-  const journal = await getOfflineJournal(id, userId)
-  if (!journal || journal.revision !== revision) return false
-
-  await getDatabase().offlineJournals.update(id, {
-    syncState: 'syncing',
-    syncError: null,
+  return mutateMatchingRevision(id, userId, revision, async (journals) => {
+    await journals.update(id, {
+      syncState: 'syncing',
+      syncError: null,
+    })
   })
-  return true
 }
 
 export const completeOfflineJournalSync = async (
@@ -153,17 +174,8 @@ export const completeOfflineJournalSync = async (
   userId: string,
   revision: number
 ) => {
-  const journal = await getOfflineJournal(id, userId)
-  if (!journal) return
-
-  if (journal.revision === revision) {
-    await getDatabase().offlineJournals.delete(id)
-    return
-  }
-
-  await getDatabase().offlineJournals.update(id, {
-    syncState: 'pending',
-    syncError: null,
+  return mutateMatchingRevision(id, userId, revision, async (journals) => {
+    await journals.delete(id)
   })
 }
 
@@ -173,12 +185,11 @@ export const failOfflineJournalSync = async (
   revision: number,
   error: unknown
 ) => {
-  const journal = await getOfflineJournal(id, userId)
-  if (!journal || journal.revision !== revision) return
-
-  await getDatabase().offlineJournals.update(id, {
-    syncState: 'failed',
-    syncError: error instanceof Error ? error.message : 'Sync failed',
+  return mutateMatchingRevision(id, userId, revision, async (journals) => {
+    await journals.update(id, {
+      syncState: 'failed',
+      syncError: error instanceof Error ? error.message : 'Sync failed',
+    })
   })
 }
 

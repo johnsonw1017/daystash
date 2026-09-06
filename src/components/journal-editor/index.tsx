@@ -6,7 +6,9 @@ import { isSortableOperation, useSortable } from '@dnd-kit/react/sortable'
 import { Provider as JotaiProvider } from 'jotai'
 import { useAtomValue } from 'jotai'
 import {
+  useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type FocusEvent,
@@ -41,8 +43,10 @@ const sortableGroupId = 'journal-editor-blocks'
 
 const OfflineDraftAutosave = ({
   onDraftChange,
+  onDraftSaveStart,
 }: {
-  onDraftChange?: (input: SaveJournalInput) => Promise<void> | void
+  onDraftChange?: (input: SaveJournalInput) => Promise<unknown> | void
+  onDraftSaveStart?: () => void
 }) => {
   const journalId = useAtomValue(journalIdAtom)
   const title = useAtomValue(titleAtom)
@@ -52,60 +56,50 @@ const OfflineDraftAutosave = ({
   const thumbnailAssetId = useAtomValue(thumbnailAssetIdAtom)
   const latestInputRef = useRef<SaveJournalInput | null>(null)
   const onDraftChangeRef = useRef(onDraftChange)
+  const draftInput = useMemo<SaveJournalInput | null>(
+    () =>
+      journalId
+        ? {
+            journalId,
+            title,
+            date,
+            blocks,
+            places,
+            thumbnailAssetId,
+          }
+        : null,
+    [blocks, date, journalId, places, thumbnailAssetId, title]
+  )
 
   useEffect(() => {
-    latestInputRef.current = journalId
-      ? {
-          journalId,
-          title,
-          date,
-          blocks,
-          places,
-          thumbnailAssetId,
-        }
-      : null
+    latestInputRef.current = draftInput
     onDraftChangeRef.current = onDraftChange
-  }, [
-    blocks,
-    date,
-    journalId,
-    onDraftChange,
-    places,
-    thumbnailAssetId,
-    title,
-  ])
+  }, [draftInput, onDraftChange])
+
+  const persistDraft = useCallback((input: SaveJournalInput) => {
+    void Promise.resolve()
+      .then(() => onDraftChangeRef.current?.(input))
+      .catch(() => undefined)
+  }, [])
 
   useEffect(() => {
-    if (!journalId || !onDraftChange) return
+    if (!draftInput || !onDraftChange) return
+
+    onDraftSaveStart?.()
 
     const timeout = window.setTimeout(() => {
-      void onDraftChange({
-        journalId,
-        title,
-        date,
-        blocks,
-        places,
-        thumbnailAssetId,
-      })
+      persistDraft(draftInput)
     }, 300)
 
     return () => window.clearTimeout(timeout)
-  }, [
-    blocks,
-    date,
-    journalId,
-    onDraftChange,
-    places,
-    thumbnailAssetId,
-    title,
-  ])
+  }, [draftInput, onDraftChange, onDraftSaveStart, persistDraft])
 
   useEffect(
     () => () => {
       const latestInput = latestInputRef.current
-      if (latestInput) void onDraftChangeRef.current?.(latestInput)
+      if (latestInput) persistDraft(latestInput)
     },
-    []
+    [persistDraft]
   )
 
   return null
@@ -309,6 +303,7 @@ const JournalEditor = ({
   headerActions,
   isOfflineDraft = false,
   onDraftChange,
+  onDraftSaveStart,
   saveHandler,
   textOnly = false,
 }: JournalEditorProps) => {
@@ -334,7 +329,10 @@ const JournalEditor = ({
   return (
     <JotaiProvider store={store}>
       <FocusRegistryProvider>
-        <OfflineDraftAutosave onDraftChange={onDraftChange} />
+        <OfflineDraftAutosave
+          onDraftChange={onDraftChange}
+          onDraftSaveStart={onDraftSaveStart}
+        />
         <JournalEditorContent />
       </FocusRegistryProvider>
     </JotaiProvider>

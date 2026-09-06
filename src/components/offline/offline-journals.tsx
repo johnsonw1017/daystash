@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { ArrowLeft, CloudOff, RefreshCw, SquarePen } from 'lucide-react'
@@ -16,6 +16,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import type { SaveJournalInput, SaveJournalResult } from '@/lib/journals'
+import useOnlineStatus from '@/hooks/use-online-status'
 import { syncOfflineJournals } from '@/lib/offline-journal-sync'
 import {
   createOfflineJournal,
@@ -30,31 +31,33 @@ const getEntryIdFromHash = () => {
   return params.get('entry')
 }
 
+type PersistenceState = 'saved' | 'saving' | 'error'
+
+const getErrorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : 'This journal could not be saved.'
+
 const OfflineJournals = () => {
   const [userId, setUserId] = useState<string | null>(null)
   const [journals, setJournals] = useState<OfflineJournal[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [isOnline, setIsOnline] = useState(false)
+  const isOnline = useOnlineStatus()
   const [isSyncing, setIsSyncing] = useState(false)
   const [loadError, setLoadError] = useState(false)
+  const [persistenceState, setPersistenceState] =
+    useState<PersistenceState>('saved')
+  const [persistenceError, setPersistenceError] = useState('')
+  const persistenceRevisionRef = useRef(0)
 
   useEffect(() => {
     setUserId(getRememberedOfflineUser())
     setSelectedId(getEntryIdFromHash())
-    setIsOnline(navigator.onLine)
 
     const handleHashChange = () => setSelectedId(getEntryIdFromHash())
-    const handleOnline = () => setIsOnline(true)
-    const handleOffline = () => setIsOnline(false)
 
     window.addEventListener('hashchange', handleHashChange)
-    window.addEventListener('online', handleOnline)
-    window.addEventListener('offline', handleOffline)
 
     return () => {
       window.removeEventListener('hashchange', handleHashChange)
-      window.removeEventListener('online', handleOnline)
-      window.removeEventListener('offline', handleOffline)
     }
   }, [])
 
@@ -86,11 +89,15 @@ const OfflineJournals = () => {
   }, [journals.length, selectedId, selectedJournal])
 
   const openJournal = (id: string) => {
+    persistenceRevisionRef.current += 1
+    setPersistenceState('saved')
+    setPersistenceError('')
     window.history.pushState(null, '', `/offline#entry=${id}`)
     setSelectedId(id)
   }
 
   const closeJournal = () => {
+    persistenceRevisionRef.current += 1
     window.history.pushState(null, '', '/offline')
     setSelectedId(null)
 
@@ -102,28 +109,51 @@ const OfflineJournals = () => {
   const createJournal = async () => {
     if (!userId) return
 
-    const journal = await createOfflineJournal(
-      userId,
-      format(new Date(), 'yyyy-MM-dd')
-    )
-    openJournal(journal.id)
+    try {
+      const journal = await createOfflineJournal(
+        userId,
+        format(new Date(), 'yyyy-MM-dd')
+      )
+      openJournal(journal.id)
+    } catch {
+      setLoadError(true)
+    }
   }
+
+  const handlePersistenceStart = useCallback(() => {
+    persistenceRevisionRef.current += 1
+    setPersistenceState('saving')
+  }, [])
 
   const saveDraft = useCallback(
     async (input: SaveJournalInput) => {
-      if (!selectedId || !userId) return
-      await saveOfflineJournal(selectedId, userId, input)
+      const persistenceRevision = persistenceRevisionRef.current
+
+      if (!selectedId || !userId) {
+        throw new Error('Offline journal not found')
+      }
+
+      try {
+        const journal = await saveOfflineJournal(selectedId, userId, input)
+        if (persistenceRevision === persistenceRevisionRef.current) {
+          setPersistenceState('saved')
+          setPersistenceError('')
+        }
+        return journal
+      } catch (error) {
+        if (persistenceRevision === persistenceRevisionRef.current) {
+          setPersistenceState('error')
+          setPersistenceError(getErrorMessage(error))
+        }
+        throw error
+      }
     },
     [selectedId, userId]
   )
 
   const saveDraftFromEditor = useCallback(
     async (input: SaveJournalInput): Promise<SaveJournalResult> => {
-      if (!selectedId || !userId) {
-        throw new Error('Offline journal not found')
-      }
-
-      const journal = await saveOfflineJournal(selectedId, userId, input)
+      const journal = await saveDraft(input)
       return {
         journalId: journal.id,
         blocks: journal.blocks,
@@ -131,7 +161,7 @@ const OfflineJournals = () => {
         thumbnailAssetId: null,
       }
     },
-    [selectedId, userId]
+    [saveDraft]
   )
 
   const syncNow = async () => {
@@ -169,11 +199,24 @@ const OfflineJournals = () => {
             <ArrowLeft />
             Offline journals
           </Button>
-          <Badge variant="secondary">
+          <Badge
+            variant={persistenceState === 'error' ? 'destructive' : 'secondary'}
+          >
             <CloudOff />
-            Saved on this device
+            {persistenceState === 'saving'
+              ? 'Saving on this device…'
+              : persistenceState === 'error'
+                ? 'Not saved'
+                : 'Saved on this device'}
           </Badge>
         </div>
+        {persistenceState === 'error' && (
+          <Alert variant="destructive" className="mx-auto mb-4 max-w-200">
+            <AlertDescription>
+              {persistenceError} Keep this page open and try Save again.
+            </AlertDescription>
+          </Alert>
+        )}
         <JournalEditor
           key={selectedJournal.id}
           initialJournalId={selectedJournal.id}
@@ -184,6 +227,7 @@ const OfflineJournals = () => {
           isEditMode
           isOfflineDraft
           onDraftChange={saveDraft}
+          onDraftSaveStart={handlePersistenceStart}
           saveHandler={saveDraftFromEditor}
           successMessage="Saved on this device"
           textOnly

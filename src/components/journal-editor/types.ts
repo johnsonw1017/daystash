@@ -19,7 +19,8 @@ export type JournalEditorProps = {
   viewHref?: string
   headerActions?: ReactNode
   isOfflineDraft?: boolean
-  onDraftChange?: (input: SaveJournalInput) => Promise<void> | void
+  onDraftChange?: (input: SaveJournalInput) => Promise<unknown> | void
+  onDraftSaveStart?: () => void
   saveHandler?: (input: SaveJournalInput) => Promise<SaveJournalResult>
   textOnly?: boolean
 }

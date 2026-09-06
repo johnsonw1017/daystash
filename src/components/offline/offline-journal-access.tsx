@@ -1,25 +1,14 @@
 'use client'
 
-import { useSyncExternalStore } from 'react'
 import { usePathname } from 'next/navigation'
 import { CloudOff } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import useOnlineStatus from '@/hooks/use-online-status'
 
 const OfflineJournalAccess = () => {
   const pathname = usePathname()
-  const isOnline = useSyncExternalStore(
-    (onChange) => {
-      window.addEventListener('online', onChange)
-      window.addEventListener('offline', onChange)
-      return () => {
-        window.removeEventListener('online', onChange)
-        window.removeEventListener('offline', onChange)
-      }
-    },
-    () => navigator.onLine,
-    () => true
-  )
+  const isOnline = useOnlineStatus()
 
   if (isOnline || pathname === '/offline') return null
 
