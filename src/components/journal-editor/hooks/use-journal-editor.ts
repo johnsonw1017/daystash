@@ -633,15 +633,20 @@ const useJournalEditor = () => {
   )
 
   const saveMutation = useMutation({
-    mutationFn: async () =>
-      saveJournal({
+    mutationFn: async () => {
+      const input = {
         journalId,
         title,
         date: journalDate,
         blocks: normalizedBlocks,
         places,
         thumbnailAssetId: activeThumbnailAssetId,
-      }),
+      }
+
+      return editorConfig.saveHandler
+        ? editorConfig.saveHandler(input)
+        : saveJournal(input)
+    },
     onSuccess: (response) =>
       applySavedState({
         blocks: response.blocks,
@@ -681,6 +686,8 @@ const useJournalEditor = () => {
     insertImagesBelow,
     isDirty,
     isEditMode: editorConfig.isEditMode ?? false,
+    isOfflineDraft: editorConfig.isOfflineDraft ?? false,
+    textOnly: editorConfig.textOnly ?? false,
     journalDate,
     journalCreatedAt: editorConfig.initialCreatedAt,
     isSaving: saveMutation.isPending,

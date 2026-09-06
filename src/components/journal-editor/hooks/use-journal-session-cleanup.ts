@@ -5,6 +5,7 @@ import { useStore } from 'jotai'
 import {
   blocksAtom,
   isJournalSavingAtom,
+  journalEditorConfigAtom,
   journalIdAtom,
   lastSavedTitleAtom,
   savedBlocksAtom,
@@ -19,6 +20,7 @@ const useJournalSessionCleanup = () => {
 
   const discardSessionChanges = useCallback(() => {
     if (cleanupSentRef.current || store.get(isJournalSavingAtom)) return
+    if (store.get(journalEditorConfigAtom).isOfflineDraft) return
 
     const journalId = store.get(journalIdAtom)
     const sessionAssetIds = store.get(sessionAssetIdsAtom)

@@ -18,12 +18,14 @@ type AddBlockDrawerProps = {
   blockId: string
   onOpenChange: (open: boolean) => void
   open: boolean
+  textOnly?: boolean
 }
 
 const AddBlockDrawer = ({
   blockId,
   onOpenChange,
   open,
+  textOnly = false,
 }: AddBlockDrawerProps) => {
   const { insertImage, insertList, insertText } = useBlockInsertion(blockId)
   const pendingActionRef = useRef<(() => void) | null>(null)
@@ -75,17 +77,19 @@ const AddBlockDrawer = ({
                 List
               </Button>
             </DrawerClose>
-            <DrawerClose asChild>
-              <Button
-                type="button"
-                variant="outline"
-                className="h-14 justify-start px-4"
-                onClick={() => selectAction(insertImage)}
-              >
-                <ImageIcon className="size-5" />
-                Images
-              </Button>
-            </DrawerClose>
+            {!textOnly && (
+              <DrawerClose asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-14 justify-start px-4"
+                  onClick={() => selectAction(insertImage)}
+                >
+                  <ImageIcon className="size-5" />
+                  Images
+                </Button>
+              </DrawerClose>
+            )}
           </div>
           <DrawerFooter>
             <DrawerClose asChild>

@@ -12,6 +12,14 @@ vi.mock('@/components/auth/auth-state-sync', () => ({
   default: () => <div data-testid="auth-state-sync" />,
 }))
 
+vi.mock('@/components/offline/offline-journal-sync', () => ({
+  default: () => <div data-testid="offline-journal-sync" />,
+}))
+
+vi.mock('@/components/offline/offline-journal-access', () => ({
+  default: () => <div data-testid="offline-journal-access" />,
+}))
+
 describe('Providers', () => {
   it('renders app providers, auth sync, and children', () => {
     render(
@@ -22,6 +30,8 @@ describe('Providers', () => {
 
     expect(screen.getByTestId('theme-provider')).toBeInTheDocument()
     expect(screen.getByTestId('auth-state-sync')).toBeInTheDocument()
+    expect(screen.getByTestId('offline-journal-sync')).toBeInTheDocument()
+    expect(screen.getByTestId('offline-journal-access')).toBeInTheDocument()
     expect(screen.getByText('App child')).toBeInTheDocument()
   })
 })

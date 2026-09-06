@@ -49,7 +49,6 @@ describe('journal search', () => {
       isLoggedIn: true,
       userId: 'user-id',
       profile: null,
-      error: null,
     })
     mockedUseJournalSearch.mockReturnValue({
       data: [],

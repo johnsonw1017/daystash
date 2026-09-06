@@ -4,13 +4,24 @@ import type { DragEndEvent } from '@dnd-kit/react'
 import { DragDropProvider } from '@dnd-kit/react'
 import { isSortableOperation, useSortable } from '@dnd-kit/react/sortable'
 import { Provider as JotaiProvider } from 'jotai'
+import { useAtomValue } from 'jotai'
 import {
+  useEffect,
+  useRef,
   useState,
   type FocusEvent,
   type KeyboardEvent,
   type ReactNode,
 } from 'react'
-import { createJournalBlocksStore } from '@/components/journal-editor/atoms'
+import {
+  blocksAtom,
+  createJournalBlocksStore,
+  journalDateAtom,
+  journalIdAtom,
+  placesAtom,
+  thumbnailAssetIdAtom,
+  titleAtom,
+} from '@/components/journal-editor/atoms'
 import BlockMenu from '@/components/journal-editor/blocks/block-menu'
 import ImageDialog from '@/components/journal-editor/image-dialog'
 import ResolveBlock from '@/components/journal-editor/blocks/resolve-block'
@@ -24,8 +35,81 @@ import PlaceSelector from '@/components/journal-editor/place-selector'
 import type { JournalEditorProps } from '@/components/journal-editor/types'
 import { getTextareaLineBoundaryState } from '@/components/journal-editor/utils'
 import { cn } from '@/lib/utils'
+import type { SaveJournalInput } from '@/lib/journals'
 
 const sortableGroupId = 'journal-editor-blocks'
+
+const OfflineDraftAutosave = ({
+  onDraftChange,
+}: {
+  onDraftChange?: (input: SaveJournalInput) => Promise<void> | void
+}) => {
+  const journalId = useAtomValue(journalIdAtom)
+  const title = useAtomValue(titleAtom)
+  const date = useAtomValue(journalDateAtom)
+  const blocks = useAtomValue(blocksAtom)
+  const places = useAtomValue(placesAtom)
+  const thumbnailAssetId = useAtomValue(thumbnailAssetIdAtom)
+  const latestInputRef = useRef<SaveJournalInput | null>(null)
+  const onDraftChangeRef = useRef(onDraftChange)
+
+  useEffect(() => {
+    latestInputRef.current = journalId
+      ? {
+          journalId,
+          title,
+          date,
+          blocks,
+          places,
+          thumbnailAssetId,
+        }
+      : null
+    onDraftChangeRef.current = onDraftChange
+  }, [
+    blocks,
+    date,
+    journalId,
+    onDraftChange,
+    places,
+    thumbnailAssetId,
+    title,
+  ])
+
+  useEffect(() => {
+    if (!journalId || !onDraftChange) return
+
+    const timeout = window.setTimeout(() => {
+      void onDraftChange({
+        journalId,
+        title,
+        date,
+        blocks,
+        places,
+        thumbnailAssetId,
+      })
+    }, 300)
+
+    return () => window.clearTimeout(timeout)
+  }, [
+    blocks,
+    date,
+    journalId,
+    onDraftChange,
+    places,
+    thumbnailAssetId,
+    title,
+  ])
+
+  useEffect(
+    () => () => {
+      const latestInput = latestInputRef.current
+      if (latestInput) void onDraftChangeRef.current?.(latestInput)
+    },
+    []
+  )
+
+  return null
+}
 
 type SortableBlockRowProps = {
   blockId: string
@@ -33,6 +117,7 @@ type SortableBlockRowProps = {
   children: ReactNode
   isReordering: boolean
   onActivate: (blockId: string) => void
+  textOnly: boolean
 }
 
 const SortableBlockRow = ({
@@ -41,6 +126,7 @@ const SortableBlockRow = ({
   children,
   isReordering,
   onActivate,
+  textOnly,
 }: SortableBlockRowProps) => {
   const { handleRef, isDragging, ref } = useSortable({
     id: blockId,
@@ -61,6 +147,7 @@ const SortableBlockRow = ({
         blockId={blockId}
         dragHandleRef={handleRef}
         isReordering={isReordering}
+        textOnly={textOnly}
       />
 
       {children}
@@ -71,8 +158,14 @@ const SortableBlockRow = ({
 const JournalEditorContent = () => {
   useJournalSessionCleanup()
 
-  const { blocks, focusBlock, getNextBlock, getPreviousBlock, moveBlock } =
-    useJournalEditor()
+  const {
+    blocks,
+    focusBlock,
+    getNextBlock,
+    getPreviousBlock,
+    moveBlock,
+    textOnly,
+  } = useJournalEditor()
   const [activeBlockId, setActiveBlockId] = useState('')
   const [isAddBlockOpen, setIsAddBlockOpen] = useState(false)
   const [isReordering, setIsReordering] = useState(false)
@@ -169,7 +262,7 @@ const JournalEditorContent = () => {
         onKeyDownCapture={handleKeyDownCapture}
       >
         <JournalHeader />
-        <PlaceSelector />
+        {!textOnly && <PlaceSelector />}
 
         <DragDropProvider onDragEnd={handleDragEnd}>
           <div className="space-y-5">
@@ -180,6 +273,7 @@ const JournalEditorContent = () => {
                 index={index}
                 isReordering={isReordering}
                 onActivate={setActiveBlockId}
+                textOnly={textOnly}
               >
                 <ResolveBlock block={block} blockId={block.id} />
               </SortableBlockRow>
@@ -187,7 +281,7 @@ const JournalEditorContent = () => {
           </div>
         </DragDropProvider>
 
-        <ImageDialog />
+        {!textOnly && <ImageDialog />}
       </section>
       <MobileEditorToolbar
         activeBlockId={insertionBlockId}
@@ -213,6 +307,10 @@ const JournalEditor = ({
   isEditMode = false,
   viewHref,
   headerActions,
+  isOfflineDraft = false,
+  onDraftChange,
+  saveHandler,
+  textOnly = false,
 }: JournalEditorProps) => {
   const [store] = useState(() =>
     createJournalBlocksStore({
@@ -225,7 +323,10 @@ const JournalEditor = ({
       initialDate,
       initialCreatedAt,
       isEditMode,
+      isOfflineDraft,
+      saveHandler,
       successMessage,
+      textOnly,
       viewHref,
     })
   )
@@ -233,6 +334,7 @@ const JournalEditor = ({
   return (
     <JotaiProvider store={store}>
       <FocusRegistryProvider>
+        <OfflineDraftAutosave onDraftChange={onDraftChange} />
         <JournalEditorContent />
       </FocusRegistryProvider>
     </JotaiProvider>

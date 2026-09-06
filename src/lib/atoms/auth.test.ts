@@ -70,6 +70,9 @@ describe('auth atoms', () => {
       isLoggedIn: true,
       isLoading: false,
     })
+    expect(window.localStorage.getItem('daystash:last-offline-user')).toBe(
+      'user-id'
+    )
   })
 
   it('does not query profiles without verified claims', async () => {

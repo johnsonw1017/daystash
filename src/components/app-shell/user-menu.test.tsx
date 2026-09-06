@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { logout } from '@/actions/auth'
+import { forgetOfflineUser } from '@/lib/offline-journals'
 import UserMenu from '@/components/app-shell/user-menu'
 import { SidebarProvider } from '@/components/ui/sidebar'
 import { createTestProfile } from '@/test/mocks/types'
@@ -15,6 +16,10 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('@/actions/auth', () => ({
   logout: vi.fn(),
+}))
+
+vi.mock('@/lib/offline-journals', () => ({
+  forgetOfflineUser: vi.fn(),
 }))
 
 vi.mock('@/hooks/use-auth', () => ({
@@ -83,6 +88,7 @@ describe('UserMenu', () => {
     await actor.click(screen.getByRole('menuitem', { name: 'Sign out' }))
 
     expect(mockedLogout).toHaveBeenCalledOnce()
+    expect(forgetOfflineUser).toHaveBeenCalledOnce()
     expect(refreshAuth).toHaveBeenCalledOnce()
     expect(replace).toHaveBeenCalledWith('/login')
   })

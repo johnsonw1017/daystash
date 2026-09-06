@@ -21,6 +21,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useRefreshAuth } from '@/hooks/use-auth'
 import type { AuthProfile } from '@/lib/atoms/auth'
 import { getLoginHref } from '@/lib/auth/redirect'
+import { forgetOfflineUser } from '@/lib/offline-journals'
 
 type UserMenuProps = {
   onOpenSettings: () => void
@@ -45,6 +46,7 @@ export const UserMenu = ({ onOpenSettings, profile }: UserMenuProps) => {
     const result = await logout()
     if (result?.error) return
 
+    forgetOfflineUser()
     await refreshAuth()
     router.replace('/login')
   }

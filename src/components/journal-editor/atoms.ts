@@ -40,6 +40,8 @@ export const journalEditorConfigAtom = atom<JournalEditorConfig>({
   headerActions: undefined,
   isEditMode: false,
   successMessage: 'Journal saved',
+  isOfflineDraft: false,
+  textOnly: false,
   viewHref: undefined,
 })
 export const titleAtom = atom('')
@@ -69,7 +71,10 @@ type CreateJournalBlocksStoreParams = {
   initialPlaces?: JournalPlace[]
   headerActions?: JournalEditorConfig['headerActions']
   isEditMode?: boolean
+  isOfflineDraft?: boolean
+  saveHandler?: JournalEditorConfig['saveHandler']
   successMessage?: string
+  textOnly?: boolean
   viewHref?: string
 }
 
@@ -83,7 +88,10 @@ export const createJournalBlocksStore = ({
   initialThumbnailAssetId = null,
   initialPlaces = [],
   isEditMode = false,
+  isOfflineDraft = false,
+  saveHandler,
   successMessage = 'Journal saved',
+  textOnly = false,
   viewHref,
 }: CreateJournalBlocksStoreParams): Store => {
   const store = createStore()
@@ -99,7 +107,10 @@ export const createJournalBlocksStore = ({
     headerActions,
     initialCreatedAt,
     isEditMode,
+    isOfflineDraft,
+    saveHandler,
     successMessage,
+    textOnly,
     viewHref,
   })
   store.set(journalIdAtom, initialJournalId)
