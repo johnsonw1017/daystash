@@ -9,20 +9,36 @@ type UploadResult = {
   height: number
 }
 
-const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
-const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
+type UploadOptions = {
+  maxWidthOrHeight: number
+  maxSizeMB: number
+  path: (userId: string, uuid: string) => string
+}
 
-const toWebPFile = async (file: File) => {
+const DEFAULT_IMAGE_COMPRESSION = {
+  maxWidthOrHeight: 1800,
+  maxSizeMB: 1,
+} as const
+
+const toWebPFile = async (
+  file: File,
+  {
+    maxWidthOrHeight,
+    maxSizeMB,
+  }: Pick<UploadOptions, 'maxWidthOrHeight' | 'maxSizeMB'>
+) => {
   return imageCompression(file, {
-    maxWidthOrHeight: 1800,
-    maxSizeMB: 1,
+    maxWidthOrHeight,
+    maxSizeMB,
     useWebWorker: true,
     fileType: 'image/webp',
     initialQuality: 0.8,
   })
 }
 
-const getImageDimensions = (file: File): Promise<{ width: number; height: number }> => {
+const getImageDimensions = (
+  file: File
+): Promise<{ width: number; height: number }> => {
   return new Promise((resolve, reject) => {
     const image = new Image()
     const objectUrl = URL.createObjectURL(file)
@@ -41,18 +57,22 @@ const getImageDimensions = (file: File): Promise<{ width: number; height: number
   })
 }
 
-export const uploadImagesToCloudinary = async (
+const uploadFilesToCloudinary = async (
   files: File[],
-  userId: string
+  userId: string,
+  options: UploadOptions
 ): Promise<UploadResult[]> => {
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+  const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
+
   if (!cloudName || !uploadPreset) {
     throw new Error('Cloudinary upload env vars are missing')
   }
 
   const uploads = files.map(async (file) => {
-    const compressed = await toWebPFile(file)
+    const compressed = await toWebPFile(file, options)
     const uuid = uuidv4()
-    const publicId = `daystash/${userId}/${uuid}`
+    const publicId = options.path(userId, uuid)
 
     const formData = new FormData()
     formData.append('file', compressed)
@@ -85,4 +105,25 @@ export const uploadImagesToCloudinary = async (
   })
 
   return Promise.all(uploads)
+}
+
+export const uploadImagesToCloudinary = async (
+  files: File[],
+  userId: string
+): Promise<UploadResult[]> =>
+  uploadFilesToCloudinary(files, userId, {
+    ...DEFAULT_IMAGE_COMPRESSION,
+    path: (id, uuid) => `daystash/${id}/${uuid}`,
+  })
+
+export const uploadAvatarToCloudinary = async (
+  file: File,
+  userId: string
+): Promise<UploadResult> => {
+  const [avatar] = await uploadFilesToCloudinary([file], userId, {
+    ...DEFAULT_IMAGE_COMPRESSION,
+    path: (id, uuid) => `daystash/${id}/avatars/${uuid}`,
+  })
+
+  return avatar
 }

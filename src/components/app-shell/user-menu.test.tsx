@@ -23,6 +23,7 @@ vi.mock('@/hooks/use-auth', () => ({
 
 const mockedLogout = vi.mocked(logout)
 const profile = createTestProfile()
+const openSettings = vi.fn()
 
 describe('UserMenu', () => {
   beforeEach(() => {
@@ -35,7 +36,7 @@ describe('UserMenu', () => {
 
     render(
       <SidebarProvider defaultOpen>
-        <UserMenu profile={profile} />
+        <UserMenu onOpenSettings={openSettings} profile={profile} />
       </SidebarProvider>
     )
 
@@ -46,9 +47,27 @@ describe('UserMenu', () => {
     await actor.click(screen.getByRole('button', { name: 'Open user menu' }))
 
     expect(
+      screen.getByRole('menuitem', { name: 'Settings' })
+    ).toBeInTheDocument()
+    expect(
       screen.getByRole('menuitem', { name: 'Sign out' })
     ).toBeInTheDocument()
-    expect(screen.getAllByRole('menuitem')).toHaveLength(1)
+    expect(screen.getAllByRole('menuitem')).toHaveLength(2)
+  })
+
+  it('opens profile settings from the user menu', async () => {
+    const actor = userEvent.setup()
+
+    render(
+      <SidebarProvider defaultOpen>
+        <UserMenu onOpenSettings={openSettings} profile={profile} />
+      </SidebarProvider>
+    )
+
+    await actor.click(screen.getByRole('button', { name: 'Open user menu' }))
+    await actor.click(screen.getByRole('menuitem', { name: 'Settings' }))
+
+    expect(openSettings).toHaveBeenCalledOnce()
   })
 
   it('signs out and returns to the login page', async () => {
@@ -56,7 +75,7 @@ describe('UserMenu', () => {
 
     render(
       <SidebarProvider defaultOpen>
-        <UserMenu profile={profile} />
+        <UserMenu onOpenSettings={openSettings} profile={profile} />
       </SidebarProvider>
     )
 

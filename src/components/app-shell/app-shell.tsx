@@ -1,10 +1,11 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import AppSidebar from '@/components/app-shell/app-sidebar'
 import Logo from '@/components/app-shell/logo'
+import UserSettingsDialog from '@/components/app-shell/user-settings-dialog'
 import { Button } from '@/components/ui/button'
 import {
   SidebarInset,
@@ -55,12 +56,14 @@ const MobileHeader = ({
 const AppShell = ({ children }: AppShellProps) => {
   const auth = useAuth()
   const pathname = usePathname() ?? ''
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   return (
     <SidebarProvider defaultOpen={false}>
       <AppSidebar
         isLoading={auth.isLoading}
         isLoggedIn={auth.isLoggedIn}
+        onOpenSettings={() => setSettingsOpen(true)}
         profile={auth.profile}
       />
       <SidebarInset>
@@ -74,6 +77,13 @@ const AppShell = ({ children }: AppShellProps) => {
         </div>
         <div className="min-w-0 flex-1">{children}</div>
       </SidebarInset>
+      {auth.profile && (
+        <UserSettingsDialog
+          open={settingsOpen}
+          onOpenChange={setSettingsOpen}
+          profile={auth.profile}
+        />
+      )}
     </SidebarProvider>
   )
 }

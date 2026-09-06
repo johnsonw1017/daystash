@@ -28,6 +28,7 @@ describe('AppSidebar', () => {
         <AppSidebar
           isLoading={false}
           isLoggedIn
+          onOpenSettings={vi.fn()}
           profile={createTestProfile()}
         />
       </SidebarProvider>
@@ -49,9 +50,9 @@ describe('AppSidebar', () => {
       'data-active',
       'true'
     )
-    expect(
-      screen.getAllByRole('link').map((link) => link.textContent)
-    ).toEqual(['Home', 'Stash', 'Write', 'Search'])
+    expect(screen.getAllByRole('link').map((link) => link.textContent)).toEqual(
+      ['Home', 'Stash', 'Write', 'Search']
+    )
     expect(screen.getByText('Daystash').closest('a')).toBeNull()
     expect(screen.getByText('Daystash').closest('button')).toBeNull()
     expect(document.querySelector('[data-slot="sidebar-rail"]')).toBeNull()
@@ -65,6 +66,7 @@ describe('AppSidebar', () => {
         <AppSidebar
           isLoading={false}
           isLoggedIn
+          onOpenSettings={vi.fn()}
           profile={createTestProfile()}
         />
       </SidebarProvider>
@@ -79,7 +81,12 @@ describe('AppSidebar', () => {
   it('renders matched sidebar skeletons while auth is loading', () => {
     render(
       <SidebarProvider defaultOpen>
-        <AppSidebar isLoading isLoggedIn={false} profile={null} />
+        <AppSidebar
+          isLoading
+          isLoggedIn={false}
+          onOpenSettings={vi.fn()}
+          profile={null}
+        />
       </SidebarProvider>
     )
 
@@ -93,7 +100,12 @@ describe('AppSidebar', () => {
   it('uses the sidebar footer as a login action when logged out', () => {
     render(
       <SidebarProvider defaultOpen>
-        <AppSidebar isLoading={false} isLoggedIn={false} profile={null} />
+        <AppSidebar
+          isLoading={false}
+          isLoggedIn={false}
+          onOpenSettings={vi.fn()}
+          profile={null}
+        />
       </SidebarProvider>
     )
 
