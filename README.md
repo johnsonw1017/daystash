@@ -2,7 +2,7 @@
   <img src="public/daystash-app-icon.svg" alt="Daystash logo" width="88" />
   <h1>Daystash</h1>
   <p><strong>A private journal for the moments worth keeping.</strong></p>
-  <p>Capture daily stories with words, photos, and places—online or off.</p>
+  <p>Capture daily stories with words, photos, and places.</p>
   <p><a href="https://daystash.vercel.app/">Open Daystash</a></p>
 </div>
 
@@ -11,7 +11,6 @@
 - **Flexible journal entries** — Build each story from reorderable text, list, and image blocks.
 - **Photos from any device** — Upload directly or scan a QR code to add photos from your phone.
 - **Place-based memories** — Attach locations with Google Places and bias results toward nearby places.
-- **Offline writing** — Draft text-only entries without a connection and sync them when you are back online.
 - **A visual archive** — Browse entries by month, jump through the timeline, and choose a cover image for each journal.
 - **Fast search** — Find past entries by title or content.
 - **Installable experience** — Use Daystash as a responsive PWA with light and dark themes.
